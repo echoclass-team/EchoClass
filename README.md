@@ -96,6 +96,7 @@ EchoClass/
 - **任务看板**：<https://github.com/orgs/echoclass-team/projects/1>
 - **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>（25 个任务按 W1–W4 编号）
 - **API 合约**（v0 草案已就位）：[`docs/api_contract.md`](./docs/api_contract.md)
+- **W1 阶段性测试指引**：[`docs/w1_smoke_test.md`](./docs/w1_smoke_test.md) — 后端脚手架 + LLMClient + ChatECNU 集成验证
 
 ### 新成员 Onboarding
 
