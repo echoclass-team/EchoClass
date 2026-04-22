@@ -83,7 +83,7 @@ EchoClass/
 - **分工细则**：[`docs/roles.md`](./docs/roles.md) — 每个角色的技术栈、目录所有权、周度产出、跨界协作边界
 - **任务看板**：<https://github.com/orgs/echoclass-team/projects/1>
 - **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>（25 个任务按 W1–W4 编号）
-- **API 合约**（将在 W1 产出）：`docs/api_contract.md`
+- **API 合约**（v0 草案已就位）：[`docs/api_contract.md`](./docs/api_contract.md)
 
 ### 新成员 Onboarding
 
