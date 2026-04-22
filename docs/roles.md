@@ -5,17 +5,21 @@
 
 ---
 
-## 👤 Role A · Agent 工程师（后端大脑）
+## 👤 Role A · Agent 工程师（AI 大脑）
 
 **代号**：`A-Agent`
 
-**核心职责**：构建 EchoClass 的 AI 大脑——所有 LLM、Agent、RAG 逻辑。
+**核心职责**：构建 EchoClass 的 AI 大脑——所有 LLM、Agent、RAG 逻辑，并向传输层（B）产出流式事件。
+
+**不做**：不写 HTTP / WebSocket 路由本身（那是 B 的活）；不写 Pydantic 请求/响应外型（B 维护，A 提需求）。
 
 ### 技术栈
 
-- Python 3.11、FastAPI、LangGraph、Pydantic v2
-- LLM SDK：OpenAI 兼容接口（DeepSeek / Qwen / DashScope）
-- 向量库：Chroma
+- Python 3.11、LangGraph、Pydantic v2（内部模型）
+- LLM SDK：OpenAI 兼容接口（DeepSeek / Qwen / DashScope）、tenacity 重试
+- 向量库：Chroma；嵌入：bge-small / text-embedding-v3
+- 教案解析：pymupdf4llm
+- 异步：asyncio（产生事件推到 `asyncio.Queue[AgentEvent]`）
 - 测试：pytest + pytest-asyncio
 
 ### 代码所有权
@@ -25,7 +29,7 @@ backend/
 ├── agents/         # 学生 Agent、Director Agent、Evaluator Agent
 ├── rag/            # 教案解析、向量化、检索
 ├── llm/            # LLM 客户端封装（重试、限流、成本追踪）
-├── graph/          # LangGraph 状态机定义
+├── graph/          # LangGraph 状态机定义、事件产生者
 └── tests/agents/
 ```
 
@@ -38,47 +42,57 @@ backend/
 | 周 | 关键交付 |
 |---|---|
 | W1 | 单学生 Agent + 教案 RAG 跑通 |
-| W2 | Director 多 Agent 调度 + WebSocket 流式 |
-| W3 | 评估 Agent + 端到端集成 |
-| W4 | 性能优化 + 稳定性 |
+| W2 | Director 多 Agent 调度 + 事件流产生者（推到 queue） |
+| W3 | 评估 Agent + 端到端联调 |
+| W4 | 性能优化 + 稳定性 + （stretch）ASR/TTS 接入 |
 
 ---
 
-## 👤 Role B · 全栈工程师（面子 + API 粘合）
+## 👤 Role B · 全栈工程师（传输层 + 界面）
 
 **代号**：`B-Full`
 
-**核心职责**：用户看得到的一切 + 连接前后端的 API 层。
+**核心职责**：用户看得到的一切 + 连接前后端的完整传输链路（REST 与 WebSocket 两端）。
+
+**不做**：不写 LLM / Agent / RAG 本身的逻辑（那是 A 的活）。
 
 ### 技术栈
 
-- Next.js 14（App Router）、TypeScript、TailwindCSS、shadcn/ui
+**前端**：
+- Next.js 14 (App Router)、TypeScript、TailwindCSS、shadcn/ui
 - 状态：Zustand；数据请求：TanStack Query
-- 实时：原生 WebSocket + Vercel AI SDK 流式
+- 实时：原生 WebSocket client + Vercel AI SDK（流式渲染）
 - 图表：Recharts；图标：lucide-react
-- 后端 API 层：FastAPI 路由（非 Agent 内部）
+
+**后端传输层**：
+- Python 3.11、FastAPI（REST 路由）
+- WebSocket endpoint（FastAPI）：从 A 提供的 `asyncio.Queue` consume 事件→序列化为 JSON Lines 推给前端
+- Pydantic v2（对外 schema）
+- SQLite（会话 / 消息持久化）
 
 ### 代码所有权
 
 ```
 frontend/                    # 全部
 backend/
-├── api/                     # REST + WebSocket 路由
-├── schemas/                 # Pydantic 请求/响应模型
-├── db/                      # 会话存储（SQLite / 文件）
-└── main.py
+├── api/                     # REST 路由 + WebSocket endpoint
+├── schemas/
+│   ├── requests.py          # REST 请求/响应 Pydantic
+│   └── events.py            # A↔B 内部事件类型（AgentEvent union）
+├── db/                      # SQLite（会话 · 消息）
+└── main.py                  # FastAPI 入口，router 挂载
 ```
 
 ### 分支前缀
 
-`feat/fe-*`、`feat/api-*`
+`feat/fe-*`、`feat/api-*`、`feat/ws-*`
 
 ### 每周核心产出
 
 | 周 | 关键交付 |
 |---|---|
-| W1 | 前端脚手架 + 首页 + API 客户端封装 |
-| W2 | 虚拟课堂 UI + WebSocket 消息流 |
+| W1 | 前端脚手架 + 首页 + API 客户端封装 + `schemas/events.py` 骨架 |
+| W2 | WS endpoint（后）+ WS client（前）+ 虚拟课堂 UI + 会话管理 REST |
 | W3 | 诊断报告页 + 会话历史 |
 | W4 | Logo / 视觉打磨 + 落地页 + 暗色模式 |
 
@@ -131,14 +145,38 @@ backend/prompts/             # 共享：Prompt 模板（与 A 协作）
 
 ## 🤝 跨界协作边界
 
+### 文件级所有权
+
 | 共享文件 / 边界 | 主 Owner | 规则 |
 |---|---|---|
-| `backend/main.py` | B | A 只能加 router 注册，改前说一声 |
-| `backend/schemas/` | B | A 提需求，B 落实 |
+| `backend/main.py` | B | **特例**：#W1-01 脚手架由 A 创建初版，合并后日常修改归 B；A 只能加 router 注册，改前说一声 |
+| `backend/schemas/requests.py` | B | 对外 REST schema；A 提需求 |
+| `backend/schemas/events.py` | B + A | 内部事件类型（A↔B 契约）；**任何改动必须两人连署 approve** |
 | `backend/prompts/` | C + A | C 写初版，A review 后接入代码 |
-| API 合约（`docs/api_contract.md`） | B | 先写 schema，A/C 基于此开发 |
+| API 合约（`docs/api_contract.md`） | B | v0 已存在；后续改动需 A 与 B 都 approve |
 | `pyproject.toml` / `package.json` | 谁加依赖谁加 | PR 里必须说明新增依赖理由 |
-| `README.md` | 共同 | 改动大时先开 Issue 讨论 |
+| `README.md` / `docs/roles.md` | 共同 | 改动大时先开 Issue 讨论 |
+
+### WebSocket 分层职责（重要）
+
+WebSocket 距离两端跨界，按层拆分所有权：
+
+```
+【前端 WebSocket client】— B
+  │ 原生 WebSocket 、 重连 、心跳、事件订阅 UI
+  ▼
+【后端 WS endpoint】      — B（backend/api/ws.py）
+  │ 连接管理、鉴权、消息序列化、心跳
+  │ consume asyncio.Queue[AgentEvent]
+  ▼
+【事件产生者】              — A（backend/graph/, agents/）
+  │ LangGraph 节点输出 → push 到 queue
+  │ 事件类型在 backend/schemas/events.py（B+A 共同）
+```
+
+**谁接手规则**：
+- A 发现需要新事件类型 → 先在 Issue / 群里提出 → B 更新 `events.py` + `api_contract.md` 同步 → 合并后 A 再写产生代码
+- B 发现消息丢失 / 顺序问题 → 和 A 一起调试 queue / event loop
 
 ---
 
@@ -171,16 +209,16 @@ gh issue develop <N> --repo echoclass-team/EchoClass --checkout
 
 ## 📋 Issue 标签速查
 
-| 标签 | 含义 |
-|---|---|
-| `week-1` ~ `week-4` | 计划执行周次 |
-| `agent` | Role A 负责 |
-| `frontend` | Role B 负责 |
-| `api` | Role B 负责（API 层） |
-| `eval` | Role C 负责（评估相关） |
-| `data` | Role C 负责（内容数据） |
-| `docs` | 任何人都可能涉及，以 C 为主 |
-| `infra` | 基建，多人协作 |
-| `bug` | 修复问题 |
-| `enhancement` | 功能增强 |
-| `task` | 常规任务 |
+| 标签 | 含义 | 典型 Owner |
+|---|---|---|
+| `week-1` ~ `week-4` | 计划执行周次 | — |
+| `agent` | Agent / LLM / RAG / Graph 逻辑 | A |
+| `frontend` | 前端 UI | B |
+| `api` | 后端 REST / WS 路由层 | B |
+| `eval` | 评估 / 报告 / 用户测试 | C |
+| `data` | 人设库 / 迷思库 / 样例教案 | C |
+| `docs` | 文档 | C 为主，任何人可改 |
+| `infra` | 构建 / 部署 / 脚手架 | A 或 B |
+| `bug` | 修复问题 | 按模块 |
+| `enhancement` | 功能增强 | 按模块 |
+| `task` | 常规任务 | — |
