@@ -109,6 +109,19 @@ EchoClass/
 gh issue develop <N> --repo echoclass-team/EchoClass --checkout
 ```
 
+### 本地启动后端
+
+详见 [`backend/README.md`](./backend/README.md)。快速开始：
+
+```bash
+cd backend
+uv sync --extra dev          # 安装依赖（需先装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh）
+cp .env.example .env          # 填入 OPENAI_API_KEY 等
+uv run uvicorn main:app --reload --port 8000
+# 验证：curl http://localhost:8000/health  →  {"status":"ok"}
+uv run pytest                 # 运行测试
+```
+
 ## 📅 里程碑
 
 - [ ] **Week 1** · 脚手架 + 单学生 Agent + 教案解析 Demo（[W1 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-1)）
