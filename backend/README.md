@@ -16,7 +16,12 @@ uv sync --extra dev
 
 # 3. 配置环境变量
 cp .env.example .env
-# 编辑 .env，填入 OPENAI_API_KEY 等
+# 编辑 .env，填入 OPENAI_API_KEY
+# 默认使用 ChatECNU（华东师大大模型，参赛平台自有）：
+#   登录 https://chat.ecnu.edu.cn/html/ → 左下角头像 → 我的令牌
+#   base_url: https://chat.ecnu.edu.cn/open/api/v1
+#   model: ecnu-max
+# 也可切 DeepSeek / Qwen 等其它 OpenAI 兼容后端（见 .env.example 注释）
 
 # 4. 启动开发服务器
 uv run uvicorn main:app --reload --port 8000
