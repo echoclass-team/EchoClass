@@ -3,6 +3,7 @@
 Scaffold for W1-01 (Issue #16). Role A 创建初版；合并后日常维护归 Role B。
 Role A 只应在此文件追加 router 注册，变更前请与 B 同步。
 """
+
 from __future__ import annotations
 
 import os
@@ -10,6 +11,8 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from api.lessons import router as lessons_router
 
 load_dotenv()
 
@@ -31,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(lessons_router)
 
 
 @app.get("/health")
