@@ -182,7 +182,9 @@ uv run python $env:TEMP\try_llm.py
 5... llm.stream model=ecnu-max prompt_tokens=XX completion_tokens=10
 ```
 
-### 6.4 测试 StudentAgent（真实 API，消耗少量 tokens）
+### 6.4 测试 StudentAgent + 人设联调（真实 API，消耗少量 tokens）
+
+脚本会自动加载 `data/personas/` 下的 **6 个学生人设 JSON**，逐个调用真实 API 验证。
 
 在 `backend/` 目录下运行：
 
@@ -193,36 +195,44 @@ uv run python scripts/try_student_agent.py
 **预期输出**（内容每次不完全相同，但结构一致）：
 
 ```
+📂 加载了 6 个人设（来自 data/personas/）
+
 ✅ LLMClient 初始化成功 (model=ecnu-max)
 📡 base_url=https://chat.ecnu.edu.cn/open/api/v1
 
---- 小红（基础薄弱，内向害羞）---
-  intent:  answer_question
-  content: 呃……是不是……上面一个数，下面一个数？
-  emotion: 紧张
+============================================================
+👤 张雨欣（J1 中等）— 七年级活跃女生，爱抢答爱表现，热情有余严谨不足
+   💬 口头禅: 老师老师！我来我来！
 
---- 小明（中等水平，活泼好动）---
-  intent:  answer_question
-  content: 分数就是把一个东西切成几块，拿其中几块！
-  emotion: 兴奋
+   intent:  answer_question
+   content: （用口头禅开头，大致对但不严谨）
+   emotion: 兴奋
 
---- 小华（优等生，认真严谨）---
-  intent:  answer_question
-  content: 分数表示把整体平均分成若干份，取其中一份或几份的数……
-  emotion: 自信
+============================================================
+👤 林小雨（P3 薄弱）— 三年级基础薄弱女生，缺乏自信怕提问，需要耐心鼓励
+   💬 口头禅: 嗯……好像是这样的吧？
 
-🎉 全部测试通过！
+   intent:  answer_question
+   content: （模糊/不正确的回答，可能犯"分子加分子、分母加分母"的典型错误）
+   emotion: 紧张
+
+...（共 6 个学生）
+
+🎉 全部测试通过！所有人设均正常响应。
 ```
 
 **怎么看结果**：
 
-| 人设 | 知识水平 | 应该怎样 |
-|------|---------|---------|
-| **小红** | 基础薄弱 | 回答模糊/不正确，情绪紧张或困惑 |
-| **小明** | 中等水平 | 大致对但不严谨，可能用生活例子 |
-| **小华** | 优等生 | 准确完整的定义，情绪自信 |
+| 人设 | 类型 | 应该怎样 |
+|------|------|---------|
+| **张雨欣** J1 中等 | 活跃抢答 | 用口头禅，凭直觉，不严谨 |
+| **李文博** J2 优秀 | 内向学霸 | 回答正确但表述简略、犹豫 |
+| **刘思琪** J2 中等 | 跑偏型 | 联想发散，可能从分数聊到宇宙 |
+| **林小雨** P3 薄弱 | 薄弱怕错 | 小声、不确定，犯典型迷思概念错误 |
+| **陈思远** P3 优秀 | 学霸型 | 准确完整，过度自信 |
+| **王浩然** P4 中等 | 走神型 | 可能 off_topic，讲着讲着就跑了 |
 
-只要 3 个人设的 `intent` / `content` / `emotion` **符合上述特征**，就说明 StudentAgent 工作正常。
+只要 6 个人设的 `intent` / `content` / `emotion` **符合上述特征**（口头禅、迷思概念、说话风格有体现），就说明联调成功。
 
 ---
 
@@ -230,12 +240,12 @@ uv run python scripts/try_student_agent.py
 
 跑完后对照打勾：
 
-- [ ] `uv run pytest` → `40 passed`
+- [ ] `uv run pytest` → `45 passed`
 - [ ] `curl /health` 返回 `{"status":"ok"}`
 - [ ] chat 能收到 ChatECNU 的回复
 - [ ] stream 能逐字输出 `1 2 3 4 5`
 - [ ] 日志打印了 `model=ecnu-max prompt_tokens=... completion_tokens=...`
-- [ ] StudentAgent 3 个人设回复符合人设特征
+- [ ] StudentAgent 6 个人设回复符合人设特征（口头禅、迷思概念有体现）
 
 有任何一项失败，在群里发**完整报错 + 你在哪一步**，我们一起看。
 
