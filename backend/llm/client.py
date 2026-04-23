@@ -1,24 +1,27 @@
-"""LLM client wrapper.
+"""LLM 客户端封装。
 
-统一封装 OpenAI 兼容接口（DeepSeek / Qwen / DashScope）的调用，
-提供重试、超时、token 使用日志。
+统一封装 OpenAI 兼容接口的调用，提供重试、超时、token 使用日志。
 
-典型用法：
+当前默认后端为 ChatECNU ecnu-max（华东师范大学大模型平台），
+也可通过环境变量切换到 DeepSeek / Qwen 等其它 OpenAI 兼容服务。
+
+典型用法::
 
     from llm.client import LLMClient
 
     client = LLMClient()  # 从 env 读 OPENAI_API_KEY / OPENAI_BASE_URL / LLM_MODEL
 
-    # 一次性
+    # 非流式调用
     resp = await client.chat([{"role": "user", "content": "你好"}])
     print(resp.choices[0].message.content)
 
-    # 流式
+    # 流式调用
     async for chunk in client.stream([{"role": "user", "content": "你好"}]):
         delta = chunk.choices[0].delta.content if chunk.choices else None
         if delta:
             print(delta, end="", flush=True)
 """
+
 from __future__ import annotations
 
 import logging
@@ -58,13 +61,24 @@ DEFAULT_RETRY_MAX_WAIT = 10.0
 class LLMClient:
     """对 OpenAI 兼容 API 的薄封装。
 
-    参数：
-        api_key: 覆盖 env OPENAI_API_KEY
-        base_url: 覆盖 env OPENAI_BASE_URL（DeepSeek 用 https://api.deepseek.com/v1 等）
-        model: 覆盖 env LLM_MODEL
-        timeout: 单次 HTTP 超时（秒），默认 30
-        max_retries: 可重试异常的最大尝试次数，默认 3
-        retry_min_wait / retry_max_wait: 指数退避的下/上界（秒）
+    当前默认连接 ChatECNU ecnu-max，也可通过参数或环境变量切换到任意 OpenAI 兼容服务。
+
+    Parameters
+    ----------
+    api_key : str, optional
+        覆盖 env OPENAI_API_KEY。
+    base_url : str, optional
+        覆盖 env OPENAI_BASE_URL（默认 ChatECNU: https://chat.ecnu.edu.cn/open/api/v1）。
+    model : str, optional
+        覆盖 env LLM_MODEL（默认 ecnu-max）。
+    timeout : float
+        单次 HTTP 超时（秒），默认 30。
+    max_retries : int
+        可重试异常的最大尝试次数，默认 3。
+    retry_min_wait / retry_max_wait : float
+        tenacity 指数退避的下/上界（秒）。
+    client : AsyncOpenAI, optional
+        注入已有客户端实例（主要用于测试 mock）。
 
     测试里常用 ``max_retries=3, retry_min_wait=0.0, retry_max_wait=0.0``
     让重试不等待。
@@ -83,7 +97,7 @@ class LLMClient:
     ) -> None:
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = base_url or os.getenv("OPENAI_BASE_URL")
-        self.model = model or os.getenv("LLM_MODEL", "deepseek-chat")
+        self.model = model or os.getenv("LLM_MODEL", "ecnu-max")
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_min_wait = retry_min_wait

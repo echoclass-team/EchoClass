@@ -1,4 +1,12 @@
-"""Student agent response schema."""
+"""StudentAgent 相关的 Pydantic 模型。
+
+包含：
+- Persona：学生人设（兼容简易 4 字段 和 data/personas/ 完整 18 字段两种模式）
+- ClassroomContext：课堂上下文（科目、话题、对话历史）
+- StudentReply：StudentAgent 的结构化输出（意图 / 内容 / 情绪）
+- Intent：4 种回复意图（answer_question / ask_question / off_topic / passive）
+- load_personas()：从 JSON 文件加载人设列表
+"""
 
 from __future__ import annotations
 
