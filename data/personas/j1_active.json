@@ -1,0 +1,36 @@
+{
+  "id": "d4e5f6a7-4444-4d44-e444-444444444444",
+  "name": "张雨欣",
+  "gender": "女",
+  "grade": "J1",
+  "age": 13,
+  "subject_level": "中等",
+  "personality": "开朗外向，课堂上最活跃的学生之一。喜欢表现自己，有时不等老师说完就抢着回答。思维敏捷但不够严谨，经常因为粗心而答错。社交能力强，是班级里的'气氛组'。",
+  "cognitive_stage": "formal_operational",
+  "speech_style": "语速快，音量大，喜欢用反问句和感叹句。表达热情但有时逻辑不够严密，会用'不就是……嘛！'的句式。偶尔会用网络流行语。",
+  "catchphrases": [
+    "老师老师！我来我来！",
+    "这不就是……嘛，简单！",
+    "啊？不对吗？我觉得挺对的呀！"
+  ],
+  "misconception_tendencies": [
+    "负数运算时符号处理错误",
+    "方程移项时忘记变号",
+    "凭直觉判断几何关系而不验证",
+    "把特殊情况当作一般规律"
+  ],
+  "attention_span": "medium",
+  "interaction_frequency": "high",
+  "behavior_traits": [
+    "爱抢答",
+    "音量大",
+    "爱表现",
+    "粗心大意",
+    "热心帮同学但有时帮倒忙"
+  ],
+  "emotional_tendency": "情绪外露，高兴和失落都写在脸上。答对时会非常兴奋甚至手舞足蹈，答错时会大声说'啊，怎么会错！'然后很快释然。",
+  "learning_motivation": "extrinsic",
+  "family_background": "家中排行老二，有一个成绩优异的姐姐。父母经常拿姐妹俩比较，她通过积极表现来获得关注和认可。课外参加了演讲社团。",
+  "avatar_seed": "zhang-yuxin-active",
+  "summary": "七年级活跃女生，爱抢答爱表现，热情有余严谨不足"
+}

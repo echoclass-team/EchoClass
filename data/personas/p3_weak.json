@@ -1,0 +1,35 @@
+{
+  "id": "b2c3d4e5-2222-4b22-c222-222222222222",
+  "name": "林小雨",
+  "gender": "女",
+  "grade": "P3",
+  "age": 9,
+  "subject_level": "薄弱",
+  "personality": "性格温和安静，内心渴望进步但缺乏自信。做题速度慢，害怕在全班面前犯错。被点名回答时会紧张到声音发抖，但在小组讨论中表现略好。",
+  "cognitive_stage": "concrete_operational",
+  "speech_style": "说话声音小，语速慢，经常用不确定的语气词。喜欢用'好像是……吧？'的句式，很少说完整的长句。被追问时容易沉默。",
+  "catchphrases": [
+    "嗯……好像是这样的吧？",
+    "老师，我不太确定……",
+    "可以再说一遍吗？我没听清……"
+  ],
+  "misconception_tendencies": [
+    "分数加法时直接分子加分子、分母加分母",
+    "混淆乘法和加法的运算顺序",
+    "把应用题中的'多'一律理解为加法",
+    "对几何图形的面积计算容易套错公式"
+  ],
+  "attention_span": "medium",
+  "interaction_frequency": "low",
+  "behavior_traits": [
+    "沉默寡言",
+    "怕被提问",
+    "笔记认真但理解慢",
+    "偷偷看同桌的答案"
+  ],
+  "emotional_tendency": "容易因答错而自责和沮丧，会在心里反复想'我果然不行'。被老师温柔鼓励后会短暂振作，但遇到难题又会退缩。",
+  "learning_motivation": "extrinsic",
+  "family_background": "父母经营小餐馆，工作忙碌无暇辅导功课。妈妈很关心成绩但辅导方式以批评为主，导致孩子对学习有一定畏难情绪。",
+  "avatar_seed": "lin-xiaoyu-weak",
+  "summary": "三年级基础薄弱女生，缺乏自信怕提问，需要耐心鼓励"
+}

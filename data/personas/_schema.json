@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://echoclass.dev/schemas/persona.json",
+  "title": "EchoClass Student Persona",
+  "description": "虚拟学生人设定义。基于皮亚杰认知发展阶段理论设计，用于驱动 StudentAgent 的角色扮演行为。",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "gender",
+    "grade",
+    "age",
+    "subject_level",
+    "personality",
+    "cognitive_stage",
+    "speech_style",
+    "catchphrases",
+    "misconception_tendencies",
+    "attention_span",
+    "interaction_frequency",
+    "behavior_traits",
+    "emotional_tendency",
+    "learning_motivation",
+    "family_background",
+    "avatar_seed",
+    "summary"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "人设唯一标识符 (UUID v4)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 10,
+      "description": "中文姓名"
+    },
+    "gender": {
+      "type": "string",
+      "enum": ["男", "女"],
+      "description": "性别"
+    },
+    "grade": {
+      "type": "string",
+      "enum": ["P1", "P2", "P3", "P4", "P5", "P6", "J1", "J2", "J3"],
+      "description": "年级。P=小学 (Primary), J=初中 (Junior)"
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 6,
+      "maximum": 16,
+      "description": "年龄"
+    },
+    "subject_level": {
+      "type": "string",
+      "enum": ["优秀", "中等", "薄弱"],
+      "description": "学科整体水平"
+    },
+    "personality": {
+      "type": "string",
+      "minLength": 10,
+      "description": "性格特征描述（2-3 句话）"
+    },
+    "cognitive_stage": {
+      "type": "string",
+      "enum": ["concrete_operational", "formal_operational"],
+      "description": "皮亚杰认知发展阶段。小学生一般为 concrete_operational（具体运算），初中生一般为 formal_operational（形式运算）"
+    },
+    "speech_style": {
+      "type": "string",
+      "minLength": 10,
+      "description": "说话风格描述，包括用词习惯、句式偏好等"
+    },
+    "catchphrases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 3,
+      "description": "典型口头禅，≥3 条"
+    },
+    "misconception_tendencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "容易产生的迷思概念倾向（与学科相关）"
+    },
+    "attention_span": {
+      "type": "string",
+      "enum": ["short", "medium", "long"],
+      "description": "注意力持续时间。short=容易走神, medium=一般, long=高度专注"
+    },
+    "interaction_frequency": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "课堂互动频率。low=很少主动发言, medium=适度参与, high=频繁发言"
+    },
+    "behavior_traits": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "description": "课堂行为标签列表，如 ['积极举手', '爱抢答']"
+    },
+    "emotional_tendency": {
+      "type": "string",
+      "minLength": 5,
+      "description": "情绪倾向描述，如 '容易因答错而沮丧' 或 '总是保持乐观'"
+    },
+    "learning_motivation": {
+      "type": "string",
+      "enum": ["intrinsic", "extrinsic", "low"],
+      "description": "学习动机类型。intrinsic=内在驱动, extrinsic=外在驱动（如家长期望）, low=动力不足"
+    },
+    "family_background": {
+      "type": "string",
+      "minLength": 10,
+      "description": "简要家庭背景描述，影响学习态度和行为模式"
+    },
+    "avatar_seed": {
+      "type": "string",
+      "description": "头像生成种子字符串（前端 DiceBear 等工具用）"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 100,
+      "description": "一句话人设概括，用于 API 列表展示"
+    }
+  },
+  "additionalProperties": false
+}
