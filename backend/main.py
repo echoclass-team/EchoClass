@@ -1,8 +1,12 @@
 """FastAPI entrypoint for EchoClass backend.
 
-Scaffold for W1-01 (Issue #16). Role A 创建初版；合并后日常维护归 Role B。
-Role A 只应在此文件追加 router 注册，变更前请与 B 同步。
+EchoClass 后端入口。Role A 创建初版，日常维护归 Role B。
+Role A 追加 router 注册时请与 B 同步。
+
+当前已注册的路由：
+- GET /health — 健康检查
 """
+
 from __future__ import annotations
 
 import os

@@ -1,7 +1,11 @@
 """StudentAgent — 单学生虚拟角色。
 
 根据人设 (Persona) + 课堂上下文 (ClassroomContext) + 老师最新发言，
-调用 LLM 生成结构化的 StudentReply。
+通过 LLMClient 调用 ChatECNU ecnu-max 生成结构化的 StudentReply。
+
+人设支持两种模式：
+- 简易模式：4 个基础字段（name / personality / knowledge_level / behavior_traits）
+- 完整模式：从 data/personas/*.json 加载的18 字段人设（含口头禅、迷思概念、认知阶段等）
 
 典型用法::
 
@@ -13,6 +17,7 @@
     reply = await agent.respond("什么是分数？")
     print(reply)  # StudentReply(speaker_id=..., intent=..., content=..., emotion=...)
 """
+
 from __future__ import annotations
 
 import json
@@ -39,14 +44,17 @@ _jinja_env = Environment(
 class StudentAgent:
     """单学生 Agent。
 
+    每个实例代表一个虚拟学生，通过 Jinja2 模板渲染 Prompt 并调用 LLM 生成符合人设的回复。
+    回复为结构化 JSON，包含意图 (intent)、内容 (content)、情绪 (emotion)。
+
     Parameters
     ----------
     llm : LLMClient
-        已配置好的 LLM 客户端。
+        已配置好的 LLM 客户端（默认 ChatECNU ecnu-max）。
     persona : Persona
-        学生人设。
+        学生人设，支持简易模式或 data/personas/ 完整 JSON。
     context : ClassroomContext
-        当前课堂上下文（可在对话过程中更新）。
+        当前课堂上下文（对话过程中自动追加历史记录）。
     temperature : float
         LLM 采样温度，默认 0.8 以增加回复多样性。
     """
