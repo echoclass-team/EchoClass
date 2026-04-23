@@ -1,6 +1,9 @@
 """Student agent response schema."""
+
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -9,16 +12,105 @@ Intent = Literal["answer_question", "ask_question", "off_topic", "passive"]
 
 
 class Persona(BaseModel):
-    """学生人设描述。"""
+    """学生人设描述。
 
+    兼容两种构造方式：
+    1. 简易模式（4 字段）：name / personality / knowledge_level / behavior_traits
+    2. 完整模式（从 data/personas/*.json 加载）：包含全部 18 字段
+    """
+
+    # --- 核心身份 ---
+    id: str = Field(default="", description="人设唯一标识符 (UUID v4)")
     name: str = Field(..., description="学生姓名")
-    personality: str = Field(..., description="性格特征，如'内向害羞'、'活泼好动'")
+    gender: str = Field(default="", description="性别")
+    grade: str = Field(default="", description="年级，如 P3 / J1")
+    age: int = Field(default=0, description="年龄")
+
+    # --- 认知与学业 ---
+    subject_level: str = Field(default="", description="学科水平：优秀/中等/薄弱")
+    personality: str = Field(..., description="性格特征描述")
+    cognitive_stage: str = Field(
+        default="",
+        description="皮亚杰认知阶段：concrete_operational / formal_operational",
+    )
+
+    # --- 语言风格 ---
+    speech_style: str = Field(default="", description="说话风格描述")
+    catchphrases: list[str] = Field(default_factory=list, description="口头禅列表")
+
+    # --- 迷思概念 ---
+    misconception_tendencies: list[str] = Field(
+        default_factory=list, description="容易产生的迷思概念倾向"
+    )
+
+    # --- 行为与交互 ---
+    attention_span: str = Field(
+        default="medium", description="注意力：short/medium/long"
+    )
+    interaction_frequency: str = Field(
+        default="medium", description="互动频率：low/medium/high"
+    )
+    behavior_traits: str | list[str] = Field(
+        ..., description="课堂行为倾向（字符串或列表）"
+    )
+
+    # --- 心理与背景 ---
+    emotional_tendency: str = Field(default="", description="情绪倾向描述")
+    learning_motivation: str = Field(
+        default="", description="学习动机：intrinsic/extrinsic/low"
+    )
+    family_background: str = Field(default="", description="家庭背景描述")
+
+    # --- 系统辅助 ---
+    avatar_seed: str = Field(default="", description="头像种子")
+    summary: str = Field(default="", description="一句话概括")
+
+    # --- 兼容旧字段 ---
     knowledge_level: str = Field(
-        ..., description="知识水平，如'基础薄弱'、'中等水平'、'优等生'"
+        default="", description="知识水平（兼容旧接口，优先使用 subject_level）"
     )
-    behavior_traits: str = Field(
-        ..., description="课堂行为倾向，如'容易走神'、'积极举手'、'沉默寡言'"
-    )
+
+    @property
+    def effective_level(self) -> str:
+        """获取有效的知识水平（优先 subject_level）。"""
+        return self.subject_level or self.knowledge_level or "中等"
+
+    @property
+    def behavior_traits_text(self) -> str:
+        """行为特征转为文本。"""
+        if isinstance(self.behavior_traits, list):
+            return "、".join(self.behavior_traits)
+        return self.behavior_traits
+
+
+def load_personas(personas_dir: str | Path | None = None) -> list[Persona]:
+    """从 data/personas/ 目录加载所有人设 JSON。
+
+    Parameters
+    ----------
+    personas_dir : path, optional
+        人设目录，默认为项目根下的 data/personas/
+
+    Returns
+    -------
+    list[Persona]
+        加载的人设列表（按 name 排序）。
+    """
+    if personas_dir is None:
+        personas_dir = (
+            Path(__file__).resolve().parent.parent.parent / "data" / "personas"
+        )
+    else:
+        personas_dir = Path(personas_dir)
+
+    personas: list[Persona] = []
+    for fp in sorted(personas_dir.glob("*.json")):
+        if fp.name.startswith("_"):
+            continue
+        with open(fp, encoding="utf-8") as f:
+            data = json.load(f)
+        personas.append(Persona(**data))
+    return personas
 
 
 class ClassroomContext(BaseModel):
