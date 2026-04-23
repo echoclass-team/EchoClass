@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.lessons import router as lessons_router
+
 load_dotenv()
 
 app = FastAPI(
@@ -35,6 +37,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(lessons_router)
 
 
 @app.get("/health")

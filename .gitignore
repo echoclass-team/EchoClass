@@ -39,6 +39,7 @@ pnpm-debug.log*
 *.sqlite
 *.db
 chroma_db/
+chroma_data/
 data/cache/
 *.ckpt
 *.pt
