@@ -1,7 +1,7 @@
 # EchoClass W1 后端阶段性测试指引（给队友）
 
-> 目标：验证 `main` 分支上 **后端脚手架 + LLMClient + ChatECNU 集成** 都正常。
-> 预计耗时 10 分钟。
+> 目标：验证 `main` 分支上 **后端脚手架 + LLMClient + ChatECNU 集成 + StudentAgent 原型** 都正常。
+> 预计耗时 15 分钟。
 
 ---
 
@@ -95,7 +95,7 @@ LLM_MODEL=ecnu-max
 uv run pytest -v
 ```
 
-**预期**：`10 passed`
+**预期**：`40 passed`（含 StudentAgent 的 31 条测试）
 
 ### 6.2 跑 FastAPI `/health`
 
@@ -182,17 +182,60 @@ uv run python $env:TEMP\try_llm.py
 5... llm.stream model=ecnu-max prompt_tokens=XX completion_tokens=10
 ```
 
+### 6.4 测试 StudentAgent（真实 API，消耗少量 tokens）
+
+在 `backend/` 目录下运行：
+
+```bash
+uv run python scripts/try_student_agent.py
+```
+
+**预期输出**（内容每次不完全相同，但结构一致）：
+
+```
+✅ LLMClient 初始化成功 (model=ecnu-max)
+📡 base_url=https://chat.ecnu.edu.cn/open/api/v1
+
+--- 小红（基础薄弱，内向害羞）---
+  intent:  answer_question
+  content: 呃……是不是……上面一个数，下面一个数？
+  emotion: 紧张
+
+--- 小明（中等水平，活泼好动）---
+  intent:  answer_question
+  content: 分数就是把一个东西切成几块，拿其中几块！
+  emotion: 兴奋
+
+--- 小华（优等生，认真严谨）---
+  intent:  answer_question
+  content: 分数表示把整体平均分成若干份，取其中一份或几份的数……
+  emotion: 自信
+
+🎉 全部测试通过！
+```
+
+**怎么看结果**：
+
+| 人设 | 知识水平 | 应该怎样 |
+|------|---------|---------|
+| **小红** | 基础薄弱 | 回答模糊/不正确，情绪紧张或困惑 |
+| **小明** | 中等水平 | 大致对但不严谨，可能用生活例子 |
+| **小华** | 优等生 | 准确完整的定义，情绪自信 |
+
+只要 3 个人设的 `intent` / `content` / `emotion` **符合上述特征**，就说明 StudentAgent 工作正常。
+
 ---
 
 ## 7. 验收清单
 
 跑完后对照打勾：
 
-- [ ] `uv run pytest` → `10 passed`
+- [ ] `uv run pytest` → `40 passed`
 - [ ] `curl /health` 返回 `{"status":"ok"}`
 - [ ] chat 能收到 ChatECNU 的回复
 - [ ] stream 能逐字输出 `1 2 3 4 5`
 - [ ] 日志打印了 `model=ecnu-max prompt_tokens=... completion_tokens=...`
+- [ ] StudentAgent 3 个人设回复符合人设特征
 
 有任何一项失败，在群里发**完整报错 + 你在哪一步**，我们一起看。
 
