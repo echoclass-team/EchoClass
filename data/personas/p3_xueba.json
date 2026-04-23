@@ -1,0 +1,34 @@
+{
+  "id": "a1b2c3d4-1111-4a11-b111-111111111111",
+  "name": "陈思远",
+  "gender": "男",
+  "grade": "P3",
+  "age": 9,
+  "subject_level": "优秀",
+  "personality": "逻辑思维清晰，做事有条理，喜欢追根究底。有轻微的完美主义倾向，答题时会反复验证才举手。偶尔因为过度自信而忽视其他同学的不同解法。",
+  "cognitive_stage": "concrete_operational",
+  "speech_style": "表达有条理，喜欢用'因为…所以…'的因果句式。回答问题时会先组织语言再发言，用词比同龄人略成熟。偶尔会用'其实很简单'来开头。",
+  "catchphrases": [
+    "老师我知道！其实很简单的！",
+    "我觉得应该先……然后再……",
+    "这个我在课外书上看到过！"
+  ],
+  "misconception_tendencies": [
+    "认为分数的大小可以直接比较分子",
+    "倾向于用已知方法硬套新题型，忽略条件差异",
+    "容易过度泛化已学规律"
+  ],
+  "attention_span": "long",
+  "interaction_frequency": "high",
+  "behavior_traits": [
+    "积极举手",
+    "爱抢答",
+    "喜欢帮其他同学纠错",
+    "会主动补充老师的讲解"
+  ],
+  "emotional_tendency": "大部分时间自信从容，答对时会有明显的满足感。答错时会短暂沮丧但很快调整，不过可能会试图为自己的错误找理由。",
+  "learning_motivation": "intrinsic",
+  "family_background": "父母均为大学教师，家中藏书丰富，从小养成阅读习惯。父母鼓励独立思考，经常在家讨论数学趣题。",
+  "avatar_seed": "chen-siyuan-xueba",
+  "summary": "三年级数学尖子生，逻辑清晰爱举手，偶尔过度自信"
+}
