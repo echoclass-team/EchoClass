@@ -27,39 +27,41 @@ EchoClass 是一个基于多智能体的"虚拟课堂"系统：师范生上传�
 | **前端** | Next.js 14 (App Router) · TypeScript · TailwindCSS · shadcn/ui · Zustand · TanStack Query · Vercel AI SDK · Recharts | **B** |
 | **传输 / Protocol** | FastAPI REST · WebSocket（JSON Lines）· CORS · 鉴权 | **B** |
 | **Agent / Graph** | LangGraph（有状态图）· asyncio.Queue（事件流式） | **A** |
-| **LLM** | DeepSeek-V3 / Qwen2.5（OpenAI 兼容接口）· tenacity 重试 | **A** |
+| **LLM** | ChatECNU ecnu-max（OpenAI 兼容接口）· tenacity 重试 · httpx | **A** |
 | **RAG** | Chroma · bge-small 或 text-embedding-v3 · pymupdf4llm | **A** |
 | **持久化** | SQLite（会话 / 消息） | **B** |
 | **数据 / 内容** | JSON Schema · 人设库 · 迷思概念库 · Rubric | **C** |
 | **测试** | pytest + pytest-asyncio（后）· Vitest + Playwright（前，stretch） | A / B |
 | **ASR / TTS** · _W4 stretch_ | 阿里云 Paraformer / CosyVoice | A |
 
-## 📁 目录结构（规划中）
+## 📁 目录结构
 
 ```
 EchoClass/
 ├── backend/                 # Python · FastAPI + LangGraph
-│   ├── agents/              # 学生 / Director / Evaluator Agent
-│   ├── rag/                 # 教案解析、向量化、检索
-│   ├── llm/                 # LLM 客户端封装
-│   ├── graph/               # LangGraph 状态机
+│   ├── agents/              # ✅ StudentAgent（单学生 Agent 原型）
+│   ├── rag/                 # 教案解析、向量化、检索（W1 进行中）
+│   ├── llm/                 # ✅ LLMClient 封装（chat/stream + 重试 + 日志）
+│   ├── graph/               # LangGraph 状态机（W2）
 │   ├── api/                 # REST + WebSocket 路由
-│   ├── schemas/             # Pydantic 请求/响应模型
+│   ├── schemas/             # ✅ Pydantic 模型（Persona / StudentReply 等）
 │   ├── db/                  # 会话持久化（SQLite）
-│   ├── prompts/             # Prompt 模板
-│   └── tests/
-├── frontend/                # TypeScript · Next.js 14 + shadcn/ui
+│   ├── prompts/             # ✅ Jinja2 Prompt 模板
+│   ├── scripts/             # ✅ 冒烟测试脚本
+│   └── tests/               # ✅ 45 条单元测试
+├── frontend/                # TypeScript · Next.js 14 + shadcn/ui（W1 进行中）
 ├── data/
-│   ├── personas/            # 学生人设 JSON
-│   ├── misconceptions/      # 迷思概念库
+│   ├── personas/            # ✅ 6 个学生人设 JSON（基于皮亚杰理论）
+│   ├── misconceptions/      # 迷思概念库（W2）
 │   ├── lesson_samples/      # 样例教案 PDF
-│   └── eval_rubrics/        # 评估评分标准
+│   └── eval_rubrics/        # 评估评分标准（W3）
 ├── docs/
 │   ├── roles.md             # 三人分工规范
-│   ├── api_contract.md      # API 合约
+│   ├── api_contract.md      # API 合约 v0
+│   ├── persona_design.md    # ✅ 学生人设设计文档
+│   ├── w1_smoke_test.md     # ✅ W1 冒烟测试指引
 │   ├── proposal.md          # 立项书
-│   ├── pitch_deck.md        # 答辩 PPT 大纲
-│   └── user_test_plan.md    # 用户测试方案
+│   └── pitch_deck.md        # 答辩 PPT 大纲
 ├── .github/                 # PR / Issue 模板
 ├── CONTRIBUTING.md          # 协作规范
 └── README.md
@@ -96,7 +98,8 @@ EchoClass/
 - **任务看板**：<https://github.com/orgs/echoclass-team/projects/1>
 - **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>（25 个任务按 W1–W4 编号）
 - **API 合约**（v0 草案已就位）：[`docs/api_contract.md`](./docs/api_contract.md)
-- **W1 阶段性测试指引**：[`docs/w1_smoke_test.md`](./docs/w1_smoke_test.md) — 后端脚手架 + LLMClient + ChatECNU 集成验证
+- **W1 阶段性测试指引**：[`docs/w1_smoke_test.md`](./docs/w1_smoke_test.md) — LLMClient + StudentAgent + 人设联调验证
+- **学生人设设计文档**：[`docs/persona_design.md`](./docs/persona_design.md) — 6 个人设的设计理念与皮亚杰理论基础
 
 ### 新成员 Onboarding
 
@@ -120,12 +123,12 @@ uv sync --extra dev          # 安装依赖（需先装 uv：curl -LsSf https://
 cp .env.example .env          # 填入 OPENAI_API_KEY 等
 uv run uvicorn main:app --reload --port 8000
 # 验证：curl http://localhost:8000/health  →  {"status":"ok"}
-uv run pytest                 # 运行测试
+uv run pytest                 # 运行测试（45 passed）
 ```
 
 ## 📅 里程碑
 
-- [ ] **Week 1** · 脚手架 + 单学生 Agent + 教案解析 Demo（[W1 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-1)）
+- [x] **Week 1** · 脚手架 + LLMClient + StudentAgent + 6 个人设 + 联调（[W1 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-1)）
 - [ ] **Week 2** · Director + 多学生并发 + 前端课堂 UI（[W2 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-2)）
 - [ ] **Week 3** · 评估模块 + 报告 + 小学数学迷思库（50 条）（[W3 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-3)）
 - [ ] **Week 4** · 打磨 + Demo 视频 + 答辩 PPT（[W4 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-4)）
