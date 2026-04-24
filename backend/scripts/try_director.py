@@ -28,7 +28,11 @@ async def main() -> None:
     stage = load_stage_profile_by_id("p_lower")
     if stage is None:
         raise RuntimeError("未找到 p_lower stage profile")
-    students = load_personas()[:5]
+    students = [persona for persona in load_personas() if persona.stage_id == stage.id][:5]
+    if len(students) < 3:
+        raise RuntimeError(
+            f"学段 {stage.id} 可用学生不足 3 个：仅找到 {len(students)} 个 persona.stage_id 匹配的学生"
+        )
     print(f"📂 加载 {len(students)} 名学生，学段={stage.id} {stage.name}")
 
     llm = LLMClient()

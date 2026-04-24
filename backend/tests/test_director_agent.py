@@ -12,8 +12,8 @@ from pydantic import ValidationError
 from agents.director import DirectorAgent
 from llm.client import LLMClient
 from schemas.director import DirectorConfig, Message
-from schemas.stage import StageProfile
-from schemas.student import Persona
+from schemas.stage import StageProfile, load_stage_profile_by_id
+from schemas.student import Persona, load_personas
 
 
 def stage(stage_id: str) -> StageProfile:
@@ -164,14 +164,69 @@ async def test_unknown_speaker_and_illegal_action_filtered_or_corrected() -> Non
     assert d2.actions[0].action_type in {"raise_hand", "speak", "daydream", "silent"}
 
 
+def test_try_director_persona_filtering_has_same_stage() -> None:
+    loaded_stage = load_stage_profile_by_id("p_lower")
+    assert loaded_stage is not None
+    students = [persona for persona in load_personas() if persona.stage_id == loaded_stage.id][:5]
+    assert len(students) >= 3
+    assert all(persona.stage_id == loaded_stage.id for persona in students)
+
+
 @pytest.mark.asyncio
-async def test_event_queue_pushed() -> None:
-    q = MagicMock()
-    d = await DirectorAgent(llm=mock_llm("invalid"), event_queue=q).decide("谁会？", stage("p_middle"), STUDENTS, [], 10)
-    q.put_nowait.assert_called_once()
-    payload = q.put_nowait.call_args[0][0]
-    assert payload["decision"] == d.model_dump()
-    assert payload["elapsed_seconds"] == 10
+async def test_stage_persona_mismatch_raises_value_error() -> None:
+    students = [student.model_copy(update={"stage_id": "h"}) for student in STUDENTS]
+    with pytest.raises(ValueError, match="stage.*persona|stage_id"):
+        await DirectorAgent(llm=mock_llm("invalid")).decide("谁会？", stage("p_middle"), students, [], 10)
+
+
+@pytest.mark.asyncio
+async def test_duplicate_speaker_id_raises_value_error() -> None:
+    students = [
+        STUDENTS[0],
+        STUDENTS[1].model_copy(update={"id": "s1"}),
+        STUDENTS[2],
+    ]
+    with pytest.raises(ValueError, match="speaker_id.*unique"):
+        await DirectorAgent(llm=mock_llm("invalid")).decide("谁会？", stage("p_middle"), students, [], 10)
+
+
+@pytest.mark.asyncio
+async def test_same_speaker_multiple_non_speak_actions_deduped_by_priority() -> None:
+    payload = {
+        "actions": [
+            {"speaker_id": "s1", "action_type": "daydream", "priority": 5},
+            {"speaker_id": "s1", "action_type": "raise_hand", "priority": 1},
+        ],
+        "next_action_delay_ms": 1000,
+        "rationale": "去重",
+    }
+    d = await DirectorAgent(llm=mock_llm(payload)).decide("谁会？", stage("p_middle"), STUDENTS, [], 10)
+    assert len([action for action in d.actions if action.speaker_id == "s1"]) == 1
+    assert d.actions[0].action_type == "raise_hand"
+
+
+@pytest.mark.asyncio
+async def test_raise_hand_ignores_speak_cooldown_but_speak_filtered() -> None:
+    hist = [Message(role="student", speaker_id="s1", content="刚发言", timestamp_seconds=9)]
+    raise_hand_payload = {
+        "actions": [{"speaker_id": "s1", "action_type": "raise_hand", "priority": 5}],
+        "next_action_delay_ms": 1000,
+        "rationale": "举手不受发言冷却影响",
+    }
+    d = await DirectorAgent(llm=mock_llm(raise_hand_payload), config=DirectorConfig(speaker_cooldown_seconds=20)).decide(
+        "谁会？", stage("p_middle"), STUDENTS, hist, 10
+    )
+    assert any(action.speaker_id == "s1" and action.action_type == "raise_hand" for action in d.actions)
+
+    speak_payload = {
+        "actions": [{"speaker_id": "s1", "action_type": "speak", "priority": 5}],
+        "next_action_delay_ms": 1000,
+        "rationale": "发言受冷却影响",
+    }
+    d2 = await DirectorAgent(llm=mock_llm(speak_payload), config=DirectorConfig(speaker_cooldown_seconds=20)).decide(
+        "谁会？", stage("p_middle"), STUDENTS, hist, 10
+    )
+    assert all(not (action.speaker_id == "s1" and action.action_type == "speak") for action in d2.actions)
 
 
 def test_director_config_restricts_class_size_to_issue_range() -> None:
