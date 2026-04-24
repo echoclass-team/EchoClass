@@ -4,6 +4,7 @@
   "gender": "男",
   "grade": "P3",
   "age": 9,
+  "stage_id": "p_middle",
   "subject_level": "优秀",
   "personality": "逻辑思维清晰，做事有条理，喜欢追根究底。有轻微的完美主义倾向，答题时会反复验证才举手。偶尔因为过度自信而忽视其他同学的不同解法。",
   "cognitive_stage": "concrete_operational",

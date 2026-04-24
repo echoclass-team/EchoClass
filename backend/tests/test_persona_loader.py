@@ -1,4 +1,5 @@
 """Tests for persona loading from data/personas/ JSON files."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,9 +16,22 @@ def personas() -> list[Persona]:
     return load_personas(PERSONAS_DIR)
 
 
+VALID_STAGE_IDS = {"p_lower", "p_middle", "p_upper", "j_lower", "j_upper", "h"}
+
+
 def test_load_all_personas(personas: list[Persona]) -> None:
-    """应加载 6 个人设（跳过 _schema.json）。"""
-    assert len(personas) == 6
+    """应加载 18 个人设（6 学段 × 3 水平，跳过 _schema.json）。"""
+    assert len(personas) == 18
+
+
+def test_personas_cover_all_stages(personas: list[Persona]) -> None:
+    """6 个学段每个都至少有 3 个人设。"""
+    from collections import Counter
+
+    stage_counts = Counter(p.stage_id for p in personas)
+    assert set(stage_counts.keys()) == VALID_STAGE_IDS
+    for stage_id, count in stage_counts.items():
+        assert count >= 3, f"stage {stage_id} has only {count} personas"
 
 
 def test_persona_required_fields(personas: list[Persona]) -> None:
@@ -36,7 +50,8 @@ def test_persona_rich_fields(personas: list[Persona]) -> None:
         assert p.id
         assert p.gender in {"男", "女"}
         assert p.grade
-        assert p.age >= 6
+        assert 6 <= p.age <= 18
+        assert p.stage_id in VALID_STAGE_IDS
         assert p.cognitive_stage in {"concrete_operational", "formal_operational"}
         assert p.speech_style
         assert len(p.catchphrases) >= 3

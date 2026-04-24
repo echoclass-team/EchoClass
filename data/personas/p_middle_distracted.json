@@ -4,6 +4,7 @@
   "gender": "男",
   "grade": "P4",
   "age": 10,
+  "stage_id": "p_middle",
   "subject_level": "中等",
   "personality": "聪明但坐不住，对新鲜事物充满好奇心，注意力容易被窗外的事物或自己的联想带跑。其实脑子转得快，偶尔能蹦出让人惊喜的想法，但持续性差。",
   "cognitive_stage": "concrete_operational",

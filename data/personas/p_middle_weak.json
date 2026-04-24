@@ -4,6 +4,7 @@
   "gender": "女",
   "grade": "P3",
   "age": 9,
+  "stage_id": "p_middle",
   "subject_level": "薄弱",
   "personality": "性格温和安静，内心渴望进步但缺乏自信。做题速度慢，害怕在全班面前犯错。被点名回答时会紧张到声音发抖，但在小组讨论中表现略好。",
   "cognitive_stage": "concrete_operational",

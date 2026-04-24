@@ -10,6 +10,7 @@
     "gender",
     "grade",
     "age",
+    "stage_id",
     "subject_level",
     "personality",
     "cognitive_stage",
@@ -39,23 +40,55 @@
     },
     "gender": {
       "type": "string",
-      "enum": ["男", "女"],
+      "enum": [
+        "男",
+        "女"
+      ],
       "description": "性别"
     },
     "grade": {
       "type": "string",
-      "enum": ["P1", "P2", "P3", "P4", "P5", "P6", "J1", "J2", "J3"],
-      "description": "年级。P=小学 (Primary), J=初中 (Junior)"
+      "enum": [
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5",
+        "P6",
+        "J1",
+        "J2",
+        "J3",
+        "H1",
+        "H2",
+        "H3"
+      ],
+      "description": "年级。P=小学 (Primary), J=初中 (Junior), H=高中 (High)"
     },
     "age": {
       "type": "integer",
       "minimum": 6,
-      "maximum": 16,
+      "maximum": 18,
       "description": "年龄"
+    },
+    "stage_id": {
+      "type": "string",
+      "enum": [
+        "p_lower",
+        "p_middle",
+        "p_upper",
+        "j_lower",
+        "j_upper",
+        "h"
+      ],
+      "description": "关联的学段 id，对应 data/stage_profiles/*.json"
     },
     "subject_level": {
       "type": "string",
-      "enum": ["优秀", "中等", "薄弱"],
+      "enum": [
+        "优秀",
+        "中等",
+        "薄弱"
+      ],
       "description": "学科整体水平"
     },
     "personality": {
@@ -65,7 +98,10 @@
     },
     "cognitive_stage": {
       "type": "string",
-      "enum": ["concrete_operational", "formal_operational"],
+      "enum": [
+        "concrete_operational",
+        "formal_operational"
+      ],
       "description": "皮亚杰认知发展阶段。小学生一般为 concrete_operational（具体运算），初中生一般为 formal_operational（形式运算）"
     },
     "speech_style": {
@@ -75,29 +111,43 @@
     },
     "catchphrases": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "minItems": 3,
       "description": "典型口头禅，≥3 条"
     },
     "misconception_tendencies": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "minItems": 1,
       "description": "容易产生的迷思概念倾向（与学科相关）"
     },
     "attention_span": {
       "type": "string",
-      "enum": ["short", "medium", "long"],
+      "enum": [
+        "short",
+        "medium",
+        "long"
+      ],
       "description": "注意力持续时间。short=容易走神, medium=一般, long=高度专注"
     },
     "interaction_frequency": {
       "type": "string",
-      "enum": ["low", "medium", "high"],
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
       "description": "课堂互动频率。low=很少主动发言, medium=适度参与, high=频繁发言"
     },
     "behavior_traits": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "minItems": 2,
       "description": "课堂行为标签列表，如 ['积极举手', '爱抢答']"
     },
@@ -108,7 +158,11 @@
     },
     "learning_motivation": {
       "type": "string",
-      "enum": ["intrinsic", "extrinsic", "low"],
+      "enum": [
+        "intrinsic",
+        "extrinsic",
+        "low"
+      ],
       "description": "学习动机类型。intrinsic=内在驱动, extrinsic=外在驱动（如家长期望）, low=动力不足"
     },
     "family_background": {

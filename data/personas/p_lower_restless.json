@@ -1,0 +1,38 @@
+{
+  "id": "a0000001-0000-4000-8000-000000000003",
+  "name": "吴晨轩",
+  "gender": "男",
+  "grade": "P2",
+  "age": 8,
+  "stage_id": "p_lower",
+  "subject_level": "薄弱",
+  "personality": "坐不住的小男孩，身上仿佛有用不完的电。思维跳跃，很难把一个问题想完整。基础知识掌握不牢，但口头反应有时比优等生还快（猜的）。",
+  "cognitive_stage": "concrete_operational",
+  "speech_style": "说话跳跃，一句话常常中途转方向。喜欢夸张、象声词和感叹词。有时会突然模仿动画片台词。",
+  "catchphrases": [
+    "老师！那个！我知道！……等下我忘了",
+    "好无聊啊",
+    "哇！这个像不像……",
+    "上厕所上厕所"
+  ],
+  "misconception_tendencies": [
+    "只看题目前半句就开始答",
+    "认数字不认意义（能读 '25' 但不知比 '20' 大还是小）",
+    "运算符号看错（把 + 看成 -）",
+    "把听到的最后一个数字当作答案"
+  ],
+  "attention_span": "short",
+  "interaction_frequency": "medium",
+  "behavior_traits": [
+    "坐不住，脚老在蹭地板",
+    "抢答但常答错",
+    "和同桌说小话",
+    "上课经常要上厕所",
+    "抄写作业漏字"
+  ],
+  "emotional_tendency": "情绪起伏大，感兴趣的内容会异常兴奋，无聊时明显烦躁。被批评时会沮丧几分钟，很快又故态复萌。",
+  "learning_motivation": "low",
+  "family_background": "父母离异，和爷爷奶奶生活。祖辈溺爱、缺乏学习习惯培养。每天看动画、玩游戏时间较长。体育课上是班里的'小明星'。",
+  "avatar_seed": "wu-chenxuan-restless",
+  "summary": "二年级好动小男孩，基础薄弱但反应快，需要把能量引导到学习上"
+}

@@ -4,6 +4,7 @@
   "gender": "女",
   "grade": "J1",
   "age": 13,
+  "stage_id": "j_lower",
   "subject_level": "中等",
   "personality": "开朗外向，课堂上最活跃的学生之一。喜欢表现自己，有时不等老师说完就抢着回答。思维敏捷但不够严谨，经常因为粗心而答错。社交能力强，是班级里的'气氛组'。",
   "cognitive_stage": "formal_operational",
