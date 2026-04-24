@@ -86,6 +86,13 @@ class StageProfile(BaseModel):
     )
 
 
+class StageSummary(BaseModel):
+    id: str = Field(..., description="学段唯一标识")
+    name: str = Field(..., description="学段名称")
+    grade_range: str = Field(..., description="年级范围")
+    age_range: str = Field(..., description="年龄范围")
+
+
 def load_stage_profiles(
     stage_profiles_dir: str | Path | None = None,
 ) -> list[StageProfile]:

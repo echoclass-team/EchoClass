@@ -95,6 +95,16 @@ class Persona(BaseModel):
         return self.behavior_traits
 
 
+class PersonaSummary(BaseModel):
+    id: str = Field(..., description="人设唯一标识符")
+    name: str = Field(..., description="学生姓名")
+    gender: str = Field(..., description="性别")
+    grade: str = Field(..., description="年级")
+    age: int = Field(..., description="年龄")
+    stage_id: str = Field(..., description="关联学段 id")
+    subject_level: str = Field(..., description="学科水平")
+    summary: str = Field(..., description="一句话概括")
+
 def load_personas(personas_dir: str | Path | None = None) -> list[Persona]:
     """从 data/personas/ 目录加载所有人设 JSON。
 

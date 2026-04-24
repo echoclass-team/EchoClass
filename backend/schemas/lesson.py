@@ -23,3 +23,13 @@ class LessonRecord(BaseModel):
     meta: LessonMeta = Field(..., description="LLM 抽取的元数据")
     text_length: int = Field(default=0, description="解析后文本字符数")
     chunk_count: int = Field(default=0, description="向量切片数量")
+
+
+class LessonUploadData(BaseModel):
+    lesson_id: str = Field(..., description="教案唯一标识")
+    subject: str = Field(..., description="学科，如'数学'")
+    grade: str = Field(..., description="年级，如'三年级'")
+    topic: str = Field(..., description="课题名称")
+    objectives: list[str] = Field(default_factory=list, description="教学目标")
+    key_points: list[str] = Field(default_factory=list, description="教学重点")
+    difficult_points: list[str] = Field(default_factory=list, description="教学难点")
