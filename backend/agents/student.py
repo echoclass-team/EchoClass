@@ -29,6 +29,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader
 
 from llm.client import LLMClient
+from schemas.stage import StageProfile
 from schemas.student import ClassroomContext, Persona, StudentReply
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,9 @@ class StudentAgent:
         学生人设，支持简易模式或 data/personas/ 完整 JSON。
     context : ClassroomContext
         当前课堂上下文（对话过程中自动追加历史记录）。
+    stage : StageProfile | None
+        可选的学段共性特征。传入后会在 prompt 顶部注入学段认知天花板，
+        约束 LLM 的回复不超出该年龄段能力。不传则仅依赖个体 persona。
     temperature : float
         LLM 采样温度，默认 0.8 以增加回复多样性。
     """
@@ -65,11 +69,13 @@ class StudentAgent:
         llm: LLMClient,
         persona: Persona,
         context: ClassroomContext,
+        stage: StageProfile | None = None,
         temperature: float = 0.8,
     ) -> None:
         self.llm = llm
         self.persona = persona
         self.context = context
+        self.stage = stage
         self.temperature = temperature
         self._template = _jinja_env.get_template("student.j2")
 
@@ -108,6 +114,7 @@ class StudentAgent:
         return self._template.render(
             persona=self.persona,
             context=self.context,
+            stage=self.stage,
             teacher_utterance=teacher_utterance,
         )
 

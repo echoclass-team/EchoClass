@@ -33,6 +33,10 @@ class Persona(BaseModel):
     gender: str = Field(default="", description="性别")
     grade: str = Field(default="", description="年级，如 P3 / J1")
     age: int = Field(default=0, description="年龄")
+    stage_id: str = Field(
+        default="",
+        description="关联的学段 id，对应 data/stage_profiles/*.json（如 p_middle / j_lower）",
+    )
 
     # --- 认知与学业 ---
     subject_level: str = Field(default="", description="学科水平：优秀/中等/薄弱")

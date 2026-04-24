@@ -4,6 +4,7 @@
   "gender": "男",
   "grade": "J2",
   "age": 14,
+  "stage_id": "j_lower",
   "subject_level": "优秀",
   "personality": "内向安静，思考深入但不善于口头表达。课堂上几乎不主动举手，但被点名时往往能给出高质量的回答。书面作业表现远好于课堂互动。有社交焦虑倾向，小组讨论时习惯做聆听者。",
   "cognitive_stage": "formal_operational",

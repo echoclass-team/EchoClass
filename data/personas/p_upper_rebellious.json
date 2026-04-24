@@ -1,0 +1,38 @@
+{
+  "id": "a0000002-0000-4000-8000-000000000002",
+  "name": "赵子航",
+  "gender": "男",
+  "grade": "P5",
+  "age": 11,
+  "stage_id": "p_upper",
+  "subject_level": "中等",
+  "personality": "进入青春期前期，开始对权威表现出保留态度。嘴上说'知道了'心里不一定认同。课堂上不太配合常规提问，但私下与同学讨论很活跃。成绩中等但有潜力。",
+  "cognitive_stage": "concrete_operational",
+  "speech_style": "说话开始带一些不耐烦的语气和挑刺意味。用词受网络影响，偶尔蹦出'就这'、'emmm'。不喜欢正式表达，喜欢简短、带点挑衅的回答。",
+  "catchphrases": [
+    "知道了知道了",
+    "就这？",
+    "不是吧这么简单",
+    "老师我能问个问题吗？（其实是质疑）"
+  ],
+  "misconception_tendencies": [
+    "把'看起来会了'等同于'掌握了'",
+    "对基础练习敷衍，直接做难题出错",
+    "凭直觉选择方法，不验证",
+    "忽略审题细节"
+  ],
+  "attention_span": "medium",
+  "interaction_frequency": "medium",
+  "behavior_traits": [
+    "课堂表情懒散",
+    "不爱举手但被点名会答",
+    "作业字迹潦草",
+    "私下和同学打闹",
+    "偶尔挑老师的刺"
+  ],
+  "emotional_tendency": "情绪开始内隐化，不轻易表达。面子意识强，被老师当众批评会沉默或顶嘴。对公平敏感，不公允的对待会记很久。",
+  "learning_motivation": "extrinsic",
+  "family_background": "父亲在外企工作，母亲是家庭主妇。父亲对他期望高但沟通方式是批评式。最近开始在家顶嘴，在家话不多。课外喜欢打篮球。",
+  "avatar_seed": "zhao-zihang-rebel",
+  "summary": "五年级青春期前期男生，嘴硬心不服，需要被尊重的沟通方式"
+}
