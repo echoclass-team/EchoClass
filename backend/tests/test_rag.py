@@ -127,7 +127,7 @@ class TestExtractor:
             _parse_meta("这里没有任何 JSON")
 
     def test_parse_meta_invalid_json_raises(self) -> None:
-        with pytest.raises(json.JSONDecodeError):
+        with pytest.raises(ValueError, match="JSON 解析失败"):
             _parse_meta("{invalid json content}")
 
     async def test_extract_lesson_meta_calls_llm(self) -> None:
