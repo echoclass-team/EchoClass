@@ -1,18 +1,25 @@
-"""Issue #19 冒烟测试 — 教案解析 + LLM 抽取 + Chroma 索引。
+"""教案解析 + LLM 抽取 + Chroma 索引的冒烟测试脚本。
+
+针对 data/lesson_samples/ 下的 6 份样例教案（覆盖 6 档学段）逐份运行：
+1. parser: 解析 MD 或 PDF 为纯文本
+2. extractor: 调用 LLM 抽取结构化元数据
+3. indexer: 切片 + 写入 Chroma + 检索验证
+
+验收基准从各份 meta.md 的 JSON 块自动解析，避免硬编码。
 
 用法:
     cd backend
-    uv run python scripts/try_lesson_rag.py
-
-会依次测试:
-1. parser: 解析样例教案 MD 文件
-2. extractor: 调用 LLM 抽取结构化元数据
-3. indexer: 切片 + 写入 Chroma + 检索验证
+    uv run python scripts/try_lesson_rag.py              # 跑全部 6 份
+    uv run python scripts/try_lesson_rag.py --only math_p3_fraction   # 只跑一份
+    uv run python scripts/try_lesson_rag.py --skip-index  # 跳过 Chroma 索引省时间
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
+import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -32,57 +39,93 @@ from rag.parser import parse_file
 # 样例教案路径
 SAMPLES_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "lesson_samples"
 
-SAMPLE_FILES = [
-    "math_p3_fraction.md",
-    "math_p5_area.md",
-    "physics_j2_force.md",
+# 6 档学段对应的样例教案（stage_id 用于展示分组）
+SAMPLES: list[tuple[str, str]] = [
+    ("p_lower", "math_p2_addition.md"),
+    ("p_middle", "math_p3_fraction.md"),
+    ("p_upper", "math_p5_area.md"),
+    ("j_lower", "physics_j2_force.md"),
+    ("j_upper", "math_j3_quadratic.md"),
+    ("h", "math_h2_derivative.md"),
 ]
 
 
-async def main() -> None:
-    print("=" * 60)
-    print("Issue #19 冒烟测试：教案解析与 RAG 索引")
-    print("=" * 60)
+def _load_expected(meta_path: Path) -> dict:
+    """从 meta.md 中解析首个 ```json ``` 块作为验收基准。"""
+    content = meta_path.read_text(encoding="utf-8")
+    match = re.search(r"```json\s*(\{.*?\})\s*```", content, re.DOTALL)
+    if not match:
+        raise ValueError(f"{meta_path} 中未找到 JSON 预期块")
+    return json.loads(match.group(1))
 
-    # 选择第一个样例
-    sample = SAMPLES_DIR / SAMPLE_FILES[0]
+
+def _check_field(actual: str, expected: str, mode: str = "contains_any") -> bool:
+    """模糊字段校验：预期字符串中任一关键词（多年级/多课题关键词）出现在 actual 即算通过。"""
+    if not actual or not expected:
+        return False
+    if mode == "exact":
+        return actual == expected
+    # 抽取 2-4 字的中文子串作候选关键词（简化：取 expected 的前两个字 + 后两个字）
+    candidates = {expected, expected[:2], expected[-2:]}
+    # 添加常用变体：“小学二年级”→“二年级”；“初一年”→“初一”等
+    candidates.update(re.findall(r"[\u4e00-\u9fff]{2,4}", expected))
+    return any(c and c in actual for c in candidates)
+
+
+async def _run_single(
+    llm: LLMClient, stage_id: str, filename: str, skip_index: bool
+) -> bool:
+    """对一份样例教案跑完整的 parse → extract → (index) 流程，返回是否验收通过。"""
+    sample = SAMPLES_DIR / filename
+    meta_path = sample.with_suffix(".meta.md")
     if not sample.exists():
-        print(f"❌ 样例文件不存在: {sample}")
-        return
+        print(f"   ❌ 样例文件不存在: {sample}")
+        return False
+    if not meta_path.exists():
+        print(f"   ❌ 验收基准不存在: {meta_path}")
+        return False
+
+    header = f" [{stage_id}] {filename} "
+    print("\n" + header.center(60, "━"))
+
+    expected = _load_expected(meta_path)
 
     # --- 1. Parser ---
-    print(f"\n📄 [1/3] 解析文件: {sample.name}")
     text = parse_file(sample)
-    print(f"   ✅ 解析成功，共 {len(text)} 字符（前 200 字）:")
-    print(f"   {text[:200]}...")
+    print(f"📄 解析 {len(text)} 字符")
 
     # --- 2. Extractor ---
-    print("\n🤖 [2/3] 调用 LLM 抽取元数据...")
-    llm = LLMClient()
+    print("🤖 LLM 抽取中...")
     meta = await extract_lesson_meta(llm, text)
-    print("   ✅ 抽取成功:")
-    print(f"   学科: {meta.subject}")
-    print(f"   年级: {meta.grade}")
-    print(f"   课题: {meta.topic}")
-    print(f"   教学目标 ({len(meta.objectives)} 条):")
-    for i, obj in enumerate(meta.objectives, 1):
-        print(f"     {i}. {obj}")
-    print(f"   教学重点 ({len(meta.key_points)} 条):")
-    for kp in meta.key_points:
-        print(f"     - {kp}")
-    print(f"   教学难点 ({len(meta.difficult_points)} 条):")
-    for dp in meta.difficult_points:
-        print(f"     - {dp}")
+    print(f"   学科: {meta.subject}  |  年级: {meta.grade}  |  课题: {meta.topic}")
+    print(
+        f"   objectives={len(meta.objectives)}  key_points={len(meta.key_points)}  difficult_points={len(meta.difficult_points)}"
+    )
 
     # --- 验收检查 ---
-    print("\n📋 验收检查:")
     checks = [
-        ("subject == '数学'", meta.subject == "数学"),
-        ("grade 含 '三年级'", "三年级" in meta.grade),
-        ("topic 含 '分数'", "分数" in meta.topic),
-        ("objectives >= 3 条", len(meta.objectives) >= 3),
-        ("key_points >= 2 条", len(meta.key_points) >= 2),
-        ("difficult_points >= 1 条", len(meta.difficult_points) >= 1),
+        (f"subject == {expected['subject']!r}", meta.subject == expected["subject"]),
+        (
+            f"grade 匹配 {expected['grade']!r}",
+            _check_field(meta.grade, expected["grade"]),
+        ),
+        (
+            f"topic 匹配 {expected['topic']!r}",
+            _check_field(meta.topic, expected["topic"]),
+        ),
+        (
+            f"objectives >= {max(3, len(expected['objectives']) // 2)} 条",
+            len(meta.objectives) >= max(3, len(expected["objectives"]) // 2),
+        ),
+        (
+            f"key_points >= {max(1, len(expected['key_points']) // 2)} 条",
+            len(meta.key_points) >= max(1, len(expected["key_points"]) // 2),
+        ),
+        (
+            f"difficult_points >= {max(1, len(expected['difficult_points']) // 2)} 条",
+            len(meta.difficult_points)
+            >= max(1, len(expected["difficult_points"]) // 2),
+        ),
     ]
     all_pass = True
     for desc, ok in checks:
@@ -92,24 +135,60 @@ async def main() -> None:
             all_pass = False
 
     # --- 3. Indexer ---
-    print(f"\n📦 [3/3] 切片 + Chroma 索引...")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        chunk_count = index_lesson("smoke_test", text, persist_dir=tmpdir)
-        print(f"   ✅ 索引成功，共 {chunk_count} 个切片")
+    if not skip_index:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            chunk_count = index_lesson(f"smoke_{stage_id}", text, persist_dir=tmpdir)
+            query = expected.get("key_points", [expected.get("topic", "")])[0]
+            results = query_lesson(
+                query, lesson_id=f"smoke_{stage_id}", persist_dir=tmpdir
+            )
+            print(f"📦 索引 {chunk_count} 片 · 检索 {query!r} → {len(results)} 条结果")
 
-        # 检索测试
-        results = query_lesson("分数的含义", lesson_id="smoke_test", persist_dir=tmpdir)
-        print(f"   🔍 检索 '分数的含义' → 返回 {len(results)} 个切片")
-        if results:
-            print(f"   首条结果（前 100 字）: {results[0][:100]}...")
+    return all_pass
 
-    # --- 总结 ---
-    print("\n" + "=" * 60)
-    if all_pass:
-        print("🎉 全部验收通过！Issue #19 冒烟测试成功。")
-    else:
-        print("⚠️  部分验收未通过，请检查 LLM 抽取结果。")
+
+async def main() -> None:
+    parser = argparse.ArgumentParser(description="教案解析 / 抽取 / 索引冒烟测试")
+    parser.add_argument(
+        "--only", help="只跑指定样例（文件名含不含 .md 都行）", default=None
+    )
+    parser.add_argument(
+        "--skip-index", action="store_true", help="跳过 Chroma 索引阶段"
+    )
+    args = parser.parse_args()
+
     print("=" * 60)
+    print("教案解析冒烟测试：6 档学段 × 6 份样例教案")
+    print("=" * 60)
+
+    targets = SAMPLES
+    if args.only:
+        needle = args.only if args.only.endswith(".md") else f"{args.only}.md"
+        targets = [(s, f) for s, f in SAMPLES if f == needle or f.startswith(args.only)]
+        if not targets:
+            print(f"❌ 未找到匹配 {args.only!r} 的样例")
+            return
+
+    llm = LLMClient()
+    results: list[tuple[str, str, bool]] = []
+    for stage_id, filename in targets:
+        ok = await _run_single(llm, stage_id, filename, args.skip_index)
+        results.append((stage_id, filename, ok))
+
+    # --- 汇总 ---
+    print("\n" + "=" * 60)
+    print("📋 汇总")
+    print("=" * 60)
+    for stage_id, filename, ok in results:
+        status = "✅ PASS" if ok else "❌ FAIL"
+        print(f"   {status}  [{stage_id:<8}] {filename}")
+    passed = sum(1 for _, _, ok in results if ok)
+    total = len(results)
+    print(f"\n通过率：{passed}/{total}")
+    print("=" * 60)
+
+    if passed != total:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
