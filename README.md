@@ -1,7 +1,7 @@
 # EchoClass
 
 > AI-powered virtual classroom for pre-service teachers.
-> 师范生虚拟学生陪练 Agent —— 让每位未来的老师都有无限次"试讲"机会。
+> 师范生虚拟课堂陪练系统 —— 让未来的教师在走上讲台前多试几次讲。
 
 参赛项目：**华东师范大学开发者大赛 2026 · 大语言模型创新应用开发赛道**
 赛事官网：<https://developer.ecnu.edu.cn/competition2026/>
@@ -10,60 +10,92 @@
 
 ## ✨ 项目简介
 
-EchoClass 是一个基于多智能体的"虚拟课堂"系统：师范生上传教案后，系统生成多位性格/学力各异的虚拟学生（由 LLM 扮演），进行沉浸式课堂演练，并在课后输出量化的教学能力诊断报告。
+### 背景
 
-核心亮点：
+师范生在正式走上讲台之前，缺乏安全、低成本、可重复的练习场景：
 
-- **Director Agent 调度**：避免多学生同时发言的混乱，按真实课堂节奏触发互动
-- **基于教育学理论的学生人设**：皮亚杰认知阶段 + 学科常见迷思概念库，错得真实
-- **多维诊断报告**：教学设计 / 课堂互动 / 语言表达 / 课堂管理（参考 Flanders 互动分析）
+- **真人试讲难**：组织一节真实课堂代价高，一次课只能留下 40 分钟录音和模糊印象
+- **反馈滞后**：导师点评稀缺，难以对同一教学环节做 A / B 对比
+- **学生反应千差万别**：薄弱生、优等生、走神生、爱跑题生——真实课堂上永远只能遇到一种组合
+- **教案到实战的鸿沟**：写教案时计划详尽，一到课堂上就发现"这个概念孩子根本听不懂"
+
+### 使用流程
+
+EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
+
+1. **上传教案** — 支持 PDF / Markdown / TXT，系统自动解析并抽取学科、学段、教学目标、知识点、难点
+2. **选择学段与学生** — 从小学低年级到高中共 6 档学段、每档 3 种典型学生（共 18 个虚拟学生人设），组建虚拟班级
+3. **开始模拟授课** — 师范生以"老师"身份和虚拟学生互动，每个学生按其人设和学段认知边界实时回答、提问、走神或沉默
+4. **课后诊断报告** — 从教学设计、课堂互动、语言表达、课堂管理四个维度，输出量化评分与改进建议
+
+### 关键设计点
+
+- **双层建模（学段共性 × 个体差异）**：先用 6 档学段特征库（基于皮亚杰认知发展阶段、维果茨基最近发展区、埃里克森心理社会理论、教育部《中小学心理健康教育指导纲要》）约束学生的认知上限，再叠加个体人设（性格、口头禅、学业水平、迷思倾向）。这避免了 LLM 常见的"小学一年级学生开口就讲微积分"的失真问题。
+
+- **Director Agent 调度**：不让所有虚拟学生同时发言。Director 根据课堂节奏、学生注意力、老师语气，决定下一个该谁发言、该不该提问、该不该走神。
+
+- **学科迷思概念库驱动的错误生成**：薄弱学生的错误不是随机的，而是从学科常见迷思概念库里挑选（如小学分数加法常把分子分母分别相加），让师范生在练习中识别并应对真实教学难点。
+
+- **多维度评估（参考 Flanders 互动分析体系）**：教学设计、课堂互动、语言表达、课堂管理四维评分 + 文字点评。
+
+- **教案 RAG 检索**：上传的教案会被解析、切片、向量化并索引，学生回复会围绕教案实际内容展开。
 
 ## 🏗️ 技术栈
 
-按层组织，括号内为主要负责角色：
-
 | 层 | 技术 | Owner |
 |---|---|---|
-| **前端** | Next.js 14 (App Router) · TypeScript · TailwindCSS · shadcn/ui · Zustand · TanStack Query · Vercel AI SDK · Recharts | **B** |
-| **传输 / Protocol** | FastAPI REST · WebSocket（JSON Lines）· CORS · 鉴权 | **B** |
-| **Agent / Graph** | LangGraph（有状态图）· asyncio.Queue（事件流式） | **A** |
-| **LLM** | ChatECNU ecnu-max（OpenAI 兼容接口）· tenacity 重试 · httpx | **A** |
-| **RAG** | Chroma · bge-small 或 text-embedding-v3 · pymupdf4llm | **A** |
+| **前端** | Next.js 14（App Router）· TypeScript · TailwindCSS · shadcn/ui · Zustand · TanStack Query · Recharts | **B** |
+| **API / 协议** | FastAPI · WebSocket（JSON Lines）· REST · CORS · uv | **B** |
+| **Agent 编排** | LangGraph（有状态图）· asyncio.Queue（事件流生产者-消费者） | **A** |
+| **LLM 接入** | ChatECNU ecnu-max（OpenAI 兼容接口）· openai 客户端 · tenacity 重试 · token 使用日志 | **A** |
+| **RAG** | Chroma 向量库 · pymupdf4llm（PDF → Markdown）· Jinja2 Prompt 模板 · 500 token 切片 | **A** |
+| **教育学建模** | 6 档学段认知特征库 · 18 个学生人设 JSON · 学科迷思概念库 | A / C |
 | **持久化** | SQLite（会话 / 消息） | **B** |
-| **数据 / 内容** | JSON Schema · 人设库 · 迷思概念库 · Rubric | **C** |
-| **测试** | pytest + pytest-asyncio（后）· Vitest + Playwright（前，stretch） | A / B |
-| **ASR / TTS** · _W4 stretch_ | 阿里云 Paraformer / CosyVoice | A |
+| **评估** | Flanders 互动分析 · 自定义 Rubric · LLM-as-a-Judge | A / C |
+| **测试** | pytest + pytest-asyncio（后端）· Vitest + Playwright（前端，可选） | A / B |
+| **ASR / TTS**（可选增强） | 阿里云 Paraformer / CosyVoice | A |
 
 ## 📁 目录结构
 
 ```
 EchoClass/
-├── backend/                 # Python · FastAPI + LangGraph
-│   ├── agents/              # ✅ StudentAgent（单学生 Agent 原型）
-│   ├── rag/                 # 教案解析、向量化、检索（W1 进行中）
-│   ├── llm/                 # ✅ LLMClient 封装（chat/stream + 重试 + 日志）
-│   ├── graph/               # LangGraph 状态机（W2）
-│   ├── api/                 # REST + WebSocket 路由
-│   ├── schemas/             # ✅ Pydantic 模型（Persona / StudentReply 等）
-│   ├── db/                  # 会话持久化（SQLite）
-│   ├── prompts/             # ✅ Jinja2 Prompt 模板
-│   ├── scripts/             # ✅ 冒烟测试脚本
-│   └── tests/               # ✅ 45 条单元测试
-├── frontend/                # TypeScript · Next.js 14 + shadcn/ui（W1 进行中）
+├── backend/                     # Python 3.11+ · FastAPI + LangGraph
+│   ├── agents/                  # StudentAgent（已完成）· DirectorAgent（规划中）· EvaluatorAgent（规划中）
+│   ├── rag/                     # 教案解析、抽取、切片、Chroma 索引
+│   │   ├── parser.py            # PDF / MD / TXT → 纯文本
+│   │   ├── extractor.py         # LLM 抽取 subject/grade/topic/objectives/key_points/difficult_points
+│   │   └── indexer.py           # 500 token 切片 + Chroma 向量化
+│   ├── llm/                     # LLMClient 封装（chat / stream + 重试 + 日志）
+│   ├── graph/                   # LangGraph 状态机（规划中）
+│   ├── api/                     # REST + WebSocket 路由
+│   │   ├── lessons.py           # POST /api/lessons/upload · GET /api/lessons/{id}
+│   │   ├── stages.py            # GET /api/stages · GET /api/stages/{id}
+│   │   └── personas.py          # GET /api/personas · GET /api/personas/{name_or_id}
+│   ├── schemas/                 # Pydantic 模型
+│   │   ├── stage.py             # StageProfile（学段认知特征）
+│   │   ├── student.py           # Persona / ClassroomContext / StudentReply
+│   │   └── lesson.py            # LessonMeta / LessonRecord
+│   ├── db/                      # 会话持久化（SQLite，规划中）
+│   ├── prompts/                 # Jinja2 Prompt 模板
+│   │   ├── student.j2           # 学生 Agent（学段共性 + 个体人设叠加）
+│   │   └── extractor.j2         # 教案元数据抽取
+│   ├── scripts/                 # 冒烟测试脚本
+│   └── tests/                   # pytest 单元与集成测试
+├── frontend/                    # TypeScript · Next.js 14 + shadcn/ui（规划中）
 ├── data/
-│   ├── personas/            # ✅ 6 个学生人设 JSON（基于皮亚杰理论）
-│   ├── misconceptions/      # 迷思概念库（W2）
-│   ├── lesson_samples/      # 样例教案 PDF
-│   └── eval_rubrics/        # 评估评分标准（W3）
+│   ├── stage_profiles/          # 6 档学段认知特征 JSON（P1-P2 / P3-P4 / P5-P6 / J1-J2 / J3 / H1-H3）
+│   ├── personas/                # 18 个学生人设 JSON（每学段 3 个：优秀 / 中等 / 薄弱）
+│   ├── lesson_samples/          # 样例教案（PDF + Markdown + 解析预期元数据）
+│   ├── misconceptions/          # 学科迷思概念库（规划中）
+│   └── eval_rubrics/            # 评估评分标准（规划中）
 ├── docs/
-│   ├── roles.md             # 三人分工规范
-│   ├── api_contract.md      # API 合约 v0
-│   ├── persona_design.md    # ✅ 学生人设设计文档
-│   ├── w1_smoke_test.md     # ✅ W1 冒烟测试指引
-│   ├── proposal.md          # 立项书
-│   └── pitch_deck.md        # 答辩 PPT 大纲
-├── .github/                 # PR / Issue 模板
-├── CONTRIBUTING.md          # 协作规范
+│   ├── roles.md                 # 三人分工细则
+│   ├── api_contract.md          # API 合约
+│   ├── persona_design.md        # 人设设计文档
+│   ├── proposal.md              # 立项书
+│   └── pitch_deck.md            # 答辩大纲
+├── .github/                     # PR / Issue 模板
+├── CONTRIBUTING.md              # 协作规范
 └── README.md
 ```
 
@@ -73,39 +105,40 @@ EchoClass/
 
 | 角色 | 代号 | 负责人 | 核心职责 | 代码领地 |
 |---|---|---|---|---|
-| **Agent 工程师** | `A-Agent` | TBD | LLM 客户端、学生 / Director / Evaluator Agent、RAG、LangGraph 状态机、**产生流式事件**（push 到 asyncio.Queue） | `backend/{agents,rag,llm,graph}` |
-| **全栈工程师** | `B-Full` | TBD | 前端课堂 / 报告 UI、**WebSocket 端到端**（前端 client + 后端 endpoint）、REST 路由、会话持久化、落地页与视觉打磨 | `frontend/`、`backend/{api,schemas,db}` |
-| **产品 / 评测** | `C-Prod` | TBD | 立项书与答辩材料、学生人设库、迷思概念库、评估 Rubric、用户测试、Demo 视频 | `data/`、`docs/`、`backend/prompts/` |
+| **Agent 工程师** | `A-Agent` | **[@Nekooo915](https://github.com/Nekooo915)** | LLM 客户端封装、Student / Director / Evaluator Agent、RAG 管线、LangGraph 状态机、**事件流生产者**（push 到 asyncio.Queue） | `backend/{agents,rag,llm,graph,prompts,schemas}` |
+| **全栈工程师** | `B-Full` | **[@Traumere7](https://github.com/Traumere7)** | 前端课堂 UI 与诊断报告、**WebSocket 端到端**（前后端）、REST 路由、会话持久化、视觉与落地页 | `frontend/`、`backend/{api,db}` |
+| **产品 / 评测** | `C-Prod` | **[@IST00](https://github.com/IST00)** | 立项书与答辩材料、学生人设设计、学科迷思概念库、评估 Rubric、用户测试、Demo 视频 | `data/`、`docs/`、`backend/prompts/` |
 
-**A ↔ B 内部契约**（非对外 API）：
+### A ↔ B 内部契约（非对外 API）
+
 - A 把 Agent 事件 push 到 `asyncio.Queue[AgentEvent]`（类型定义在 `backend/schemas/events.py`，B 维护）
 - B 的 WS endpoint consume 该 queue，封装为对外 JSON Lines 帧推给前端
 - 事件 schema 变更须两人连署 approve
 
-**每周核心交付一览**：
+### 主要交付阶段
 
-| 周 | A-Agent | B-Full | C-Prod |
+| 阶段 | A-Agent | B-Full | C-Prod |
 |---|---|---|---|
-| W1 | 单学生 Agent + 教案 RAG | 前端脚手架 + API 合约 v1 | 立项书 v1 + 6 个人设 |
-| W2 | Director 调度 + **事件流产生者** | **WS endpoint + 前端 client** + 虚拟课堂 UI + 会话管理 | 迷思库 v1（20 条）+ Rubric |
-| W3 | 评估 Agent + 端到端联调 | 诊断报告页 | 迷思库 50 条 + 用户测试方案 |
-| W4 | 性能 / 稳定性 | Logo / 落地页 / 暗色模式 | 答辩 PPT + Demo 视频 + 用户测试 |
+| **第一阶段** | LLMClient + 单学生 Agent + 教案 RAG + 学段特征库 | FastAPI 脚手架 + API 合约 + 前端脚手架 | 立项书 + 人设设计 + 样例教案 |
+| **第二阶段** | Director 调度 + 事件流生产者 | WebSocket endpoint + 前端 client + 虚拟课堂 UI + 会话管理 | 迷思概念库 + Rubric 初版 |
+| **第三阶段** | Evaluator Agent + 端到端联调 | 诊断报告页面 + 数据可视化 | 迷思库扩展 + 用户测试方案 |
+| **第四阶段** | 性能与稳定性调优 | 品牌视觉 + 落地页 + 暗色模式 | 答辩 PPT + Demo 视频 + 用户测试执行 |
 
 ## 🚦 协作 & 开发
 
 - **协作规范**：[`CONTRIBUTING.md`](./CONTRIBUTING.md) — 分支策略、Commit 规范、PR 流程、冲突解决
-- **分工细则**：[`docs/roles.md`](./docs/roles.md) — 每个角色的技术栈、目录所有权、周度产出、跨界协作边界
+- **分工细则**：[`docs/roles.md`](./docs/roles.md) — 每个角色的技术栈、目录所有权、跨界协作边界
 - **任务看板**：<https://github.com/orgs/echoclass-team/projects/1>
-- **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>（25 个任务按 W1–W4 编号）
-- **API 合约**（v0 草案已就位）：[`docs/api_contract.md`](./docs/api_contract.md)
-- **W1 阶段性测试指引**：[`docs/w1_smoke_test.md`](./docs/w1_smoke_test.md) — LLMClient + StudentAgent + 人设联调验证
-- **学生人设设计文档**：[`docs/persona_design.md`](./docs/persona_design.md) — 6 个人设的设计理念与皮亚杰理论基础
+- **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>
+- **API 合约**：[`docs/api_contract.md`](./docs/api_contract.md)
+- **人设设计文档**：[`docs/persona_design.md`](./docs/persona_design.md)
+- **立项书**：[`docs/proposal.md`](./docs/proposal.md)
 
 ### 新成员 Onboarding
 
 1. 阅读本 README + [`CONTRIBUTING.md`](./CONTRIBUTING.md) + [`docs/roles.md`](./docs/roles.md)
 2. 认领自己的 Role（A / B / C）
-3. 从 `week-1` 标签的 Issue 里挑一个自己负责的，分配给自己
+3. 从 Issue 列表里挑一个自己负责的任务，分配给自己
 4. 按 [`CONTRIBUTING.md`](./CONTRIBUTING.md) 的流程开分支、写代码、开 PR
 
 ```bash
@@ -119,19 +152,27 @@ gh issue develop <N> --repo echoclass-team/EchoClass --checkout
 
 ```bash
 cd backend
-uv sync --extra dev          # 安装依赖（需先装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh）
-cp .env.example .env          # 填入 OPENAI_API_KEY 等
+uv sync --extra dev                       # 安装依赖（需先装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh）
+cp .env.example .env                      # 填入 OPENAI_API_KEY 等
 uv run uvicorn main:app --reload --port 8000
-# 验证：curl http://localhost:8000/health  →  {"status":"ok"}
-uv run pytest                 # 运行测试（45 passed）
+# 验证：curl http://localhost:8000/health        →  {"status":"ok"}
+# 查看学段：curl http://localhost:8000/api/stages
+# 查看人设：curl http://localhost:8000/api/personas
+uv run pytest                             # 运行全部测试
 ```
 
-## 📅 里程碑
+### 常用命令
 
-- [x] **Week 1** · 脚手架 + LLMClient + StudentAgent + 6 个人设 + 联调（[W1 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-1)）
-- [ ] **Week 2** · Director + 多学生并发 + 前端课堂 UI（[W2 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-2)）
-- [ ] **Week 3** · 评估模块 + 报告 + 小学数学迷思库（50 条）（[W3 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-3)）
-- [ ] **Week 4** · 打磨 + Demo 视频 + 答辩 PPT（[W4 Issues](https://github.com/echoclass-team/EchoClass/issues?q=is%3Aissue+label%3Aweek-4)）
+```bash
+# 冒烟测试 — StudentAgent 在不同人设下的回复
+uv run python scripts/try_student_agent.py
+
+# 冒烟测试 — 学段特征对生成回复的约束效果
+uv run python scripts/try_stage_profile.py
+
+# 冒烟测试 — 教案 RAG 完整管线（解析 → 抽取 → 索引）
+uv run python scripts/try_lesson_rag.py
+```
 
 ## 📜 License
 
