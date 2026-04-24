@@ -5,6 +5,10 @@ Role A 追加 router 注册时请与 B 同步。
 
 当前已注册的路由：
 - GET /health — 健康检查
+- GET /api/stages — 学段列表
+- GET /api/stages/{id} — 学段详情
+- GET /api/personas — 人设列表（支持过滤）
+- GET /api/personas/{name_or_id} — 人设详情
 """
 
 from __future__ import annotations
@@ -16,6 +20,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.lessons import router as lessons_router
+from api.personas import router as personas_router
+from api.stages import router as stages_router
 
 load_dotenv()
 
@@ -40,6 +46,8 @@ app.add_middleware(
 
 
 app.include_router(lessons_router)
+app.include_router(stages_router)
+app.include_router(personas_router)
 
 
 @app.get("/health")
