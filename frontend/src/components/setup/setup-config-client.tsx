@@ -329,8 +329,8 @@ export function SetupConfigClient() {
                             {active ? "已选" : "选择"}
                           </span>
                         </div>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">{persona.summary ?? persona.description ?? "暂无摘要"}</p>
-                        <p className="mt-3 text-xs text-slate-500">{persona.stage_id ?? selectedStageId}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">{persona.summary || "暂无摘要"}</p>
+                        <p className="mt-3 text-xs text-slate-500">{persona.stage_id}</p>
                       </button>
                     );
                   })}

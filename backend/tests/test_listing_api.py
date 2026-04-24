@@ -1,4 +1,5 @@
 """学段 & 人设 Listing API 测试。"""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -62,6 +63,12 @@ class TestStagesAPI:
     async def test_get_stage_not_found(self, client: AsyncClient) -> None:
         resp = await client.get("/api/stages/nonexistent")
         assert resp.status_code == 404
+        # 错误响应也走 envelope：code=404, message 带 detail, data=None
+        body = resp.json()
+        assert body["code"] == 404
+        assert "nonexistent" in body["message"]
+        assert body["data"] is None
+        assert isinstance(body["request_id"], str)
 
 
 # ── Personas ────────────────────────────────────────────────
@@ -103,7 +110,9 @@ class TestPersonasAPI:
         assert resp.status_code == 200
         data = assert_wrapped(resp.json())
         assert len(data) >= 1
-        assert all(p["stage_id"] == "j_upper" and p["subject_level"] == "优秀" for p in data)
+        assert all(
+            p["stage_id"] == "j_upper" and p["subject_level"] == "优秀" for p in data
+        )
 
     async def test_get_persona_by_name(self, client: AsyncClient) -> None:
         # 先拿到一个名字

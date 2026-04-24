@@ -137,11 +137,11 @@ export default function StageSetupPage() {
                           </span>
                         </div>
                         <p className={`mt-3 text-sm leading-6 ${active ? "text-slate-200" : "text-slate-600"}`}>
-                          {stage.description ?? "暂无说明"}
+                          {`${stage.grade_range} · ${stage.age_range}`}
                         </p>
                         <div className={`mt-4 flex flex-wrap gap-2 text-xs ${active ? "text-slate-300" : "text-slate-500"}`}>
-                          {stage.grade_range ? <span>年级：{stage.grade_range}</span> : null}
-                          {stage.age_range ? <span>年龄：{stage.age_range}</span> : null}
+                          <span>年级：{stage.grade_range}</span>
+                          <span>年龄：{stage.age_range}</span>
                         </div>
                       </button>
                     );
