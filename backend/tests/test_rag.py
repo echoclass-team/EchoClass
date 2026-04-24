@@ -274,7 +274,9 @@ class TestLessonAPI:
             )
 
         assert resp.status_code == 200
-        data = resp.json()
+        body = resp.json()
+        assert body["code"] == 0
+        data = body["data"]
         assert "lesson_id" in data
         assert data["subject"] == "数学"
         assert len(data["objectives"]) == 3
@@ -301,13 +303,15 @@ class TestLessonAPI:
                 "/api/lessons/upload",
                 files={"file": ("test.md", b"# Test", "text/markdown")},
             )
-            lesson_id = resp.json()["lesson_id"]
+            lesson_id = resp.json()["data"]["lesson_id"]
 
             # 再查询
             resp2 = await client.get(f"/api/lessons/{lesson_id}")
 
         assert resp2.status_code == 200
-        data = resp2.json()
+        body = resp2.json()
+        assert body["code"] == 0
+        data = body["data"]
         assert data["lesson_id"] == lesson_id
         assert data["meta"]["subject"] == "数学"
 

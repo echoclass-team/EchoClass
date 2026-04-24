@@ -67,14 +67,12 @@ type Subject = "math" | "chinese" | "english" | "physics" | "chemistry" | "biolo
 ```ts
 interface LessonUploadResp {
   lesson_id: UUID;
-  title: string;
   subject: Subject;
   grade: Grade;
   topic: string;                    // 课题，e.g. "分数的初步认识"
   objectives: string[];             // 教学目标
   key_points: string[];             // 重点
   difficult_points: string[];       // 难点
-  parsed_at: ISO8601;
 }
 ```
 
@@ -82,7 +80,17 @@ interface LessonUploadResp {
 
 **`GET /api/lessons/{lesson_id}`**
 
-**响应** `data`：同 `LessonUploadResp`。
+**响应** `data`：
+
+```ts
+interface LessonRecord {
+  lesson_id: UUID;
+  filename: string;
+  meta: Record<string, unknown>;
+  text_length: number;
+  chunk_count: number;
+}
+```
 
 ### 1.3 列出教案
 
@@ -105,6 +113,8 @@ interface LessonListItem {
 ---
 
 ## 2. 会话 Sessions
+
+> **状态**：Draft / 规划中（接口与字段仍待实现，不作为前端稳定接入依据）
 
 ### 2.1 创建会话（开课）
 
@@ -353,30 +363,61 @@ Server → Client: {"type":"board_update", "taught_points":["分数的定义","1
 
 ---
 
-## 4. 人设 Personas（只读）
+## 4. 人设 Personas
 
 ### 4.1 列出可用人设
 
-**`GET /api/personas?grade=P3&subject=math`**
+**`GET /api/personas?stage_id=<stage_id>&subject_level=<subject_level>`**
+
+- 支持过滤：`stage_id`、`subject_level`
+
+**响应** `data`：
 
 ```ts
 interface PersonaListItem {
-  persona_id: UUID;
+  id: UUID;
   name: string;
+  gender: string;
   grade: Grade;
-  personality_tags: string[];
-  avatar_url: string;
+  age: number;
+  stage_id: string;
+  subject_level: string;
   summary: string;                  // 一句话描述
 }
 ```
 
 ### 4.2 获取人设详情
 
-**`GET /api/personas/{persona_id}`** — 返回完整人设 JSON（schema 见 `data/personas/_schema.json`）。
+**`GET /api/personas/{name_or_id}`**
+
+**响应**：返回单个人设详情（schema 见 `data/personas/_schema.json`；以当前实现为准）。
+
+## 5. 阶段 Stages
+
+### 5.1 列出阶段
+
+**`GET /api/stages`**
+
+**响应** `data`：
+
+```ts
+interface StageListItem {
+  id: string;
+  name: string;
+  grade_range: string;
+  age_range: string;
+}
+```
+
+### 5.2 获取阶段详情
+
+**`GET /api/stages/{stage_id}`**
+
+**响应**：返回阶段详情；当前已实现的稳定概要字段同上.
 
 ---
 
-## 5. 健康检查
+## 6. 健康检查
 
 **`GET /health`**
 
@@ -386,7 +427,7 @@ interface PersonaListItem {
 
 ---
 
-## 6. 版本管理
+## 7. 版本管理
 
 - **当前版本**：`v0` — M1 到 M3 开发期间
 - **语义变更规则**：
@@ -395,7 +436,7 @@ interface PersonaListItem {
 
 ---
 
-## 7. Open Questions（待团队决定）
+## 8. Open Questions（待团队决定）
 
 - [ ] 是否引入用户登录 / 鉴权？v0 假设**单用户本地**无鉴权
 - [ ] 多个 session 并发上限？目前假设 1

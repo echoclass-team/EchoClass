@@ -7,30 +7,23 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from schemas.stage import StageProfile, load_stage_profile_by_id, load_stage_profiles
+from api.response import ok_response
+from schemas.api import ApiResponse
+from schemas.stage import StageProfile, StageSummary, load_stage_profile_by_id, load_stage_profiles
 
 router = APIRouter(prefix="/api/stages", tags=["stages"])
 
 
-@router.get("", response_model=list[dict])
-async def list_stages() -> list[dict]:
-    """返回所有学段的概要信息（id / name / grade_range / age_range）。"""
+@router.get("", response_model=ApiResponse[list[StageSummary]])
+async def list_stages() -> ApiResponse[list[StageSummary]]:
     stages = load_stage_profiles()
-    return [
-        {
-            "id": s.id,
-            "name": s.name,
-            "grade_range": s.grade_range,
-            "age_range": s.age_range,
-        }
-        for s in stages
-    ]
+    data = [StageSummary(id=s.id, name=s.name, grade_range=s.grade_range, age_range=s.age_range) for s in stages]
+    return ok_response(data)
 
 
-@router.get("/{stage_id}", response_model=StageProfile)
-async def get_stage(stage_id: str) -> StageProfile:
-    """返回指定学段的完整认知特征。"""
+@router.get("/{stage_id}", response_model=ApiResponse[StageProfile])
+async def get_stage(stage_id: str) -> ApiResponse[StageProfile]:
     stage = load_stage_profile_by_id(stage_id)
     if not stage:
         raise HTTPException(status_code=404, detail=f"Stage '{stage_id}' not found")
-    return stage
+    return ok_response(stage)

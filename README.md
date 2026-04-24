@@ -40,6 +40,45 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 
 - **教案 RAG 检索**：上传的教案会被解析、切片、向量化并索引，学生回复会围绕教案实际内容展开。
 
+## 📌 当前进度
+
+截至本次更新（PR 进行中，仍在第一阶段收尾 / 第二阶段起步）：
+
+**后端（A-Agent）**
+
+- ✅ FastAPI 脚手架 + CORS + `/health`
+- ✅ LLMClient 封装（ChatECNU ecnu-max，OpenAI 兼容接口 + tenacity 重试 + token 日志）
+- ✅ StudentAgent 原型（人设驱动的结构化回复，Jinja2 模板 + JSON 解析）
+- ✅ 18 个学生人设 JSON + 完整 18 字段 Persona 模型
+- ✅ 6 档学段认知特征库（StageProfile，基于皮亚杰 / 维果茨基 / 埃里克森）
+- ✅ StudentAgent × StageProfile 联调（学段共性层 + 个体差异层）
+- ✅ 教案 RAG 管线：parser（pymupdf4llm）→ extractor（LLM 结构化抽取）→ indexer（Chroma 切片向量化）
+- ✅ REST API：`/api/lessons/upload|{id}` · `/api/stages[/{id}]` · `/api/personas[/{name_or_id}]`
+- ✅ **统一响应包络 `ApiResponse`**：`{code, message, data, request_id}`，错误也走同一结构（全局 HTTPException handler）
+- ✅ 6 份跨学段样例教案（小低 / 小中 / 小高 / 初低 / 初高 / 高中，Markdown + PDF + 解析预期）
+- ✅ 96 条单元 & 集成测试全绿
+- ⏳ DirectorAgent / EvaluatorAgent / LangGraph 状态机（第二阶段）
+- ⏳ WebSocket 事件流（A 生产 → B 消费）
+
+**前端（B-Full）**
+
+- ✅ Next.js 14 + TypeScript + TailwindCSS 脚手架
+- ✅ Setup 流程：学段选择（`/setup/stage`）→ 教案 + 学生配置（`/setup/config`）→ 课堂演示页
+- ✅ 教案上传（调用 `/api/lessons/upload`） + 本地教案库暂存（localStorage）
+- ✅ `apiFetch` 统一 API client（ApiError 类 + envelope 解析 + `code !== 0` 业务错误抛异常）
+- ✅ 类型定义严格对齐后端 schema（Stage / Persona / LessonMeta / LessonRecord）
+- ⏳ 虚拟课堂 UI + WebSocket client（第二阶段）
+- ⏳ 诊断报告页面 + 数据可视化（第三阶段）
+- ⏳ shadcn/ui 组件化（Toast / Skeleton / Alert 替换手写）
+
+**产品 / 评测（C-Prod）**
+
+- ✅ 立项书 v4 终极答辩论证版
+- ✅ 学生人设设计文档
+- ✅ 6 份跨学段样例教案
+- ⏳ 学科迷思概念库
+- ⏳ 评估 Rubric + Flanders 互动分析表
+
 ## 🏗️ 技术栈
 
 | 层 | 技术 | Owner |
@@ -81,7 +120,12 @@ EchoClass/
 │   │   └── extractor.j2         # 教案元数据抽取
 │   ├── scripts/                 # 冒烟测试脚本
 │   └── tests/                   # pytest 单元与集成测试
-├── frontend/                    # TypeScript · Next.js 14 + shadcn/ui（规划中）
+├── frontend/                    # TypeScript · Next.js 14 + TailwindCSS
+│   ├── src/app/                 # App Router：首页 / setup / classroom / lessons
+│   ├── src/components/setup/    # Setup 流程（学段 / 教案 / 人设）
+│   ├── src/lib/api/             # apiFetch 客户端（ApiResponse envelope + ApiError）
+│   ├── src/lib/setup-storage.ts # 本地教案库 localStorage 持久化
+│   └── src/types/               # Stage / Persona / Lesson 类型（严格对齐后端）
 ├── data/
 │   ├── stage_profiles/          # 6 档学段认知特征 JSON（P1-P2 / P3-P4 / P5-P6 / J1-J2 / J3 / H1-H3）
 │   ├── personas/                # 18 个学生人设 JSON（每学段 3 个：优秀 / 中等 / 薄弱）
@@ -158,8 +202,29 @@ uv run uvicorn main:app --reload --port 8000
 # 验证：curl http://localhost:8000/health        →  {"status":"ok"}
 # 查看学段：curl http://localhost:8000/api/stages
 # 查看人设：curl http://localhost:8000/api/personas
-uv run pytest                             # 运行全部测试
+uv run pytest                             # 运行全部测试（当前 96 条）
 ```
+
+### 本地启动前端
+
+```bash
+cd frontend
+npm install                               # 首次安装依赖
+npm run dev                               # 启动在 http://localhost:3000
+```
+
+前端默认连后端 `http://localhost:8000`，如需覆盖在 `frontend/.env.local` 设置：
+
+```
+NEXT_PUBLIC_API_BASE=http://localhost:8000
+```
+
+页面入口：
+
+- `/` — 首页 + 本地教案库预览
+- `/setup/stage` — 选择学段
+- `/setup/config` — 选教案 + 选学生
+- `/classroom/demo` — 课堂演示（WebSocket 待接入）
 
 ### 常用命令
 

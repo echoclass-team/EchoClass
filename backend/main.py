@@ -16,11 +16,12 @@ from __future__ import annotations
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.lessons import router as lessons_router
 from api.personas import router as personas_router
+from api.response import http_exception_handler
 from api.stages import router as stages_router
 
 load_dotenv()
@@ -48,6 +49,9 @@ app.add_middleware(
 app.include_router(lessons_router)
 app.include_router(stages_router)
 app.include_router(personas_router)
+
+# 全局异常 → ApiResponse envelope，前端统一走一套解析逻辑
+app.add_exception_handler(HTTPException, http_exception_handler)
 
 
 @app.get("/health")
