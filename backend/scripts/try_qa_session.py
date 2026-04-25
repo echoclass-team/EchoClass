@@ -40,7 +40,7 @@ from agents.student import StudentAgent
 from llm.client import LLMClient
 from schemas.lesson import LessonMeta
 from schemas.stage import load_stage_profile_by_id
-from schemas.student import ClassroomContext, load_personas
+from schemas.student import load_personas
 from services.qa_session import QASession
 
 LESSON_SAMPLES_DIR = (
@@ -198,17 +198,7 @@ async def main() -> None:
     _print_lesson(lesson)
     print(f"👥 参与学生（{len(personas)} 位）：{'、'.join(p.name for p in personas)}")
 
-    # 为每个 persona 构造一个 StudentAgent。ClassroomContext 在新方向用不上，
-    # 只为兼容现有 __init__ 必填参数；后续 v2 可让 context 变 optional。
-    agents = [
-        StudentAgent(
-            llm=llm,
-            persona=p,
-            context=ClassroomContext(subject=lesson.subject, topic=lesson.topic),
-            stage=stage,
-        )
-        for p in personas
-    ]
+    agents = [StudentAgent(llm=llm, persona=p, stage=stage) for p in personas]
 
     session = QASession(lesson_meta=lesson)
     print("\n⏳ 学生们正在阅读教案，构思问题……（每个学生约 1 次 LLM 调用）")

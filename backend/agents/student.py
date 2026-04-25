@@ -1,21 +1,31 @@
-"""StudentAgent — 单学生虚拟角色。
+"""StudentAgent — 单学生虚拟角色（1v1 答疑陪练专用）。
 
-根据人设 (Persona) + 课堂上下文 (ClassroomContext) + 老师最新发言，
-通过 LLMClient 调用 ChatECNU ecnu-max 生成结构化的 StudentReply。
+该 agent 提供两个能力：
 
-人设支持两种模式：
-- 简易模式：4 个基础字段（name / personality / knowledge_level / behavior_traits）
-- 完整模式：从 data/personas/*.json 加载的18 字段人设（含口头禅、迷思概念、认知阶段等）
+1. ``generate_questions(lesson_meta)``
+   根据人设 + 教案 + 学段迷思库，主动提出学生会问老师的问题。输出为
+   ``list[StudentQuestion]``，含 category / difficulty / linked_key_point /
+   linked_misconception_id 等结构化元数据。
+
+2. ``respond_in_dialog(question, teacher_utterance, history)``
+   在 1v1 对话中根据老师发言多轮回应。输出为 ``DialogReplyResult``（
+   含是否出现 ``[懂了]`` 标记的 ``self_resolved`` 字段）。
+
+人设支持：
+- 简易模式（name / personality / knowledge_level / behavior_traits）
+- 完整模式（从 data/personas/*.json 加载，18 字段）
+
+老课堂回合制 ``respond()`` 接口已随产品转型废弃，详见 ``docs/PIVOT.md``。
 
 典型用法::
 
     from agents.student import StudentAgent
     from llm.client import LLMClient
-    from schemas.student import ClassroomContext, Persona
 
-    agent = StudentAgent(llm=LLMClient(), persona=persona, context=context)
-    reply = await agent.respond("什么是分数？")
-    print(reply)  # StudentReply(speaker_id=..., intent=..., content=..., emotion=...)
+    agent = StudentAgent(llm=LLMClient(), persona=persona, stage=stage)
+    qs = await agent.generate_questions(lesson_meta, count=3)
+    result = await agent.respond_in_dialog(question=qs[0], teacher_utterance="...")
+    print(result.content, result.self_resolved)
 """
 
 from __future__ import annotations
@@ -37,7 +47,7 @@ from schemas.lesson import LessonMeta
 from schemas.misconception import Misconception
 from schemas.question import StudentQuestion
 from schemas.stage import StageProfile
-from schemas.student import ClassroomContext, Persona, StudentReply
+from schemas.student import ClassroomContext, Persona
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +60,7 @@ _jinja_env = Environment(
 
 
 class StudentAgent:
-    """单学生 Agent。
-
-    每个实例代表一个虚拟学生，通过 Jinja2 模板渲染 Prompt 并调用 LLM 生成符合人设的回复。
-    回复为结构化 JSON，包含意图 (intent)、内容 (content)、情绪 (emotion)。
+    """单学生 Agent。1v1 答疑陪练中的虚拟学生角色。
 
     Parameters
     ----------
@@ -61,13 +68,15 @@ class StudentAgent:
         已配置好的 LLM 客户端（默认 ChatECNU ecnu-max）。
     persona : Persona
         学生人设，支持简易模式或 data/personas/ 完整 JSON。
-    context : ClassroomContext
-        当前课堂上下文（对话过程中自动追加历史记录）。
     stage : StageProfile | None
-        可选的学段共性特征。传入后会在 prompt 顶部注入学段认知天花板，
-        约束 LLM 的回复不超出该年龄段能力。不传则仅依赖个体 persona。
+        可选的学段共性特征。传入后会在 prompt 顶部注入认知边界。
+        不传则仅依赖个体 persona。
     temperature : float
-        LLM 采样温度，默认 0.8 以增加回复多样性。
+        LLM 采样温度，默认 0.8。
+    misconceptions / misconceptions_dir
+        迷思库来源。不传则从项目默认 ``data/misconceptions/`` 加载。
+    rng : random.Random | None
+        仅供未来需要随机采样的场景使用（如随机选择迷思）。
     """
 
     def __init__(
@@ -75,7 +84,6 @@ class StudentAgent:
         *,
         llm: LLMClient,
         persona: Persona,
-        context: ClassroomContext,
         stage: StageProfile | None = None,
         temperature: float = 0.8,
         misconceptions: list[Misconception] | None = None,
@@ -84,7 +92,6 @@ class StudentAgent:
     ) -> None:
         self.llm = llm
         self.persona = persona
-        self.context = context
         self.stage = stage
         self.temperature = temperature
         self.misconceptions = (
@@ -93,167 +100,10 @@ class StudentAgent:
             else load_misconceptions(misconceptions_dir)
         )
         self.rng = rng or random.Random()
-        self._template = _jinja_env.get_template("student.j2")
         self._ask_template = _jinja_env.get_template("student_ask.j2")
         self._chat_template = _jinja_env.get_template("student_chat.j2")
 
-    # -------------------------------------------------------------- public
-
-    async def respond(self, teacher_utterance: str) -> StudentReply:
-        """根据老师的发言生成学生回复。
-
-        Returns
-        -------
-        StudentReply
-            包含 speaker_id / intent / content / emotion 的结构化回复。
-        """
-        matched_misconceptions = self._match_misconceptions()
-        triggered_misconception = self._choose_triggered_misconception(
-            matched_misconceptions
-        )
-        prompt = self._render_prompt(
-            teacher_utterance,
-            matched_misconceptions=matched_misconceptions,
-            triggered_misconception=triggered_misconception,
-        )
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": teacher_utterance},
-        ]
-
-        resp = await self.llm.chat(messages, temperature=self.temperature)
-        raw = resp.choices[0].message.content or ""
-
-        logger.debug("StudentAgent raw LLM output: %s", raw)
-
-        reply = self._parse_reply(raw)
-        reply = self._normalize_triggered_misconception(
-            reply,
-            matched_misconceptions=matched_misconceptions,
-            triggered_misconception=triggered_misconception,
-        )
-
-        # 追加到课堂历史
-        self.context.history.append(f"老师：{teacher_utterance}")
-        self.context.history.append(f"{reply.speaker_id}：{reply.content}")
-
-        return reply
-
-    # ------------------------------------------------------------- private
-
-    def _render_prompt(
-        self,
-        teacher_utterance: str,
-        *,
-        matched_misconceptions: list[Misconception] | None = None,
-        triggered_misconception: Misconception | None = None,
-    ) -> str:
-        return self._template.render(
-            persona=self.persona,
-            context=self.context,
-            stage=self.stage,
-            teacher_utterance=teacher_utterance,
-            matched_misconceptions=matched_misconceptions or [],
-            triggered_misconception=triggered_misconception,
-        )
-
-    def _match_misconceptions(self) -> list[Misconception]:
-        stage_id = self.stage.id if self.stage is not None else self.persona.stage_id
-        return match_misconceptions(
-            subject=self.context.subject,
-            stage_id=stage_id,
-            key_points=self.context.key_points,
-            topic=self.context.topic,
-            difficult_points=self.context.difficult_points,
-            misconceptions=self.misconceptions,
-        )
-
-    def _choose_triggered_misconception(
-        self, matched: list[Misconception]
-    ) -> Misconception | None:
-        if not matched:
-            return None
-        probability = self._trigger_probability()
-        if self.rng.random() < probability:
-            return matched[0]
-        return None
-
-    def _trigger_probability(self) -> float:
-        level = self.persona.effective_level.lower()
-        if "薄弱" in level or "weak" in level:
-            return 0.5
-        if "优秀" in level or "优等" in level or "strong" in level or "xueba" in level:
-            return 0.05
-        if "中等" in level or "medium" in level:
-            return 0.25
-        return 0.25
-
-    def _normalize_triggered_misconception(
-        self,
-        reply: StudentReply,
-        *,
-        matched_misconceptions: list[Misconception],
-        triggered_misconception: Misconception | None,
-    ) -> StudentReply:
-        if triggered_misconception is None:
-            reply.triggered_misconception_id = None
-            return reply
-        if reply.intent == "answer_question":
-            reply.triggered_misconception_id = triggered_misconception.id
-        else:
-            reply.triggered_misconception_id = None
-        return reply
-
-    def _parse_reply(self, raw: str) -> StudentReply:
-        """从 LLM 原始输出中提取 JSON 并解析为 StudentReply。
-
-        支持 LLM 输出被 ```json ... ``` 包裹或直接输出 JSON 的情况。
-        """
-        # 尝试提取 markdown code block 中的 JSON
-        match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
-        if match:
-            json_str = match.group(1)
-        else:
-            # 直接尝试找第一个 { ... }
-            match = re.search(r"\{.*\}", raw, re.DOTALL)
-            if match:
-                json_str = match.group(0)
-            else:
-                logger.warning(
-                    "StudentAgent: no JSON found in LLM output, building fallback reply"
-                )
-                return StudentReply(
-                    speaker_id=self.persona.name,
-                    intent="passive",
-                    content=raw.strip() or "……",
-                    emotion="困惑",
-                )
-
-        try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError:
-            logger.warning("StudentAgent: invalid JSON: %s", json_str[:200])
-            return StudentReply(
-                speaker_id=self.persona.name,
-                intent="passive",
-                content=raw.strip() or "……",
-                emotion="困惑",
-            )
-
-        # 校验 intent 合法性
-        valid_intents = {"answer_question", "ask_question", "off_topic", "passive"}
-        if data.get("intent") not in valid_intents:
-            data["intent"] = "passive"
-
-        # 确保 speaker_id
-        data.setdefault("speaker_id", self.persona.name)
-        data.setdefault("emotion", "平静")
-
-        return StudentReply(**data)
-
-    # =========================================================== Q/A coach
-    # 以下方法服务于"1v1 答疑陪练"新方向（详见 docs/PIVOT.md）。
-    # 与上面的回合制 ``respond`` 完全独立，不共用 prompt 模板。
+    # =========================================================== public
 
     async def generate_questions(
         self,

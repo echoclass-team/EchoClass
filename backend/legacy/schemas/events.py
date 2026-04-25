@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
-from schemas.student import Intent  # main schema, intentionally not under legacy
+from legacy.schemas.student_reply import Intent
 
 
 class BaseAgentEvent(BaseModel):

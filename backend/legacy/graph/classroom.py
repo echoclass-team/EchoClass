@@ -24,7 +24,8 @@ from legacy.schemas.events import (
     StudentReplyEndEvent,
     StudentReplyStartEvent,
 )
-from schemas.student import ClassroomContext, Persona, StudentReply
+from legacy.schemas.student_reply import StudentReply
+from schemas.student import ClassroomContext, Persona
 
 StudentAgentFactory = Callable[..., Any]
 

@@ -20,7 +20,7 @@ from agents.student import StudentAgent
 from llm.client import LLMClient
 from schemas.lesson import LessonMeta
 from schemas.misconception import Misconception
-from schemas.student import ClassroomContext, Persona
+from schemas.student import Persona
 
 
 # ============================================================ helpers
@@ -80,7 +80,6 @@ def _make_agent(
     return StudentAgent(
         llm=llm,
         persona=_persona(),
-        context=ClassroomContext(subject="数学", topic="占位"),
         misconceptions=misconceptions
         if misconceptions is not None
         else [_misconception()],

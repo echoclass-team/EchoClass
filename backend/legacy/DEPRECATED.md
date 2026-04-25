@@ -26,16 +26,18 @@ EchoClass 在 2026-04-25 完成了一次产品方向转型：
 
 ## 是否仍可运行
 
-理论上能跑，所有内部 import 已改为 `legacy.*` 前缀，依赖的 main 模块（`llm`、`schemas.lesson`、`schemas.stage`、`schemas.student`）保持不变。
+⚠️ **不再保证可运行**。随着 main 路径上的产品转型，`agents.student.StudentAgent` 的
+`__init__` 不再接受 `context` 参数、`StudentReply` 已迁出、旧 `respond()` 已删除。
+legacy 的 `graph/classroom.py` 仍按旧接口调用 StudentAgent，因此再跑 legacy
+demo 会在 fanout/respond 调用处抛错。
 
-```bash
-# 在 backend/ 下手动跑老 demo（仅用于回看）
-uv run python -m legacy.scripts.try_director
-uv run python -m legacy.scripts.try_classroom --auto
+legacy 代码保留的目的是**作为答辩素材与设计回顾**，不再追求执行可运行性。
+如果未来真有"复活老课堂"的需求，需要：
 
-# 跑 legacy 测试（不在 CI 中）
-uv run pytest legacy/tests
-```
+1. 在 `legacy/agents/` 单独 fork 一份与 main 解耦的 `StudentAgent`
+2. 或者在 main `StudentAgent` 上重新接出兼容旧接口的 wrapper
+
+legacy 测试目录 `legacy/tests/` 已随产品转型清理。
 
 ## 不要这么做
 

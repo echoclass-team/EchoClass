@@ -2,21 +2,21 @@
 
 包含：
 - Persona：学生人设（兼容简易 4 字段 和 data/personas/ 完整 18 字段两种模式）
+- PersonaSummary：人设概要（API 列表用）
 - ClassroomContext：课堂上下文（科目、话题、对话历史）
-- StudentReply：StudentAgent 的结构化输出（意图 / 内容 / 情绪）
-- Intent：4 种回复意图（answer_question / ask_question / off_topic / passive）
 - load_personas()：从 JSON 文件加载人设列表
+
+注：旧回合制 ``StudentReply`` / ``Intent`` 已随产品转型迁出至
+``backend/legacy/schemas/student_reply.py``，新方向的对话回复模型
+参见 ``schemas.dialog.DialogReplyResult``。
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel, Field
-
-Intent = Literal["answer_question", "ask_question", "off_topic", "passive"]
 
 
 class Persona(BaseModel):
@@ -105,6 +105,7 @@ class PersonaSummary(BaseModel):
     subject_level: str = Field(..., description="学科水平")
     summary: str = Field(..., description="一句话概括")
 
+
 def load_personas(personas_dir: str | Path | None = None) -> list[Persona]:
     """从 data/personas/ 目录加载所有人设 JSON。
 
@@ -146,16 +147,3 @@ class ClassroomContext(BaseModel):
     )
     key_points: list[str] = Field(default_factory=list, description="教学重点")
     difficult_points: list[str] = Field(default_factory=list, description="教学难点")
-
-
-class StudentReply(BaseModel):
-    """StudentAgent 的结构化输出。"""
-
-    speaker_id: str = Field(..., description="学生标识")
-    intent: Intent = Field(..., description="回复意图")
-    content: str = Field(..., description="回复文本")
-    emotion: str = Field(..., description="当前情绪，如'困惑'、'自信'、'无聊'")
-    triggered_misconception_id: str | None = Field(
-        default=None,
-        description="本轮触发的学科迷思 id；无触发时为空",
-    )

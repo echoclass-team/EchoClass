@@ -18,7 +18,7 @@ from agents.student import StudentAgent
 from llm.client import LLMClient
 from schemas.dialog import DialogMessage
 from schemas.question import StudentQuestion
-from schemas.student import ClassroomContext, Persona
+from schemas.student import Persona
 
 
 def _persona() -> Persona:
@@ -62,7 +62,6 @@ def _make_agent(llm: LLMClient) -> StudentAgent:
     return StudentAgent(
         llm=llm,
         persona=_persona(),
-        context=ClassroomContext(subject="数学", topic="分数"),
         misconceptions=[],
     )
 
