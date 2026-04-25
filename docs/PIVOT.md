@@ -59,7 +59,7 @@ EchoClass 原定位为 **AI 虚拟课堂师范生陪练系统**：
 
 - **代码 / repo 名**：保留 `EchoClass`（避免改名造成的工程灾难）
 - **对外产品名**：暂定 `PupilEcho · 师范生答疑陪练`（最终待定）
-- **答辩故事**：传统师范生只能在真实课堂里试错；EchoClass 让 AI 学生基于真实教案与 60+ 学科迷思主动向你提问，让每一次答疑都是安全的练兵。
+- **产品故事内核**：传统师范生只能在真实课堂里试错；EchoClass 让 AI 学生基于真实教案与 60+ 学科迷思主动向你提问，让每一次答疑都是安全的练兵。
 
 ## 3. 架构对比
 
@@ -103,7 +103,7 @@ Frontend 微信式 UI：
 
 ### Archive（移到 `backend/legacy/`，不删）
 
-保留旧代码作为**答辩素材**和**git history 价值**。CI 不再跑 legacy 测试（`testpaths = ["tests"]`）。
+保留旧代码作为**设计回顾素材**和**git history 价值**。CI 不再跑 legacy 测试（`testpaths = ["tests"]`）。
 
 | 原路径 | 归档路径 |
 |---|---|
@@ -213,7 +213,7 @@ Frontend 微信式 UI：
 | 决策 | 选择 | 理由 |
 |---|---|---|
 | 是否保留 EchoClass repo 名 | ✅ 保留 | 改名会断 PR/issue/CI 链接，工程零收益 |
-| 旧代码处置 | Archive 不删 | 答辩素材 + git history 价值；CI 自动跳过 |
+| 旧代码处置 | Archive 不删 | 设计回顾价值 + git history；CI 自动跳过 |
 | 是否重写 prompt | ✅ 从零写 | 旧 student.j2 是"被动应答"思路，新方向是"主动提问 + 多轮对话" |
 | 是否新建 evaluator agent | M4 才做 | MVP 用学生自我宣称 + 师范生手动 override，足够交付 |
 | 异步推送队列 | ❌ MVP 不做 | 串行队列已能演示"多学生切换"，工程量翻倍不值 |

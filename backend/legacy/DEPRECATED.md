@@ -1,7 +1,7 @@
 # Legacy — 旧"虚拟课堂回合制"架构归档
 
 > ⚠️ 本目录下的所有代码**已停用**，新功能不要导入 `legacy.*`。
-> 仅保留作为 git history、设计回顾与答辩素材。
+> 仅保留作为 git history 与设计回顾。
 
 ## 为什么停用
 
@@ -31,7 +31,7 @@ EchoClass 在 2026-04-25 完成了一次产品方向转型：
 legacy 的 `graph/classroom.py` 仍按旧接口调用 StudentAgent，因此再跑 legacy
 demo 会在 fanout/respond 调用处抛错。
 
-legacy 代码保留的目的是**作为答辩素材与设计回顾**，不再追求执行可运行性。
+legacy 代码保留的目的是**作为设计回顾与转型决策的可追溯记录**，不再追求执行可运行性。
 如果未来真有"复活老课堂"的需求，需要：
 
 1. 在 `legacy/agents/` 单独 fork 一份与 main 解耦的 `StudentAgent`
@@ -51,4 +51,4 @@ legacy 测试目录 `legacy/tests/` 已随产品转型清理。
 - ✅ 阅读 legacy 代码理解过往设计权衡
 - ✅ 复用 `data/personas/`、`data/stage_profiles/`、`data/misconceptions/`、`data/lesson_samples/`（这些**不在 legacy**）
 - ✅ 复用 `agents/student.py`、`rag/`、`schemas/student.py`、`schemas/lesson.py`、`schemas/stage.py`、`schemas/misconception.py`（这些**保留为主路径**）
-- ✅ 在答辩时引用本目录证明"我们做过完整探索后才主动转型"
+- ✅ 在产品汇报中引用本目录证明"我们做过完整探索后才主动转型"

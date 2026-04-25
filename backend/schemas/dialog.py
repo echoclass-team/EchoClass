@@ -5,7 +5,7 @@
 
     pending → active → resolved | abandoned
 
-resolution_source 记录"是怎么解决的"，便于答辩时区分"师范生真破除"和
+resolution_source 记录"是怎么解决的"，便于事后区分"师范生真破除"和
 "学生自我宣称懂了"。
 """
 

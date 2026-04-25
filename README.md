@@ -76,7 +76,7 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 
 **产品 / 评测（C-Prod）**
 
-- ✅ 立项书 v4 终极答辩论证版
+- ✅ 立项书 v4
 - ✅ 学生人设设计文档
 - ✅ 6 份跨学段样例教案
 - ⏳ 学科迷思概念库
@@ -142,7 +142,7 @@ EchoClass/
 │   ├── api_contract.md          # API 合约
 │   ├── persona_design.md        # 人设设计文档
 │   ├── proposal.md              # 立项书
-│   └── pitch_deck.md            # 答辩大纲
+│   └── pitch_deck.md            # 产品展示大纲
 ├── .github/                     # PR / Issue 模板
 ├── CONTRIBUTING.md              # 协作规范
 └── README.md
@@ -156,7 +156,7 @@ EchoClass/
 |---|---|---|---|---|
 | **Agent 工程师** | `A-Agent` | **[@Nekooo915](https://github.com/Nekooo915)** | LLM 客户端封装、Student / Director / Evaluator Agent、RAG 管线、LangGraph 状态机、**事件流生产者**（push 到 asyncio.Queue） | `backend/{agents,rag,llm,graph,prompts,schemas}` |
 | **全栈工程师** | `B-Full` | **[@Traumere7](https://github.com/Traumere7)** | 前端课堂 UI 与诊断报告、**WebSocket 端到端**（前后端）、REST 路由、会话持久化、视觉与落地页 | `frontend/`、`backend/{api,db}` |
-| **产品 / 评测** | `C-Prod` | **[@IST00](https://github.com/IST00)** | 立项书与答辩材料、学生人设设计、学科迷思概念库、评估 Rubric、用户测试、Demo 视频 | `data/`、`docs/`、`backend/prompts/` |
+| **产品 / 评测** | `C-Prod` | **[@IST00](https://github.com/IST00)** | 立项书与产品展示材料、学生人设设计、学科迷思概念库、评估 Rubric、用户测试、Demo 视频 | `data/`、`docs/`、`backend/prompts/` |
 
 ### A ↔ B 内部契约（非对外 API）
 
@@ -171,7 +171,7 @@ EchoClass/
 | **第一阶段** | LLMClient + 单学生 Agent + 教案 RAG + 学段特征库 | FastAPI 脚手架 + API 合约 + 前端脚手架 | 立项书 + 人设设计 + 样例教案 |
 | **第二阶段** | Director 调度 + 事件流生产者 | WebSocket endpoint + 前端 client + 虚拟课堂 UI + 会话管理 | 迷思概念库 + Rubric 初版 |
 | **第三阶段** | Evaluator Agent + 端到端联调 | 诊断报告页面 + 数据可视化 | 迷思库扩展 + 用户测试方案 |
-| **第四阶段** | 性能与稳定性调优 | 品牌视觉 + 落地页 + 暗色模式 | 答辩 PPT + Demo 视频 + 用户测试执行 |
+| **第四阶段** | 性能与稳定性调优 | 品牌视觉 + 落地页 + 暗色模式 | 产品展示 PPT + Demo 视频 + 用户测试执行 |
 
 ## 🚦 协作 & 开发
 
@@ -211,7 +211,7 @@ EchoClass/
 14. **#32 用户测试方案**：设计面向 3 位师范生的测试任务、观察指标和访谈提纲。
 15. **#34 用户测试执行**：在可演示链路稳定后执行测试并整理报告。
 16. **#35 Demo 视频**：依赖可演示链路，完成 3 分钟脚本、录制、剪辑和发布。
-17. **#36 答辩 PPT / 立项书定稿 / QA 预案**：依赖 Demo 与核心链路稳定后收口。
+17. **#36 产品展示 PPT / 立项书定稿 / QA 预案**：依赖 Demo 与核心链路稳定后收口。
 
 ### 新成员 Onboarding
 

@@ -121,7 +121,7 @@ data/
 └── eval_rubrics/            # 评估评分标准 JSON
 docs/
 ├── proposal.md              # 立项书
-├── pitch_deck.md            # 答辩 PPT 大纲
+├── pitch_deck.md            # 产品展示 PPT 大纲
 ├── demo_script.md           # Demo 视频脚本
 ├── user_test_plan.md        # 用户测试计划
 └── references/              # 参考文献
@@ -139,7 +139,7 @@ backend/prompts/             # 共享：Prompt 模板（与 A 协作）
 | W1 | 立项书 v1 + 6 个学生人设 + 评估框架设计 |
 | W2 | 迷思概念库 20 条 + 评估 Prompt v1 + 样例教案 3 份 |
 | W3 | 迷思库补齐 50 条 + 用户测试方案 |
-| W4 | 答辩 PPT + Demo 视频 + 3 位师范生试用 |
+| W4 | 产品展示 PPT + Demo 视频 + 3 位师范生试用 |
 
 ---
 
