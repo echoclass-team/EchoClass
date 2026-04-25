@@ -2,4 +2,5 @@
 
 当前包含：
 - schemas.student：Persona / ClassroomContext / StudentReply / Intent / load_personas()
+- schemas.director：DirectorConfig / DirectorDecision / StudentAction / Message
 """
