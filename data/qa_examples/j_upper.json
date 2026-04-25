@@ -1,0 +1,78 @@
+{
+  "stage_id": "j_upper",
+  "stage_name": "初中高年级",
+  "ask_examples": [
+    {
+      "persona_tag": "striver",
+      "topic": "二次函数 y = ax² + bx + c",
+      "key_points": ["对称轴 x = -b/(2a)", "顶点坐标"],
+      "questions": [
+        {
+          "content": "老师，我做中考题时遇到那种含参数 a 的题——题目说 a > 0 时图像怎么样、a < 0 时怎么样，我老是糊涂哪种情况开口朝上。能不能教我一个不会忘的记法？",
+          "category": "clarify_concept",
+          "difficulty": "medium",
+          "linked_key_point": "对称轴 x = -b/(2a)",
+          "linked_misconception_id": null,
+          "rationale": "我备战中考，需要稳定可靠的记忆方法应对应试压力。"
+        },
+        {
+          "content": "老师，对称轴 x = -b/(2a) 的负号是不是经常被忽略掉？我有一次就是把负号丢了导致整道题挂了……",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "对称轴 x = -b/(2a)",
+          "linked_misconception_id": null,
+          "rationale": "我因为粗心丢分过，想搞清楚为什么有这个负号、能否避免再错。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "giveup",
+      "topic": "勾股定理",
+      "key_points": ["直角三角形 a² + b² = c²", "判定一个三角形是否为直角三角形"],
+      "questions": [
+        {
+          "content": "老师……勾股定理我从初二就背到现在了，但是我做题还是会用错，是不是我天生就学不会数学？感觉中考要凉了。",
+          "category": "off_topic",
+          "difficulty": "easy",
+          "linked_key_point": null,
+          "linked_misconception_id": null,
+          "rationale": "我已经放弃数学了，但还是想发泄一下，老师听到的话能拉我一把就拉。"
+        },
+        {
+          "content": "老师，那个……是不是只要三条边平方加起来对得上就是直角三角形啊？还有别的方法判断吗？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "判定一个三角形是否为直角三角形",
+          "linked_misconception_id": null,
+          "rationale": "我虽然放弃但还是想问最基础的，万一中考能蒙对一题。"
+        }
+      ]
+    }
+  ],
+  "chat_examples": [
+    {
+      "persona_tag": "striver",
+      "scenario": "中考备战学生想要可靠记法，老师给出二次项系数与开口方向的物理直觉。",
+      "initial_question": "a 的正负怎么判断开口方向？",
+      "turns": [
+        {"role": "teacher", "content": "你想象 ax² 这一项，当 x 很大时 ax² 占主导。如果 a > 0，那 x 越大、ax² 越大，函数值飞向正无穷，所以开口朝上像 U 形。"},
+        {"role": "student", "content": "嗯老师这个我懂，但是考场紧张的时候可能想不到这么细，能不能给个一秒判断的口诀？", "self_resolved": false},
+        {"role": "teacher", "content": "可以：a 是脸——a 正（笑脸），开口向上；a 负（哭脸），开口向下。永远不要忘的记法。"},
+        {"role": "student", "content": "笑脸哭脸，这个我能记住！那我把 a 看作表情就行，不用每次推。\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "giveup",
+      "scenario": "放弃数学的学生发泄情绪，老师先共情再用最简单的例子拉他回来，不强求 [懂了]。",
+      "initial_question": "我是不是学不会数学啊？",
+      "turns": [
+        {"role": "teacher", "content": "别这么说。你告诉我，3、4、5 是不是直角三角形？"},
+        {"role": "student", "content": "啊？……3² 是 9，4² 是 16，加起来 25，5² 也是 25……所以是？", "self_resolved": false},
+        {"role": "teacher", "content": "对！你刚刚自己用勾股定理判断了一个直角三角形，还说不会？"},
+        {"role": "student", "content": "……那为啥我一到考试就用错呢？", "self_resolved": false},
+        {"role": "teacher", "content": "考试紧张时容易忘哪条边是斜边。你记一句话：斜边永远是最长的，对应的就是 c。"},
+        {"role": "student", "content": "斜边最长对应 c，行吧我先记这一句……试试看。", "self_resolved": false}
+      ]
+    }
+  ]
+}

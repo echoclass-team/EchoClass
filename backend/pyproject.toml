@@ -1,7 +1,7 @@
 [project]
 name = "echoclass-backend"
 version = "0.1.0"
-description = "EchoClass backend — FastAPI + LangGraph multi-agent virtual classroom."
+description = "EchoClass backend — FastAPI · 师范生 1v1 答疑陪练系统。"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "EchoClass Team" }]
@@ -10,6 +10,8 @@ license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
+    # NOTE: langgraph / langchain-openai 暂保留以匹配 uv.lock；
+    # 当前代码 0 引用，待网络条件允许时统一跑 `uv lock` 清理。
     "langgraph>=0.2.0",
     "langchain-openai>=0.2.0",
     "openai>=1.40.0",
@@ -38,11 +40,11 @@ packages = [
     "agents",
     "api",
     "db",
-    "graph",
     "llm",
     "prompts",
     "rag",
     "schemas",
+    "services",
 ]
 
 [tool.pytest.ini_options]

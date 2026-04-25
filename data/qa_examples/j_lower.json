@@ -1,0 +1,80 @@
+{
+  "stage_id": "j_lower",
+  "stage_name": "初中低年级",
+  "ask_examples": [
+    {
+      "persona_tag": "active",
+      "topic": "一元一次方程",
+      "key_points": ["等式两边同时加减乘除同一个数", "用字母表示未知数"],
+      "questions": [
+        {
+          "content": "老师！我看着 2x + 3 = 7，那我把 3 移到右边变成 -3 是不是叫'移项变号'？为啥移过去就要变号啊？",
+          "category": "clarify_concept",
+          "difficulty": "medium",
+          "linked_key_point": "等式两边同时加减乘除同一个数",
+          "linked_misconception_id": null,
+          "rationale": "我背了'移项变号'这个口诀但不理解原理，想知道为什么。"
+        },
+        {
+          "content": "老师那我能用 x 表示我家的猫吗？比如 3 只猫加 2 只猫等于 5x？",
+          "category": "off_topic",
+          "difficulty": "easy",
+          "linked_key_point": "用字母表示未知数",
+          "linked_misconception_id": null,
+          "rationale": "我活泼好动，看到字母代替东西就联想到生活里的物品，半开玩笑半认真地问。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "introvert",
+      "topic": "三角形的内角和",
+      "key_points": ["三角形内角和等于 180°", "外角等于不相邻两内角之和"],
+      "questions": [
+        {
+          "content": "老师，那个……如果三角形内角和是 180°，那四边形是不是 360°？我自己画了一下好像是的，但我不确定……",
+          "category": "extend_topic",
+          "difficulty": "medium",
+          "linked_key_point": "三角形内角和等于 180°",
+          "linked_misconception_id": null,
+          "rationale": "我自己摸索发现规律但缺乏自信，需要老师确认。"
+        },
+        {
+          "content": "老师，外角和内角……如果是 90 度的角，那它的外角是不是也是 90 度？这种情况算特殊吧？",
+          "category": "challenge_example",
+          "difficulty": "hard",
+          "linked_key_point": "外角等于不相邻两内角之和",
+          "linked_misconception_id": null,
+          "rationale": "我注意到直角的特殊性，想确认我对外角定义的理解。"
+        }
+      ]
+    }
+  ],
+  "chat_examples": [
+    {
+      "persona_tag": "active",
+      "scenario": "活跃型学生背口诀但没理解'移项变号'的等式原理，老师用天平类比让他自己推出来。",
+      "initial_question": "为啥移项要变号啊？",
+      "turns": [
+        {"role": "teacher", "content": "你把方程想成天平，左边和右边一样重。如果你从左边拿走 3，右边要拿走几？"},
+        {"role": "student", "content": "也要拿走 3 啊！不然天平就不平衡了！", "self_resolved": false},
+        {"role": "teacher", "content": "对，所以 2x + 3 = 7 两边同时减 3，左边变成 2x，右边变成 4。这跟'把 3 挪到右边变成 -3'看起来是不是一样？"},
+        {"role": "student", "content": "哦——所以'移项变号'其实就是'两边减去同一个数'的简化说法？它不是魔法是等式性质！", "self_resolved": false},
+        {"role": "teacher", "content": "完全正确。'变号'只是助记符，本质是两边同时做同一件事。"},
+        {"role": "student", "content": "懂了懂了！那我以后做应用题就不用怕变形了，反正天平要平衡就行。\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "introvert",
+      "scenario": "内向学生小心地猜想四边形内角和，老师肯定她并引导她自己证明。",
+      "initial_question": "四边形内角和是 360° 对吗？",
+      "turns": [
+        {"role": "teacher", "content": "对，你是怎么想到的？"},
+        {"role": "student", "content": "嗯……我画了个四边形，从一个顶点连对角线，发现可以分成两个三角形……每个 180°，加起来 360°……不知道对不对", "self_resolved": false},
+        {"role": "teacher", "content": "你已经自己证明出来了！这就是几何里非常重要的'对角线分割法'。那五边形呢？"},
+        {"role": "student", "content": "五边形可以分成 3 个三角形，所以是 540°？", "self_resolved": false},
+        {"role": "teacher", "content": "完全正确。其实 n 边形可以分成 (n-2) 个三角形，所以内角和是 (n-2)×180°。"},
+        {"role": "student", "content": "原来这就是公式的来源！我以前都是背 (n-2)×180° 的……\n[懂了]", "self_resolved": true}
+      ]
+    }
+  ]
+}

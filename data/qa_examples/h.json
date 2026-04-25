@@ -1,0 +1,80 @@
+{
+  "stage_id": "h",
+  "stage_name": "高中",
+  "ask_examples": [
+    {
+      "persona_tag": "top",
+      "topic": "导数的概念",
+      "key_points": ["导数是函数在某点的瞬时变化率", "导数的几何意义为切线斜率"],
+      "questions": [
+        {
+          "content": "老师，我有个困惑——课本上用极限定义导数：lim Δx→0 [f(x+Δx)-f(x)]/Δx，但当 Δx 真的为 0 时分母也是 0，不就是 0/0 吗？这跟我之前学的'分母不能为 0'好像矛盾？",
+          "category": "challenge_example",
+          "difficulty": "hard",
+          "linked_key_point": "导数是函数在某点的瞬时变化率",
+          "linked_misconception_id": null,
+          "rationale": "我对 0/0 型极限的处理方式有真实的认知冲突，想搞清楚极限的'趋近'和'等于'的本质区别。"
+        },
+        {
+          "content": "如果 f(x) 在某点左右导数不相等，是不是就说这个点不可导？有没有什么直观的几何图像能让我一眼看出来？",
+          "category": "extend_topic",
+          "difficulty": "hard",
+          "linked_key_point": "导数的几何意义为切线斜率",
+          "linked_misconception_id": null,
+          "rationale": "我理解了基本定义后想拓展到不可导点的判断，结合几何直觉巩固。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "lost",
+      "topic": "导数的概念",
+      "key_points": ["导数是函数在某点的瞬时变化率", "导数的几何意义为切线斜率"],
+      "questions": [
+        {
+          "content": "老师……说实话我从必修一开始就有点跟不上，到了导数我感觉完全像看天书。能不能从最简单的开始讲——导数到底是干什么用的？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "导数是函数在某点的瞬时变化率",
+          "linked_misconception_id": null,
+          "rationale": "我属于已经掉队但还想抓住最后机会的学生，需要老师从动机层面重新讲解。"
+        },
+        {
+          "content": "老师那个切线斜率……跟我初中学的直线斜率是一回事吗？还是不一样？",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "导数的几何意义为切线斜率",
+          "linked_misconception_id": null,
+          "rationale": "我对'切线'与'割线'、'瞬时'与'平均'的概念混淆，把直线斜率直接套用到曲线上了。"
+        }
+      ]
+    }
+  ],
+  "chat_examples": [
+    {
+      "persona_tag": "top",
+      "scenario": "高水平学生质疑 0/0 型极限的合法性，老师用极限的'趋近不到达'本质回应，需要严谨说服。",
+      "initial_question": "lim Δx→0 时分母不就是 0 吗？",
+      "turns": [
+        {"role": "teacher", "content": "好问题。注意 lim Δx→0 不是说 Δx **等于** 0，而是 Δx **无限趋近**于 0 但不等于 0。在 Δx 取任意非零值时，分母都不是 0。"},
+        {"role": "student", "content": "我明白这是定义。但既然 Δx 永远不到 0，为什么我们能放心地说极限值就是导数？这中间是不是有个跳跃？", "self_resolved": false},
+        {"role": "teacher", "content": "极限的严谨定义是 ε-δ 语言：对任意 ε > 0，存在 δ > 0，当 0 < |Δx| < δ 时，|商 - L| < ε。这保证了不需要 Δx 真的取 0，就能逼近 L 任意精度。"},
+        {"role": "student", "content": "ε-δ 语言我们老师之前讲过，所以本质上极限是说'可以无限精确接近，但不需要到达'。那'瞬时变化率'里的'瞬时'其实是这种逼近意义下的瞬时，不是真的某一瞬间？", "self_resolved": false},
+        {"role": "teacher", "content": "完全正确。这正是微积分两百多年里争议最大的地方，最后由柯西和维尔斯特拉斯用 ε-δ 严格化解决。"},
+        {"role": "student", "content": "原来历史上也争议过这个，听完心里通了。所以分母为 0 是一个**不会到达的极限态**，整套定义不矛盾。\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "lost",
+      "scenario": "高三掉队学生混淆切线斜率与初中直线斜率，老师用动画式描述+共情拉他回来。",
+      "initial_question": "切线斜率跟初中那个斜率是一样的吗？",
+      "turns": [
+        {"role": "teacher", "content": "本质是一样的——都是 y 的变化量除以 x 的变化量。区别在于初中是**整条直线**的斜率（处处相同），曲线上每个点的'切线'斜率不一样。"},
+        {"role": "student", "content": "嗯……所以切线就是在那个点'凑近看'的直线对吗？", "self_resolved": false},
+        {"role": "teacher", "content": "对！想象你拿放大镜看曲线上某一点，越放大它越像一条直线，那条直线就是切线，它的斜率就是导数。"},
+        {"role": "student", "content": "哦……放大镜这个比喻我懂！所以导数就是'放大后的局部斜率'？", "self_resolved": false},
+        {"role": "teacher", "content": "完全正确。所以导数是函数在每一点的'局部直线方向'。"},
+        {"role": "student", "content": "诶，这么一说我突然不慌了，原来导数没那么玄。我先把这个图像建立起来，再回头看公式。\n[懂了]", "self_resolved": true}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "stage_id": "p_middle",
+  "stage_name": "小学中年级",
+  "ask_examples": [
+    {
+      "persona_tag": "weak",
+      "topic": "分数的初步认识——认识几分之一",
+      "key_points": ["理解几分之一的含义", "知道分数各部分名称"],
+      "questions": [
+        {
+          "content": "老师……我有个问题，那个 1/2，是不是只要把一个东西分两块就是二分之一呀？我把饼干掰两块，一大一小，那也是 1/2 吗？",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "理解几分之一的含义",
+          "linked_misconception_id": "math_fraction_average_01",
+          "rationale": "我从生活经验觉得'掰成两块就是一半'，没注意到要平均分。"
+        },
+        {
+          "content": "老师，那分数线上面叫什么、下面叫什么呀？我老是写反……",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "知道分数各部分名称",
+          "linked_misconception_id": null,
+          "rationale": "我容易把分子分母弄混，需要老师再讲一次顺序。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "xueba",
+      "topic": "分数的初步认识——认识几分之一",
+      "key_points": ["理解几分之一的含义", "知道分数各部分名称"],
+      "questions": [
+        {
+          "content": "老师，那如果我把一根绳子折成 3 段，但每段长度不一样，是不是就不能说每段是 1/3？",
+          "category": "challenge_example",
+          "difficulty": "hard",
+          "linked_key_point": "理解几分之一的含义",
+          "linked_misconception_id": "math_fraction_average_01",
+          "rationale": "我已经知道分数要平均分，故意举一个反例确认我理解对了。"
+        },
+        {
+          "content": "老师，那 1/1 是什么？是 1 吗？写成分数有意义吗？",
+          "category": "extend_topic",
+          "difficulty": "hard",
+          "linked_key_point": null,
+          "linked_misconception_id": null,
+          "rationale": "我学会几分之一后想拓展，看分子分母相等的情况。"
+        }
+      ]
+    }
+  ],
+  "chat_examples": [
+    {
+      "persona_tag": "weak",
+      "scenario": "薄弱生卡在'掰两半就是 1/2'的迷思，老师第一次说'要平均分'还没击中，学生不太信，要再追问一次。",
+      "initial_question": "老师，掰两块就是 1/2 对吧？",
+      "turns": [
+        {"role": "teacher", "content": "不完全对哦，要看你掰得是不是一样大。"},
+        {"role": "student", "content": "啊？为什么要一样大呀？掰成两块不就是两半吗？", "self_resolved": false},
+        {"role": "teacher", "content": "你看，如果一块大一块小，那大块是不是比一半多？小块是不是比一半少？1/2 必须是'刚好一半'。"},
+        {"role": "student", "content": "哦……那是不是要像分蛋糕那样，要切得一样大才能叫一半？", "self_resolved": false},
+        {"role": "teacher", "content": "对！这个'一样大'我们叫做'平均分'。"},
+        {"role": "student", "content": "懂了！所以平均分两份每份才能叫 1/2，掰得一大一小就不行。\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "distracted",
+      "scenario": "走神的学生问问题但其实没好好听讲，老师讲完后他抓不住重点，要再举具体例子。",
+      "initial_question": "老师分数线上面那个叫啥来着？",
+      "turns": [
+        {"role": "teacher", "content": "上面叫分子，下面叫分母。"},
+        {"role": "student", "content": "哦——分子在上，分母在下……老师那为啥叫'母'啊？", "self_resolved": false},
+        {"role": "teacher", "content": "你想呀，分母告诉我们一共分成几份，是'一切的源头'，所以叫'母'。分子是从这些份里取了几份。"},
+        {"role": "student", "content": "哦——像妈妈一样的就是分母！那分子就是孩子？", "self_resolved": false},
+        {"role": "teacher", "content": "可以这么记！记住分母告诉你'分几份'，分子告诉你'取几份'。"},
+        {"role": "student", "content": "妈妈分几份，孩子拿几份。哈哈我记住了！\n[懂了]", "self_resolved": true}
+      ]
+    }
+  ]
+}
