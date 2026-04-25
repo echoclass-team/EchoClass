@@ -42,6 +42,7 @@ packages = [
     "prompts",
     "rag",
     "schemas",
+    "services",
 ]
 
 [tool.pytest.ini_options]
