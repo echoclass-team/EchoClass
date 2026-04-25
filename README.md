@@ -1,10 +1,14 @@
 # EchoClass
 
-> AI-powered virtual classroom for pre-service teachers.
-> 师范生虚拟课堂陪练系统 —— 让未来的教师在走上讲台前多试几次讲。
+> AI-powered Q&A coaching for pre-service teachers.
+> 师范生 1v1 答疑陪练系统 —— 让未来的教师在走上讲台前先被 AI 学生"问倒"几百次。
 
 参赛项目：**华东师范大学开发者大赛 2026 · 大语言模型创新应用开发赛道**
 赛事官网：<https://developer.ecnu.edu.cn/competition2026/>
+
+> ⚠️ **产品方向已转型**：原"完整课堂回合制模拟"经过完整探索后，于 2026-04-25 主动转向
+> "1v1 答疑陪练"。详细决策与新架构见 [`docs/PIVOT.md`](./docs/PIVOT.md)。
+> 旧 `DirectorAgent` / `ClassroomGraph` 已归档至 `backend/legacy/` 作为设计回顾。
 
 ---
 
@@ -12,55 +16,71 @@
 
 ### 背景
 
-师范生在正式走上讲台之前，缺乏安全、低成本、可重复的练习场景：
+师范生最高频、最痛苦的备课动作不是"讲课"，而是**被学生问倒**：
 
-- **真人试讲难**：组织一节真实课堂代价高，一次课只能留下 40 分钟录音和模糊印象
-- **反馈滞后**：导师点评稀缺，难以对同一教学环节做 A / B 对比
-- **学生反应千差万别**：薄弱生、优等生、走神生、爱跑题生——真实课堂上永远只能遇到一种组合
+- **真人试讲难**：组织一节真实课堂代价高，一次只能留下 40 分钟录音和模糊印象
+- **反馈滞后**：导师点评稀缺，错了就是真的失败，没有重来一次的机会
+- **学生反应千差万别**：薄弱生、优等生、走神生、爱跑题生——真实课堂永远只能遇到一种组合
 - **教案到实战的鸿沟**：写教案时计划详尽，一到课堂上就发现"这个概念孩子根本听不懂"
 
 ### 使用流程
 
-EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
+EchoClass 是一个基于教育学双层建模的 1v1 答疑陪练系统：
 
 1. **上传教案** — 支持 PDF / Markdown / TXT，系统自动解析并抽取学科、学段、教学目标、知识点、难点
-2. **选择学段与学生** — 从小学低年级到高中共 6 档学段、每档 3 种典型学生（共 18 个虚拟学生人设），组建虚拟班级
-3. **开始模拟授课** — 师范生以"老师"身份和虚拟学生互动，每个学生按其人设和学段认知边界实时回答、提问、走神或沉默
-4. **课后诊断报告** — 从教学设计、课堂互动、语言表达、课堂管理四个维度，输出量化评分与改进建议
+2. **选择学段与学生** — 从小学低年级到高中共 6 档学段、每档 3 种典型学生（共 18 个虚拟学生人设）
+3. **学生主动提问** — AI 学生 Agent 根据自己的人设 × 教案内容**主动构思**会问老师的问题（含 5 类 category × 3 档难度，关联具体教学重点与学科迷思）
+4. **微信式 1v1 答疑** — 师范生从问题队列里选学生进入 1v1 对话；多个学生可切换
+5. **退出总结** — 统计已解答 / 放弃数、覆盖的教学重点、破除的学科迷思
 
 ### 关键设计点
 
-- **双层建模（学段共性 × 个体差异）**：先用 6 档学段特征库（基于皮亚杰认知发展阶段、维果茨基最近发展区、埃里克森心理社会理论、教育部《中小学心理健康教育指导纲要》）约束学生的认知上限，再叠加个体人设（性格、口头禅、学业水平、迷思倾向）。这避免了 LLM 常见的"小学一年级学生开口就讲微积分"的失真问题。
+- **双层建模（学段共性 × 个体差异）**：先用 6 档学段特征库（基于皮亚杰认知发展阶段、维果茨基最近发展区、埃里克森心理社会理论、教育部《中小学心理健康教育指导纲要》）约束学生的认知上限，再叠加个体人设（性格、口头禅、学业水平、迷思倾向），避免 LLM 常见的"小学一年级开口讲微积分"失真。
 
-- **Director Agent 调度**：不让所有虚拟学生同时发言。Director 根据课堂节奏、学生注意力、老师语气，决定下一个该谁发言、该不该提问、该不该走神。
+- **学生主动提问 vs 被动应答**：颠倒了"老师讲、学生答"的传统模拟范式，更接近真实辅导场景，也最贴合师范生备课时的高频痛点（"如果学生这样问我能答上来吗？"）。
 
-- **学科迷思概念库驱动的错误生成**：薄弱学生的错误不是随机的，而是从学科常见迷思概念库里挑选（如小学分数加法常把分子分母分别相加），让师范生在练习中识别并应对真实教学难点。
+- **学科迷思概念库驱动的提问与对话**：学生的错误前提不是随机的，而是从学科常见迷思概念库里挑选（如小学分数加法常把分子分母分别相加）。``stuck_misconception`` 类问题的对话只有当老师**真正击中错误前提**时学生才会承认"懂了"。
 
-- **多维度评估（参考 Flanders 互动分析体系）**：教学设计、课堂互动、语言表达、课堂管理四维评分 + 文字点评。
+- **二阶段 self-check 提升问题质量**：generate_questions 内部跑两次 LLM——先宽生成 N+overshoot 个候选，再让 agent 自评（人设贴合度 + 教育价值 + 教案相关性），最后做类别多样性筛选取 top N。
 
-- **教案 RAG 检索**：上传的教案会被解析、切片、向量化并索引，学生回复会围绕教案实际内容展开。
+- **同学段 few-shot 注入**：6 个学段各维护 2 个 ask 范例 + 2 个 chat 范例（[`data/qa_examples/`](./data/qa_examples/)），渲染 prompt 时按当前 persona 自动挑选注入，显著提升口语化与人设贴合度。
+
+- **教案 RAG 检索**：上传的教案会被解析、切片、向量化并索引，问题与对话围绕教案实际内容展开。
 
 ## 📌 当前进度
 
-截至本次更新（第一阶段主体已完成，第二阶段核心链路推进中）：
+截至本次更新（M1 闭环完成，M2 准备启动）：
 
 **后端（A-Agent）**
 
+基础设施（沿用）：
 - ✅ FastAPI 脚手架 + CORS + `/health`
 - ✅ LLMClient 封装（ChatECNU ecnu-max，OpenAI 兼容接口 + tenacity 重试 + token 日志）
-- ✅ StudentAgent 原型（人设驱动的结构化回复，Jinja2 模板 + JSON 解析）
 - ✅ 18 个学生人设 JSON + 完整 18 字段 Persona 模型
 - ✅ 6 档学段认知特征库（StageProfile，基于皮亚杰 / 维果茨基 / 埃里克森）
-- ✅ StudentAgent × StageProfile 联调（学段共性层 + 个体差异层）
 - ✅ 教案 RAG 管线：parser（pymupdf4llm）→ extractor（LLM 结构化抽取）→ indexer（Chroma 切片向量化）
+- ✅ 学科迷思概念库（``rag.misconceptions``）+ 按学段 / 重点匹配
 - ✅ REST API：`/api/lessons/upload|{id}` · `/api/lessons/{id}/recommended-personas` · `/api/stages[/{id}]` · `/api/personas[/{name_or_id}]`
-- ✅ **统一响应包络 `ApiResponse`**：`{code, message, data, request_id}`，错误也走同一结构（全局 HTTPException handler）
 - ✅ 6 份跨学段样例教案（小低 / 小中 / 小高 / 初低 / 初高 / 高中，Markdown + PDF + 解析预期）
-- ✅ DirectorAgent 多学生调度器（规则层硬约束 + LLM 软判断）
-- ✅ LangGraph 课堂核心状态机（A 侧 graph core + internal AgentEvent + checkpoint）
-- ✅ 137 条单元 & 集成测试全绿
-- ⏳ WebSocket / sessions / AgentEvent adapter 端到端集成（第二阶段）
-- ⏳ EvaluatorAgent 与诊断报告链路（第三阶段）
+
+1v1 答疑陪练（M1 完成）：
+- ✅ ``StudentAgent.generate_questions(lesson_meta)`` — 宽生成 + 二阶段 self-check + 类别多样性筛选
+- ✅ ``StudentAgent.respond_in_dialog(question, ...)`` — 1v1 多轮对话，含 `[懂了]` 自我宣称解决
+- ✅ ``QASession`` orchestrator — 替代旧 ClassroomGraph，管理学生提问队列与对话状态机
+- ✅ 6 学段 few-shot 范例集合（`data/qa_examples/`）+ 按 persona 自动挑选注入
+- ✅ 新 prompt 模板：`student_ask.j2` / `student_chat.j2` / `student_check.j2`
+- ✅ CLI demo：`scripts/try_qa_session.py`（含 `/resolve` `/abandon` `/switch` `/done`）
+- ✅ **136 条单元 & 集成测试全绿**
+
+下一阶段：
+- ⏳ M2 — 流式 chunk + WebSocket endpoint v2（让 B 端微信式 UI 可接入）
+- ⏳ M3 — 评估闭环（结合学生自我宣称 + 师范生手动 override）
+- ⏳ M4 — 评估 Agent 自动判分（v2，时间允许时做）
+
+旧方向（已归档至 `backend/legacy/`，不再 CI）：
+- ⛔ DirectorAgent 多学生调度
+- ⛔ LangGraph 课堂回合制状态机
+- ⛔ 旧 `AgentEvent` 协议（DirectorEvent / BoardUpdateEvent 等）
 
 **前端（B-Full）**
 
@@ -88,7 +108,7 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 |---|---|---|
 | **前端** | Next.js 14（App Router）· TypeScript · TailwindCSS · shadcn/ui · Zustand · TanStack Query · Recharts | **B** |
 | **API / 协议** | FastAPI · WebSocket（JSON Lines）· REST · CORS · uv | **B** |
-| **Agent 编排** | LangGraph（有状态图）· asyncio.Queue（事件流生产者-消费者） | **A** |
+| **Agent 编排** | 1v1 dialog session 管理（普通 async service 类）· few-shot + self-check 二阶段质量增强 | **A** |
 | **LLM 接入** | ChatECNU ecnu-max（OpenAI 兼容接口）· openai 客户端 · tenacity 重试 · token 使用日志 | **A** |
 | **RAG** | Chroma 向量库 · pymupdf4llm（PDF → Markdown）· Jinja2 Prompt 模板 · 500 token 切片 | **A** |
 | **教育学建模** | 6 档学段认知特征库 · 18 个学生人设 JSON · 学科迷思概念库 | A / C |
@@ -101,48 +121,52 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 
 ```
 EchoClass/
-├── backend/                     # Python 3.11+ · FastAPI + LangGraph
-│   ├── agents/                  # StudentAgent / DirectorAgent（已完成）· EvaluatorAgent（规划中）
-│   ├── rag/                     # 教案解析、抽取、切片、Chroma 索引
+├── backend/                     # Python 3.11+ · FastAPI
+│   ├── agents/
+│   │   └── student.py           # StudentAgent — generate_questions / respond_in_dialog
+│   ├── services/
+│   │   └── qa_session.py        # QASession orchestrator（1v1 答疑会话编排）
+│   ├── rag/
 │   │   ├── parser.py            # PDF / MD / TXT → 纯文本
 │   │   ├── extractor.py         # LLM 抽取 subject/grade/topic/objectives/key_points/difficult_points
-│   │   └── indexer.py           # 500 token 切片 + Chroma 向量化
+│   │   ├── indexer.py           # 500 token 切片 + Chroma 向量化
+│   │   ├── misconceptions.py    # 学科迷思概念库加载与匹配
+│   │   └── qa_examples.py       # few-shot 范例集合加载（按学段 + persona）
 │   ├── llm/                     # LLMClient 封装（chat / stream + 重试 + 日志）
-│   ├── graph/                   # LangGraph 课堂核心状态机 + checkpoint
-│   ├── api/                     # REST + WebSocket 路由
-│   │   ├── lessons.py           # POST /api/lessons/upload · GET /api/lessons/{id} · GET /api/lessons/{id}/recommended-personas
-│   │   ├── stages.py            # GET /api/stages · GET /api/stages/{id}
-│   │   └── personas.py          # GET /api/personas · GET /api/personas/{name_or_id}
-│   ├── schemas/                 # Pydantic 模型
+│   ├── api/                     # REST 路由（B 端）
+│   │   ├── lessons.py           # POST /api/lessons/upload · GET /api/lessons/{id}[/recommended-personas]
+│   │   ├── stages.py            # GET /api/stages[/{id}]
+│   │   └── personas.py          # GET /api/personas[/{name_or_id}]
+│   ├── schemas/
 │   │   ├── stage.py             # StageProfile（学段认知特征）
-│   │   ├── student.py           # Persona / ClassroomContext / StudentReply
+│   │   ├── student.py           # Persona / ClassroomContext
 │   │   ├── lesson.py            # LessonMeta / LessonRecord / RecommendedPersonasData
-│   │   └── events.py            # graph internal AgentEvent（WS wire 格式待 #25 对齐）
-│   ├── db/                      # 会话持久化（SQLite，规划中）
+│   │   ├── question.py          # StudentQuestion（含 self_score / category / difficulty / linked_*）
+│   │   ├── dialog.py            # DialogSession / DialogMessage / DialogReplyResult
+│   │   └── misconception.py     # Misconception
 │   ├── prompts/                 # Jinja2 Prompt 模板
-│   │   ├── student.j2           # 学生 Agent（学段共性 + 个体人设叠加）
-│   │   ├── director.j2          # Director Agent 多学生调度
+│   │   ├── student_ask.j2       # 学生根据教案生成问题（含同学段 few-shot）
+│   │   ├── student_chat.j2      # 学生 1v1 多轮对话（含 [懂了] 标记）
+│   │   ├── student_check.j2     # 二阶段 self-check 评分
 │   │   └── extractor.j2         # 教案元数据抽取
+│   ├── db/                      # 会话持久化（SQLite，规划中，B 端）
+│   ├── legacy/                  # 旧课堂回合制架构归档（CI 不收，仅供回顾）
 │   ├── scripts/                 # 冒烟测试脚本
-│   └── tests/                   # pytest 单元与集成测试
-├── frontend/                    # TypeScript · Next.js 14 + TailwindCSS
-│   ├── src/app/                 # App Router：首页 / setup / classroom / lessons
-│   ├── src/components/setup/    # Setup 流程（学段 / 教案 / 人设）
-│   ├── src/lib/api/             # apiFetch 客户端（ApiResponse envelope + ApiError）
-│   ├── src/lib/setup-storage.ts # 本地教案库 localStorage 持久化
-│   └── src/types/               # Stage / Persona / Lesson 类型（严格对齐后端）
+│   └── tests/                   # pytest 单元与集成测试（136 passed）
+├── frontend/                    # TypeScript · Next.js 14 + TailwindCSS（B 端）
 ├── data/
-│   ├── stage_profiles/          # 6 档学段认知特征 JSON（P1-P2 / P3-P4 / P5-P6 / J1-J2 / J3 / H1-H3）
-│   ├── personas/                # 18 个学生人设 JSON（每学段 3 个：优秀 / 中等 / 薄弱）
-│   ├── lesson_samples/          # 样例教案（PDF + Markdown + 解析预期元数据）
-│   ├── misconceptions/          # 学科迷思概念库（规划中）
+│   ├── stage_profiles/          # 6 档学段认知特征 JSON
+│   ├── personas/                # 18 个学生人设 JSON
+│   ├── qa_examples/             # 6 学段 few-shot 范例集合
+│   ├── lesson_samples/          # 样例教案（PDF + Markdown + 解析预期）
+│   ├── misconceptions/          # 学科迷思概念库
 │   └── eval_rubrics/            # 评估评分标准（规划中）
 ├── docs/
 │   ├── roles.md                 # 三人分工细则
 │   ├── api_contract.md          # API 合约
 │   ├── persona_design.md        # 人设设计文档
 │   ├── proposal.md              # 立项书
-│   └── pitch_deck.md            # 产品展示大纲
+│   └── PIVOT.md                 # 产品方向转型 RFC（M1-M4 路线图）
 ├── .github/                     # PR / Issue 模板
 ├── CONTRIBUTING.md              # 协作规范
 └── README.md
@@ -185,7 +209,9 @@ EchoClass/
 
 ### 当前 Issue 推进顺序
 
-> 以 GitHub Issues 为准；本节只记录当前推荐顺序和关键依赖，避免在评论中分散维护。
+> ⚠️ **2026-04-25 转型后**：以下 issue 列表是转型前规划的旧版本，部分（#23 / #24 / #25 / #65 等）已随产品转型废弃或重新规划，待对齐 M2/M3/M4 路线图（详见 [`docs/PIVOT.md`](./docs/PIVOT.md)）。
+>
+> 实际推进以 GitHub Issues 为准。
 
 **第一优先级：打通课堂实时链路**
 
@@ -265,17 +291,14 @@ NEXT_PUBLIC_API_BASE=http://localhost:8000
 ### 常用命令
 
 ```bash
-# 冒烟测试 — StudentAgent 在不同人设下的回复
-uv run python scripts/try_student_agent.py
+# 1v1 答疑陪练 demo（真实 LLM；含教案 → 学生提问 → 1v1 对话 → 总结）
+uv run python scripts/try_qa_session.py --lesson math_p3_fraction --students 2 --questions 3
 
-# 冒烟测试 — DirectorAgent 多学生调度
-uv run python scripts/try_director.py
-
-# 冒烟测试 — 学段特征对生成回复的约束效果
-uv run python scripts/try_stage_profile.py
-
-# 冒烟测试 — 教案 RAG 完整管线（解析 → 抽取 → 索引）
+# 教案 RAG 完整管线冒烟（解析 → 抽取 → 索引；不依赖 1v1 流程）
 uv run python scripts/try_lesson_rag.py
+
+# 校验 18 个学生人设 JSON 的完整性（不调 LLM）
+uv run python scripts/validate_personas.py
 ```
 
 ## 📜 License

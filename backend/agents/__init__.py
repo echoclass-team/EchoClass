@@ -1,9 +1,11 @@
 """Agent 模块。
 
 当前包含：
-- StudentAgent：单学生虚拟角色，根据人设生成结构化回复。
-- DirectorAgent：多学生课堂调度器，控制学生动作节奏。
+- StudentAgent：1v1 答疑陪练中的虚拟学生角色。
+  · ``generate_questions(lesson_meta)`` — 根据人设 + 教案主动生成问题
+    （含宽生成 + 二阶段 self-check + 类别多样性筛选）
+  · ``respond_in_dialog(question, ...)`` — 多轮 1v1 对话回应
 
-后续计划：
-- EvaluatorAgent（W3）：教学能力评估与诊断报告生成。
+老课堂回合制 ``DirectorAgent`` / ``ClassroomGraph`` 已随产品转型归档至
+``backend/legacy/``，详见 ``docs/PIVOT.md``。
 """
