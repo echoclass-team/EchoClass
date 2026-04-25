@@ -157,7 +157,12 @@ gh issue develop <N> --repo echoclass-team/EchoClass --checkout
 
 ### 本地启动后端
 
-详见 [`backend/README.md`](./backend/README.md)。快速开始：
+完整分平台部署文档：
+
+- macOS / Linux：[`docs/setup_macos_linux.md`](./docs/setup_macos_linux.md)
+- Windows：[`docs/setup_windows.md`](./docs/setup_windows.md)
+
+精简版见 [`backend/README.md`](./backend/README.md)。快速开始：
 
 ```bash
 cd backend
