@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from schemas.student import PersonaSummary
+
 
 class LessonMeta(BaseModel):
     """LLM 抽取的教案结构化元数据。"""
@@ -33,3 +35,17 @@ class LessonUploadData(BaseModel):
     objectives: list[str] = Field(default_factory=list, description="教学目标")
     key_points: list[str] = Field(default_factory=list, description="教学重点")
     difficult_points: list[str] = Field(default_factory=list, description="教学难点")
+
+
+class RecommendedPersonasData(BaseModel):
+    """教案推荐学生响应数据。"""
+
+    lesson_id: str = Field(..., description="教案唯一标识")
+    subject: str = Field(..., description="学科，如'数学'")
+    grade: str = Field(..., description="年级，如'三年级'")
+    topic: str = Field(..., description="课题名称")
+    stage_id: str = Field(..., description="推导出的学段 id")
+    stage_name: str = Field(default="", description="学段名称")
+    recommended_count: int = Field(..., description="实际推荐学生数量")
+    persona_ids: list[str] = Field(default_factory=list, description="推荐学生 id 列表")
+    students: list[PersonaSummary] = Field(default_factory=list, description="推荐学生概要")
