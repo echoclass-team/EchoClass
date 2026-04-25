@@ -144,6 +144,8 @@ class ClassroomContext(BaseModel):
         default_factory=list,
         description="之前的课堂对话摘要",
     )
+    key_points: list[str] = Field(default_factory=list, description="教学重点")
+    difficult_points: list[str] = Field(default_factory=list, description="教学难点")
 
 
 class StudentReply(BaseModel):
@@ -153,3 +155,7 @@ class StudentReply(BaseModel):
     intent: Intent = Field(..., description="回复意图")
     content: str = Field(..., description="回复文本")
     emotion: str = Field(..., description="当前情绪，如'困惑'、'自信'、'无聊'")
+    triggered_misconception_id: str | None = Field(
+        default=None,
+        description="本轮触发的学科迷思 id；无触发时为空",
+    )

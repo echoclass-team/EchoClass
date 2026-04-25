@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import re
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,8 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader
 
 from llm.client import LLMClient
+from rag.misconceptions import load_misconceptions, match_misconceptions
+from schemas.misconception import Misconception
 from schemas.stage import StageProfile
 from schemas.student import ClassroomContext, Persona, StudentReply
 
@@ -71,12 +74,21 @@ class StudentAgent:
         context: ClassroomContext,
         stage: StageProfile | None = None,
         temperature: float = 0.8,
+        misconceptions: list[Misconception] | None = None,
+        misconceptions_dir: str | Path | None = None,
+        rng: random.Random | None = None,
     ) -> None:
         self.llm = llm
         self.persona = persona
         self.context = context
         self.stage = stage
         self.temperature = temperature
+        self.misconceptions = (
+            misconceptions
+            if misconceptions is not None
+            else load_misconceptions(misconceptions_dir)
+        )
+        self.rng = rng or random.Random()
         self._template = _jinja_env.get_template("student.j2")
 
     # -------------------------------------------------------------- public
@@ -89,7 +101,13 @@ class StudentAgent:
         StudentReply
             包含 speaker_id / intent / content / emotion 的结构化回复。
         """
-        prompt = self._render_prompt(teacher_utterance)
+        matched_misconceptions = self._match_misconceptions()
+        triggered_misconception = self._choose_triggered_misconception(matched_misconceptions)
+        prompt = self._render_prompt(
+            teacher_utterance,
+            matched_misconceptions=matched_misconceptions,
+            triggered_misconception=triggered_misconception,
+        )
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": prompt},
             {"role": "user", "content": teacher_utterance},
@@ -101,6 +119,11 @@ class StudentAgent:
         logger.debug("StudentAgent raw LLM output: %s", raw)
 
         reply = self._parse_reply(raw)
+        reply = self._normalize_triggered_misconception(
+            reply,
+            matched_misconceptions=matched_misconceptions,
+            triggered_misconception=triggered_misconception,
+        )
 
         # 追加到课堂历史
         self.context.history.append(f"老师：{teacher_utterance}")
@@ -110,13 +133,66 @@ class StudentAgent:
 
     # ------------------------------------------------------------- private
 
-    def _render_prompt(self, teacher_utterance: str) -> str:
+    def _render_prompt(
+        self,
+        teacher_utterance: str,
+        *,
+        matched_misconceptions: list[Misconception] | None = None,
+        triggered_misconception: Misconception | None = None,
+    ) -> str:
         return self._template.render(
             persona=self.persona,
             context=self.context,
             stage=self.stage,
             teacher_utterance=teacher_utterance,
+            matched_misconceptions=matched_misconceptions or [],
+            triggered_misconception=triggered_misconception,
         )
+
+    def _match_misconceptions(self) -> list[Misconception]:
+        stage_id = self.stage.id if self.stage is not None else self.persona.stage_id
+        return match_misconceptions(
+            subject=self.context.subject,
+            stage_id=stage_id,
+            key_points=self.context.key_points,
+            topic=self.context.topic,
+            difficult_points=self.context.difficult_points,
+            misconceptions=self.misconceptions,
+        )
+
+    def _choose_triggered_misconception(self, matched: list[Misconception]) -> Misconception | None:
+        if not matched:
+            return None
+        probability = self._trigger_probability()
+        if self.rng.random() < probability:
+            return matched[0]
+        return None
+
+    def _trigger_probability(self) -> float:
+        level = self.persona.effective_level.lower()
+        if "薄弱" in level or "weak" in level:
+            return 0.5
+        if "优秀" in level or "优等" in level or "strong" in level or "xueba" in level:
+            return 0.05
+        if "中等" in level or "medium" in level:
+            return 0.25
+        return 0.25
+
+    def _normalize_triggered_misconception(
+        self,
+        reply: StudentReply,
+        *,
+        matched_misconceptions: list[Misconception],
+        triggered_misconception: Misconception | None,
+    ) -> StudentReply:
+        if triggered_misconception is None:
+            reply.triggered_misconception_id = None
+            return reply
+        if reply.intent == "answer_question":
+            reply.triggered_misconception_id = triggered_misconception.id
+        else:
+            reply.triggered_misconception_id = None
+        return reply
 
     def _parse_reply(self, raw: str) -> StudentReply:
         """从 LLM 原始输出中提取 JSON 并解析为 StudentReply。

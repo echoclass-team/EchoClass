@@ -119,7 +119,13 @@ class ClassroomGraph:
         async def call(action: StudentAction) -> StudentReply:
             persona = self._find_student(state["students"], action.speaker_id)
             history = [f"{m.role}:{m.content}" for m in state["transcript"][-12:]]
-            context = ClassroomContext(subject=state["lesson_meta"].subject, topic=state["lesson_meta"].topic, history=history)
+            context = ClassroomContext(
+                subject=state["lesson_meta"].subject,
+                topic=state["lesson_meta"].topic,
+                history=history,
+                key_points=state["lesson_meta"].key_points,
+                difficult_points=state["lesson_meta"].difficult_points,
+            )
             agent = self.student_agent_factory(llm=self.llm, persona=persona, context=context, stage=state["stage"])
             return await agent.respond(state["last_teacher_utterance"] or "")
         self._student_replies = await asyncio.gather(*(call(a) for a in speak_actions)) if speak_actions else []
@@ -166,7 +172,19 @@ class ClassroomGraph:
         state["pending_events"].append(self._next_event(state, StudentReplyStartEvent, reply_id=reply_id, speaker_id=reply.speaker_id, intent=reply.intent, emotion=reply.emotion, trigger="teacher_prompt", started_at=now))
         for i in range(0, len(reply.content), self.chunk_size):
             state["pending_events"].append(self._next_event(state, StudentReplyChunkEvent, reply_id=reply_id, speaker_id=reply.speaker_id, delta=reply.content[i : i + self.chunk_size], chunk_seq=i // self.chunk_size))
-        state["pending_events"].append(self._next_event(state, StudentReplyEndEvent, reply_id=reply_id, speaker_id=reply.speaker_id, full_content=reply.content, intent=reply.intent, emotion=reply.emotion, ended_at=datetime.now(timezone.utc)))
+        state["pending_events"].append(
+            self._next_event(
+                state,
+                StudentReplyEndEvent,
+                reply_id=reply_id,
+                speaker_id=reply.speaker_id,
+                full_content=reply.content,
+                intent=reply.intent,
+                emotion=reply.emotion,
+                ended_at=datetime.now(timezone.utc),
+                triggered_misconception_id=reply.triggered_misconception_id,
+            )
+        )
 
     def _mark_taught_points(self, state: ClassroomState, text: str) -> None:
         for point in state["lesson_meta"].key_points:
