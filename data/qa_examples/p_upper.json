@@ -1,0 +1,82 @@
+{
+  "stage_id": "p_upper",
+  "stage_name": "小学高年级",
+  "ask_examples": [
+    {
+      "persona_tag": "thinker",
+      "topic": "平行四边形的面积",
+      "key_points": ["平行四边形面积公式 S=ah", "通过割补转化为长方形"],
+      "questions": [
+        {
+          "content": "老师，我有点搞不懂——为什么沿着高剪一刀拼成长方形以后，长就是底，宽就是高？我感觉宽好像是斜着那条边……",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "通过割补转化为长方形",
+          "linked_misconception_id": "math_p_upper_parallelogram_area_01",
+          "rationale": "我把'宽'和'倾斜的那条边'混了，没想清楚长方形的宽必须垂直于长。"
+        },
+        {
+          "content": "那如果是任意一个四边形，是不是都能用 S=ah？还是只有平行四边形可以？",
+          "category": "challenge_example",
+          "difficulty": "hard",
+          "linked_key_point": "平行四边形面积公式 S=ah",
+          "linked_misconception_id": null,
+          "rationale": "我担心自己只是死记公式，想找个反例确认前提条件。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "anxious",
+      "topic": "分数除法",
+      "key_points": ["除以一个数等于乘它的倒数", "0 不能做除数"],
+      "questions": [
+        {
+          "content": "老师……那个除以一个分数要变成乘倒数，我背是背下来了，但是我考试时老是写错……到底为什么要这样啊，万一考试题变了一点我又要挂了。",
+          "category": "clarify_concept",
+          "difficulty": "medium",
+          "linked_key_point": "除以一个数等于乘它的倒数",
+          "linked_misconception_id": null,
+          "rationale": "我成绩焦虑，靠死记公式没有理解，担心考试变形题就崩。"
+        },
+        {
+          "content": "老师，那 0 除以分数行不行啊？我刚才做题时不敢写……",
+          "category": "challenge_example",
+          "difficulty": "easy",
+          "linked_key_point": "0 不能做除数",
+          "linked_misconception_id": null,
+          "rationale": "我对'0 不能做除数'这条规则记反了，担心 0 在分子位置是不是也不行。"
+        }
+      ]
+    }
+  ],
+  "chat_examples": [
+    {
+      "persona_tag": "thinker",
+      "scenario": "爱思考的高年级生卡在'宽=高'的几何直觉，老师用方格纸演示后他还要追问反例边界。",
+      "initial_question": "为啥拼成长方形后，宽就是高？",
+      "turns": [
+        {"role": "teacher", "content": "你想想看：长方形的宽必须**垂直于长**，对吧？我们沿着高剪开拼上去，被拼到上面那条边是不是就是原来的高？"},
+        {"role": "student", "content": "嗯……我画一下……哦对，是垂直的那条。所以宽必须是高，不能是斜边对吗？", "self_resolved": false},
+        {"role": "teacher", "content": "完全正确。斜边比高长，所以斜边乘底会比真实面积大。"},
+        {"role": "student", "content": "那如果平行四边形是个矩形（高就是斜边），是不是高跟斜边重合就刚好相等？这种情况下用斜边乘底也对吗？", "self_resolved": false},
+        {"role": "teacher", "content": "好问题！如果是矩形，斜边其实就是高本身（因为它和底垂直），所以两者等价。一般的平行四边形不行。"},
+        {"role": "student", "content": "原来如此，矩形是个特殊的平行四边形，所以两个公式自然吻合。我懂了。\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "anxious",
+      "scenario": "焦虑型学生死记倒数规则，老师用具体例子+几何意义引导，要安抚她的焦虑情绪。",
+      "initial_question": "为啥除以分数要变成乘倒数啊我老忘……",
+      "turns": [
+        {"role": "teacher", "content": "别紧张，我们一起想想为什么。6 ÷ 2 等于几？"},
+        {"role": "student", "content": "等于 3……老师这跟分数有什么关系？我现在就是反应不过来……", "self_resolved": false},
+        {"role": "teacher", "content": "继续，6 里面有几个 2？"},
+        {"role": "student", "content": "有 3 个 2。", "self_resolved": false},
+        {"role": "teacher", "content": "对，除法就是问'里面有几个'。那 6 ÷ 1/2 就是问 6 里面有几个 1/2，每个整数里有 2 个 1/2，6 个整数就有 12 个 1/2，是不是等于 6 × 2？"},
+        {"role": "student", "content": "啊——我好像有点感觉了，因为分母是 2 表示分两半，所以一个整体能分出 2 份……所以乘 2 其实就是数有几份？", "self_resolved": false},
+        {"role": "teacher", "content": "对！所以除以 1/2 就等于乘 2，乘的就是它的倒数。这下变形题来了你也能想出来。"},
+        {"role": "student", "content": "嗯！我理解了，这次记得不是死背是知道为啥了。\n[懂了]", "self_resolved": true}
+      ]
+    }
+  ]
+}

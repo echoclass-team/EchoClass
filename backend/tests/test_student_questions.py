@@ -297,3 +297,178 @@ async def test_generate_questions_count_zero_returns_empty() -> None:
     questions = await agent.generate_questions(_lesson(), count=0)
     assert questions == []
     llm.chat.assert_not_called()
+
+
+# ====================================================== self-check 路径
+
+
+def _make_mock_llm_seq(responses: list[str]) -> LLMClient:
+    """按调用顺序返回不同响应文本的 mock LLM。
+
+    第 N 次 ``chat`` 调用返回 ``responses[N]``；超出长度后重复最后一条。
+    """
+    seq = list(responses)
+
+    async def fake_chat(*args, **kwargs):  # noqa: ANN001 - mock signature
+        text = seq.pop(0) if len(seq) > 1 else seq[0]
+        msg = MagicMock()
+        msg.content = text
+        choice = MagicMock()
+        choice.message = msg
+        resp = MagicMock()
+        resp.choices = [choice]
+        resp.usage = None
+        return resp
+
+    client = MagicMock(spec=LLMClient)
+    client.chat = AsyncMock(side_effect=fake_chat)
+    return client
+
+
+async def test_self_check_assigns_scores_and_filters_low() -> None:
+    """self-check 应给每条候选写 self_score；keep=false 或 score<40 的被剔除。"""
+    candidates_payload: list[dict[str, Any]] = [
+        {
+            "content": "高质量问题 A",
+            "category": "clarify_concept",
+            "difficulty": "easy",
+        },
+        {
+            "content": "高质量问题 B",
+            "category": "challenge_example",
+            "difficulty": "medium",
+        },
+        {"content": "低质量问题 C", "category": "off_topic", "difficulty": "easy"},
+    ]
+    verdicts = [
+        {"index": 0, "score": 88, "keep": True, "reason": "贴人设"},
+        {"index": 1, "score": 82, "keep": True, "reason": "深思考"},
+        {"index": 2, "score": 25, "keep": False, "reason": "完全跑偏"},
+    ]
+    llm = _make_mock_llm_seq(
+        [
+            json.dumps(candidates_payload, ensure_ascii=False),
+            json.dumps(verdicts, ensure_ascii=False),
+        ]
+    )
+    agent = _make_agent(llm)
+
+    questions = await agent.generate_questions(
+        _lesson(), count=3, overshoot=0, self_check=True
+    )
+
+    assert len(questions) == 2  # 第三条被 keep=false 剔除
+    contents = {q.content for q in questions}
+    assert "高质量问题 A" in contents
+    assert "高质量问题 B" in contents
+    assert "低质量问题 C" not in contents
+    # self_score 都已写入
+    assert all(q.self_score is not None for q in questions)
+
+
+async def test_self_check_diverse_selection_prefers_unique_categories() -> None:
+    """多样性筛选：相同 category 的候选只先取一个，给其他 category 留位置。"""
+    candidates_payload: list[dict[str, Any]] = [
+        {
+            "content": "Q0 clarify-高分",
+            "category": "clarify_concept",
+            "difficulty": "easy",
+        },
+        {
+            "content": "Q1 clarify-高分",
+            "category": "clarify_concept",
+            "difficulty": "easy",
+        },
+        {
+            "content": "Q2 challenge-中分",
+            "category": "challenge_example",
+            "difficulty": "hard",
+        },
+    ]
+    verdicts = [
+        {"index": 0, "score": 95, "keep": True, "reason": ""},
+        {"index": 1, "score": 92, "keep": True, "reason": ""},
+        {"index": 2, "score": 70, "keep": True, "reason": ""},
+    ]
+    llm = _make_mock_llm_seq(
+        [
+            json.dumps(candidates_payload, ensure_ascii=False),
+            json.dumps(verdicts, ensure_ascii=False),
+        ]
+    )
+    agent = _make_agent(llm)
+
+    # overshoot=1 让 target_count=3，3 条候选都进筛选阶段
+    questions = await agent.generate_questions(
+        _lesson(), count=2, overshoot=1, self_check=True
+    )
+
+    assert len(questions) == 2
+    cats = [q.category for q in questions]
+    assert cats == ["clarify_concept", "challenge_example"], (
+        "类别多样性应优先于单一类别拿满"
+    )
+
+
+async def test_self_check_fallback_when_verdicts_invalid() -> None:
+    """self-check 输出无效 JSON 时降级，仍返回 count 个候选（无 self_score）。"""
+    candidates_payload: list[dict[str, Any]] = [
+        {"content": "Q0", "category": "clarify_concept", "difficulty": "easy"},
+        {"content": "Q1", "category": "challenge_example", "difficulty": "medium"},
+    ]
+    llm = _make_mock_llm_seq(
+        [
+            json.dumps(candidates_payload, ensure_ascii=False),
+            "我无法评分",  # self-check 阶段输出无效 JSON
+        ]
+    )
+    agent = _make_agent(llm)
+
+    questions = await agent.generate_questions(
+        _lesson(), count=2, overshoot=0, self_check=True
+    )
+
+    assert len(questions) == 2
+    # self-check 失败降级，self_score 应未被写入
+    assert all(q.self_score is None for q in questions)
+
+
+async def test_self_check_disabled_skips_second_llm_call() -> None:
+    """self_check=False 时方法只调一次 LLM。"""
+    candidates_payload: list[dict[str, Any]] = [
+        {"content": "Q0", "category": "clarify_concept", "difficulty": "easy"},
+        {"content": "Q1", "category": "extend_topic", "difficulty": "medium"},
+    ]
+    llm = _make_mock_llm_seq([json.dumps(candidates_payload, ensure_ascii=False)])
+    agent = _make_agent(llm)
+
+    questions = await agent.generate_questions(_lesson(), count=2, self_check=False)
+
+    assert len(questions) == 2
+    assert llm.chat.await_count == 1
+
+
+async def test_self_check_keeps_at_least_one_when_all_rejected() -> None:
+    """self-check 把所有候选都标 keep=false 时，应至少保留 1 条最高分避免 0 候选。"""
+    candidates_payload: list[dict[str, Any]] = [
+        {"content": "Q0", "category": "clarify_concept", "difficulty": "easy"},
+        {"content": "Q1", "category": "challenge_example", "difficulty": "medium"},
+    ]
+    verdicts = [
+        {"index": 0, "score": 30, "keep": False, "reason": ""},
+        {"index": 1, "score": 35, "keep": False, "reason": ""},
+    ]
+    llm = _make_mock_llm_seq(
+        [
+            json.dumps(candidates_payload, ensure_ascii=False),
+            json.dumps(verdicts, ensure_ascii=False),
+        ]
+    )
+    agent = _make_agent(llm)
+
+    questions = await agent.generate_questions(
+        _lesson(), count=2, overshoot=0, self_check=True
+    )
+
+    assert len(questions) == 1
+    assert questions[0].content == "Q1"  # 35 > 30，最高分保留

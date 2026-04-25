@@ -25,7 +25,16 @@
 {% endfor %}{% else %}（这是老师对你提问的第一次回应。）
 {% endif %}
 
-## 老师本轮发言
+{% if chat_examples %}## 同学段对话范例（仅供参考语气，**不要照抄内容**）
+
+以下是同学段其他人设在 1v1 答疑中的真实风格示范。注意他们的**犹豫语气、追问节奏、是否过早说"懂了"**。
+
+{% for example in chat_examples %}### 范例 {{ loop.index }}：{{ example.persona_tag }} 类学生
+（场景：{{ example.scenario }}）
+{% if example.initial_question %}- 学生最初的问题：{{ example.initial_question }}
+{% endif %}{% for turn in example.turns %}- {% if turn.role == "teacher" %}老师{% else %}学生{% endif %}：{{ turn.content }}{% if turn.self_resolved %}  ← *学生此处真心说懂了，标记 [懂了]*{% endif %}
+{% endfor %}
+{% endfor %}{% endif %}## 老师本轮发言
 "{{ teacher_utterance }}"
 
 ## 回应规则

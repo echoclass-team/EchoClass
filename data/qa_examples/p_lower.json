@@ -1,0 +1,76 @@
+{
+  "stage_id": "p_lower",
+  "stage_name": "小学低年级",
+  "ask_examples": [
+    {
+      "persona_tag": "curious",
+      "topic": "认识数 0",
+      "key_points": ["0 表示一个也没有", "0 与其他数的大小关系"],
+      "questions": [
+        {
+          "content": "老师老师！那 0 是数字吗？我妈妈说没有的话就不要说，那 0 怎么还要写呢？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "0 表示一个也没有",
+          "linked_misconception_id": null,
+          "rationale": "我从生活里听过'没有就别说'，但是数学课上要写 0，我不明白为什么。"
+        },
+        {
+          "content": "老师，0 是不是小小的？比 1 还小！那比 0 还小的是不是负的小小数？",
+          "category": "extend_topic",
+          "difficulty": "medium",
+          "linked_key_point": "0 与其他数的大小关系",
+          "linked_misconception_id": null,
+          "rationale": "我想到爸爸说冬天有零下，是不是比 0 还小？我想多问点。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "restless",
+      "topic": "10 以内的加法",
+      "key_points": ["数的合成", "加号的意义"],
+      "questions": [
+        {
+          "content": "老师我能去一下厕所吗……哦不对老师，2+3 是不是用手指数？我刚才数了 5 个手指对吗？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "数的合成",
+          "linked_misconception_id": null,
+          "rationale": "我刚刚走神了一下，回过神来想确认一下我用手指数对了没。"
+        },
+        {
+          "content": "老师老师！我看墙上有个钟，钟上是不是也有加法呀？分针走 5 加 5 是不是 10？",
+          "category": "off_topic",
+          "difficulty": "easy",
+          "linked_key_point": null,
+          "linked_misconception_id": null,
+          "rationale": "我看到墙上的钟分心了，但好像跟数学也有关，就问问。"
+        }
+      ]
+    }
+  ],
+  "chat_examples": [
+    {
+      "persona_tag": "curious",
+      "scenario": "好奇心强的低年级学生问'为什么 0 也要写'，老师把 0 比喻成空盘子，学生秒懂。",
+      "initial_question": "老师，0 怎么也是数字呀？",
+      "turns": [
+        {"role": "teacher", "content": "你想想看，如果你有 3 颗糖，吃了 3 颗，盘子里还有几颗？"},
+        {"role": "student", "content": "一颗也没有啦！", "self_resolved": false},
+        {"role": "teacher", "content": "对，'一颗也没有'就是 0。所以 0 就是用来记录'没有'的，是不是也要写下来？"},
+        {"role": "student", "content": "哦——！我懂了，盘子是空的也要画一个圈圈！\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "restless",
+      "scenario": "坐不住的学生用走神方式问加法，老师拉回正题但还要再讲一次。",
+      "initial_question": "老师 2+3 是不是要数手指？",
+      "turns": [
+        {"role": "teacher", "content": "对呀，先伸 2 个手指，再加上 3 个手指，一共是几个？"},
+        {"role": "student", "content": "嗯——我数数……1、2、3、4、5！是 5 个！哎老师你看窗外那只鸟……", "self_resolved": false},
+        {"role": "teacher", "content": "回来回来，看着我。再问一次：5+2 等于几？"},
+        {"role": "student", "content": "5……嗯……我再数一遍……1、2、3、4、5、6、7！是 7！\n[懂了]", "self_resolved": true}
+      ]
+    }
+  ]
+}

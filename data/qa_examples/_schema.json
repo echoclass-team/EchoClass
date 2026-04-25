@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QAExampleSet",
+  "description": "按学段维护的 few-shot 示例集合，供 student_ask.j2 / student_chat.j2 注入。",
+  "type": "object",
+  "required": ["stage_id", "stage_name", "ask_examples", "chat_examples"],
+  "properties": {
+    "stage_id": {"type": "string", "description": "学段 id，对应 data/stage_profiles/*.json"},
+    "stage_name": {"type": "string"},
+    "ask_examples": {
+      "type": "array",
+      "description": "学生提问范例，每条要展示一个 persona 类型的真实口吻。",
+      "items": {
+        "type": "object",
+        "required": ["persona_tag", "topic", "questions"],
+        "properties": {
+          "persona_tag": {
+            "type": "string",
+            "description": "范例对应的人设类型，如 weak / xueba / distracted / introvert"
+          },
+          "topic": {"type": "string", "description": "范例使用的课题（仅用于 prompt 上下文）"},
+          "key_points": {"type": "array", "items": {"type": "string"}},
+          "questions": {
+            "type": "array",
+            "description": "该 persona 的 2-3 个范例问题，覆盖不同 category。",
+            "items": {
+              "type": "object",
+              "required": ["content", "category", "difficulty", "rationale"],
+              "properties": {
+                "content": {"type": "string"},
+                "category": {
+                  "type": "string",
+                  "enum": ["clarify_concept", "challenge_example", "extend_topic", "off_topic", "stuck_misconception"]
+                },
+                "difficulty": {"type": "string", "enum": ["easy", "medium", "hard"]},
+                "linked_key_point": {"type": ["string", "null"]},
+                "linked_misconception_id": {"type": ["string", "null"]},
+                "rationale": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "chat_examples": {
+      "type": "array",
+      "description": "1v1 对话回应范例。每条展示一个学生在收到老师讲解后会怎么自然回应。",
+      "items": {
+        "type": "object",
+        "required": ["persona_tag", "scenario", "turns"],
+        "properties": {
+          "persona_tag": {"type": "string"},
+          "scenario": {
+            "type": "string",
+            "description": "简短场景说明，比如 '薄弱生卡在迷思，老师第一次解释还没击中'"
+          },
+          "initial_question": {"type": "string", "description": "学生最初的问题（可选）"},
+          "turns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["role", "content"],
+              "properties": {
+                "role": {"type": "string", "enum": ["teacher", "student"]},
+                "content": {"type": "string"},
+                "self_resolved": {"type": "boolean", "description": "学生回应末尾是否带 [懂了]"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

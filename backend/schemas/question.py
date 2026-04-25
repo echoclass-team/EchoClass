@@ -19,11 +19,11 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 QuestionCategory = Literal[
-    "clarify_concept",     # 澄清概念："老师，XXX 是什么意思？"
-    "challenge_example",   # 反例挑战："那如果是 XXX 这种情况呢？"
-    "extend_topic",        # 拓展联想："那这个跟 XXX 有什么关系？"
-    "off_topic",           # 跑题："老师，下课能玩游戏吗？"
-    "stuck_misconception", # 卡在迷思："我觉得应该是 XXX，对吗？"（含错误前提）
+    "clarify_concept",  # 澄清概念："老师，XXX 是什么意思？"
+    "challenge_example",  # 反例挑战："那如果是 XXX 这种情况呢？"
+    "extend_topic",  # 拓展联想："那这个跟 XXX 有什么关系？"
+    "off_topic",  # 跑题："老师，下课能玩游戏吗？"
+    "stuck_misconception",  # 卡在迷思："我觉得应该是 XXX，对吗？"（含错误前提）
 ]
 
 QuestionDifficulty = Literal["easy", "medium", "hard"]
@@ -49,4 +49,14 @@ class StudentQuestion(BaseModel):
     rationale: str = Field(
         default="",
         description="学生内心 OS：为什么会这样问。仅供后端评估，不展示给师范生。",
+    )
+    self_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=100.0,
+        description=(
+            "二阶段 self-check 给本问题的综合评分（0-100）。"
+            "由 ``StudentAgent`` 在生成后再调一次 LLM 自评得到，"
+            "用于按质量排序与多样性筛选。未跑 self-check 时为 None。"
+        ),
     )

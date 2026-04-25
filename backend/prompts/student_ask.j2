@@ -52,7 +52,27 @@
 6. **标注 linked_misconception_id**：仅当 category 是 `stuck_misconception` 或 `challenge_example` 且确实关联到上面迷思列表时填该 id，否则填 null。
 7. **rationale 是你的内心 OS**：为什么会这么问？例如"我从生活经验觉得分一半就是二分之一，不知道要严格相等"。这部分**不会**给老师看，只是后端记录用。
 
-## 输出格式
+{% if ask_examples %}## 同学段范例（仅供参考语气和粒度，**不要照抄**）
+
+以下是同学段其他人设的提问示范。请注意他们的**口语化程度、是否带犹豫语气、是否真实关联教案重点**。你不要复制内容，只学习风格与质量。
+
+{% for example in ask_examples %}### 范例 {{ loop.index }}：{{ example.persona_tag }} 类学生
+（场景：{{ example.topic }}{% if example.key_points %}；重点 {{ example.key_points | join("、") }}{% endif %}）
+
+```json
+[
+{% for q in example.questions %}  {
+    "content": {{ q.content | tojson }},
+    "category": "{{ q.category }}",
+    "difficulty": "{{ q.difficulty }}",
+    "linked_key_point": {{ (q.linked_key_point | tojson) if q.linked_key_point else "null" }},
+    "linked_misconception_id": {{ (q.linked_misconception_id | tojson) if q.linked_misconception_id else "null" }},
+    "rationale": {{ q.rationale | tojson }}
+  }{% if not loop.last %},{% endif %}
+{% endfor %}]
+```
+
+{% endfor %}{% endif %}## 输出格式
 
 只输出一个 JSON 数组，**不要**加 ```json``` 包裹，**不要**加任何解释。每个元素：
 

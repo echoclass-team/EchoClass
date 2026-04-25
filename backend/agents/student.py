@@ -42,6 +42,11 @@ from jinja2 import Environment, FileSystemLoader
 
 from llm.client import LLMClient
 from rag.misconceptions import load_misconceptions, match_misconceptions
+from rag.qa_examples import (
+    load_qa_examples,
+    select_ask_examples,
+    select_chat_examples,
+)
 from schemas.dialog import DialogMessage, DialogReplyResult
 from schemas.lesson import LessonMeta
 from schemas.misconception import Misconception
@@ -88,6 +93,7 @@ class StudentAgent:
         temperature: float = 0.8,
         misconceptions: list[Misconception] | None = None,
         misconceptions_dir: str | Path | None = None,
+        qa_examples_dir: str | Path | None = None,
         rng: random.Random | None = None,
     ) -> None:
         self.llm = llm
@@ -99,9 +105,11 @@ class StudentAgent:
             if misconceptions is not None
             else load_misconceptions(misconceptions_dir)
         )
+        self.qa_examples_dir = qa_examples_dir
         self.rng = rng or random.Random()
         self._ask_template = _jinja_env.get_template("student_ask.j2")
         self._chat_template = _jinja_env.get_template("student_chat.j2")
+        self._check_template = _jinja_env.get_template("student_check.j2")
 
     # =========================================================== public
 
@@ -110,43 +118,59 @@ class StudentAgent:
         lesson_meta: LessonMeta,
         *,
         count: int = 3,
+        overshoot: int = 3,
+        self_check: bool = True,
     ) -> list[StudentQuestion]:
-        """根据教案 + 自身人设生成一组学生想问的问题。
+        """根据教案 + 自身人设生成一组学生想问的问题（宽生成 + self-check + 多样性筛选）。
 
-        典型用法（在 1v1 答疑陪练入口）::
+        流程（详见 docs/PIVOT.md M1 阶段）::
 
-            qs = await agent.generate_questions(lesson_meta, count=3)
-            for q in qs:
-                print(q.category, q.difficulty, q.content)
+            1. 第一次 LLM：用 student_ask.j2 生成 count + overshoot 个候选
+            2. 解析校验为 list[StudentQuestion]
+            3. 第二次 LLM（可选）：用 student_check.j2 让 agent 自评每条候选
+            4. 类别多样性 + 自评分综合排序，取 top count
 
         Parameters
         ----------
         lesson_meta : LessonMeta
-            已解析的教案元数据（含 subject / topic / key_points / difficult_points）。
+            已解析的教案元数据。
         count : int
-            希望生成几个问题，默认 3。LLM 实际产出可能多/少，方法内会裁剪到 ≤count。
+            最终返回的问题数量。
+        overshoot : int
+            宽生成时多生成 overshoot 个候选，给 self-check 留挑选空间。
+            建议 ≥ 2，越大质量越高但 LLM 成本越高。
+        self_check : bool
+            是否启用二阶段 self-check。关闭时方法只走第一次 LLM 调用，
+            返回前 ``count`` 个合法候选（行为同 M1 之前）。
 
         Returns
         -------
         list[StudentQuestion]
-            每个问题已带稳定的 ``id``（uuid4）、``speaker_id``、``speaker_name``。
-            非法的 category / difficulty / linked_misconception_id 会被规范化或剔除。
+            带 ``id`` / ``speaker_id`` / ``speaker_name`` 的合法问题；启用 self_check
+            时同时填充 ``self_score``。返回顺序按"类别多样性 + self_score 降序"排列。
         """
         if count < 1:
             return []
 
+        # ---- 第一阶段：宽生成
         ctx = self._lesson_to_context(lesson_meta)
         matched = self._match_misconceptions_for_lesson(ctx)
+        ask_examples = self._select_ask_examples()
+        target_count = count + max(overshoot, 0) if self_check else count
         prompt = self._ask_template.render(
             persona=self.persona,
             stage=self.stage,
             context=ctx,
             matched_misconceptions=matched,
-            question_count=count,
+            question_count=target_count,
+            ask_examples=ask_examples,
         )
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": prompt},
-            {"role": "user", "content": "请输出 JSON 数组。"},
+            {
+                "role": "user",
+                "content": f"请输出 {target_count} 个候选问题的 JSON 数组。",
+            },
         ]
         resp = await self.llm.chat(messages, temperature=self.temperature)
         raw = resp.choices[0].message.content or ""
@@ -154,8 +178,8 @@ class StudentAgent:
 
         items = self._parse_question_array(raw)
         valid_misconception_ids = {m.id for m in matched}
-        questions: list[StudentQuestion] = []
-        for item in items[:count]:
+        candidates: list[StudentQuestion] = []
+        for item in items[:target_count]:
             try:
                 question = self._build_question(
                     item,
@@ -170,8 +194,23 @@ class StudentAgent:
                     exc,
                 )
                 continue
-            questions.append(question)
-        return questions
+            candidates.append(question)
+
+        if not candidates:
+            return []
+
+        # ---- 第二阶段：self-check（可选）
+        if self_check and len(candidates) > 1:
+            try:
+                await self._apply_self_check(candidates, ctx)
+            except Exception as exc:  # noqa: BLE001 - self-check 失败应降级而非拖累生成
+                logger.warning(
+                    "StudentAgent.generate_questions self-check failed (%s); fallback to no-score order",
+                    exc,
+                )
+
+        # ---- 多样性筛选 + 排序
+        return self._select_diverse(candidates, count=count)
 
     async def respond_in_dialog(
         self,
@@ -201,12 +240,14 @@ class StudentAgent:
         DialogReplyResult
             ``content`` 已剥离 ``[懂了]`` 标记，``self_resolved`` 反映该标记是否出现。
         """
+        chat_examples = self._select_chat_examples()
         prompt = self._chat_template.render(
             persona=self.persona,
             stage=self.stage,
             question=question,
             dialog_history=dialog_history or [],
             teacher_utterance=teacher_utterance,
+            chat_examples=chat_examples,
         )
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": prompt},
@@ -227,6 +268,36 @@ class StudentAgent:
             history=[],
             key_points=list(lesson_meta.key_points),
             difficult_points=list(lesson_meta.difficult_points),
+        )
+
+    def _resolve_stage_id(self) -> str:
+        """优先使用 self.stage.id，否则回退到 persona.stage_id。"""
+        return self.stage.id if self.stage is not None else self.persona.stage_id
+
+    def _select_ask_examples(self):
+        """加载并按当前 persona 挑选 ask 类 few-shot；学段缺失则返回空列表。"""
+        stage_id = self._resolve_stage_id()
+        if not stage_id:
+            return []
+        examples = load_qa_examples(stage_id, self.qa_examples_dir)
+        return select_ask_examples(
+            examples,
+            persona_level=self.persona.effective_level,
+            persona_tag_hint="",
+            max_count=2,
+        )
+
+    def _select_chat_examples(self):
+        """加载并按当前 persona 挑选 chat 类 few-shot；学段缺失则返回空列表。"""
+        stage_id = self._resolve_stage_id()
+        if not stage_id:
+            return []
+        examples = load_qa_examples(stage_id, self.qa_examples_dir)
+        return select_chat_examples(
+            examples,
+            persona_level=self.persona.effective_level,
+            persona_tag_hint="",
+            max_count=1,
         )
 
     def _match_misconceptions_for_lesson(
@@ -335,3 +406,126 @@ class StudentAgent:
         if not text:
             text = "……"
         return DialogReplyResult(content=text, self_resolved=self_resolved, raw=raw)
+
+    # ----------------------------------------------------- self-check helpers
+
+    async def _apply_self_check(
+        self,
+        candidates: list[StudentQuestion],
+        ctx: ClassroomContext,
+    ) -> None:
+        """让 agent 第二次调 LLM 自评 candidates，原地写回 ``self_score`` 并剔除 keep=false。
+
+        失败时调用方会捕获异常并降级——保留原顺序、不写 self_score。
+        本方法**就地修改** candidates（删掉 keep=false 的元素，并设置 self_score）。
+        """
+        prompt = self._check_template.render(
+            persona=self.persona,
+            stage=self.stage,
+            context=ctx,
+            candidates=candidates,
+        )
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": "请输出 JSON 数组。"},
+        ]
+        # self-check 期望更稳定的判断，温度可低些，但仍需保留多样性
+        resp = await self.llm.chat(
+            messages, temperature=max(0.2, self.temperature - 0.3)
+        )
+        raw = resp.choices[0].message.content or ""
+        logger.debug("StudentAgent.self_check raw: %s", raw)
+
+        verdicts = self._parse_self_check_array(raw, expected_len=len(candidates))
+        if not verdicts:
+            logger.warning("self-check 未返回有效 verdicts，降级保留全部 candidates")
+            return
+
+        # index → verdict 映射，保护后续筛选不依赖输出顺序
+        verdict_map = {v["index"]: v for v in verdicts if "index" in v}
+        kept: list[StudentQuestion] = []
+        for i, q in enumerate(candidates):
+            v = verdict_map.get(i)
+            if v is None:
+                # 缺评分的候选保留但标记为最低有效分
+                q.self_score = 50.0
+                kept.append(q)
+                continue
+            score = float(v.get("score", 50))
+            score = max(0.0, min(100.0, score))
+            q.self_score = score
+            keep_flag = v.get("keep")
+            # 显式 false 才剔除；缺省视为保留
+            if keep_flag is False or score < 40:
+                continue
+            kept.append(q)
+
+        # 至少保留 1 条避免 0 候选
+        if not kept and candidates:
+            kept = sorted(
+                candidates,
+                key=lambda q: q.self_score if q.self_score is not None else -1,
+                reverse=True,
+            )[:1]
+
+        candidates.clear()
+        candidates.extend(kept)
+
+    @staticmethod
+    def _parse_self_check_array(raw: str, expected_len: int) -> list[dict[str, Any]]:
+        """从 LLM 自评输出抽取 JSON 数组；兼容 ``` 包裹与裸数组。"""
+        match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", raw, re.DOTALL)
+        candidate = match.group(1) if match else None
+        if candidate is None:
+            match = re.search(r"\[.*\]", raw, re.DOTALL)
+            candidate = match.group(0) if match else None
+        if candidate is None:
+            return []
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            logger.warning("self-check JSON 解析失败 (%s): %s", exc, candidate[:200])
+            return []
+        if not isinstance(data, list):
+            return []
+        return [v for v in data if isinstance(v, dict)]
+
+    @staticmethod
+    def _select_diverse(
+        candidates: list[StudentQuestion],
+        *,
+        count: int,
+    ) -> list[StudentQuestion]:
+        """按"类别多样性优先 + self_score 降序"筛选 top count。
+
+        贪心策略：
+        1. 候选先按 self_score 降序排（None 视为 0）
+        2. 依次取，遇到已出现过的 category 就先跳过
+        3. 第一轮拿不满 count 时，再不限 category 取剩下高分的
+        """
+        if count <= 0 or not candidates:
+            return []
+        sorted_pool = sorted(
+            candidates,
+            key=lambda q: q.self_score if q.self_score is not None else 0.0,
+            reverse=True,
+        )
+        seen_categories: set[str] = set()
+        first_pass: list[StudentQuestion] = []
+        leftover: list[StudentQuestion] = []
+        for q in sorted_pool:
+            if len(first_pass) >= count:
+                leftover.append(q)
+                continue
+            if q.category in seen_categories:
+                leftover.append(q)
+                continue
+            first_pass.append(q)
+            seen_categories.add(q.category)
+
+        result = first_pass[:count]
+        for q in leftover:
+            if len(result) >= count:
+                break
+            result.append(q)
+        return result
