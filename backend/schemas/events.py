@@ -56,6 +56,7 @@ class StudentReplyEndEvent(BaseAgentEvent):
     intent: Intent
     emotion: str
     ended_at: datetime
+    triggered_misconception_id: str | None = None
 
 
 class BoardUpdateEvent(BaseAgentEvent):

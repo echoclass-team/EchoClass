@@ -1,0 +1,146 @@
+[
+  {
+    "id": "math_algebra_variable_11",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "字母表示数",
+    "name": "字母只能代表一个特定的数",
+    "description": "认为像 x、y 这样的字母只能代表一个固定的未知数，而不能代表一个范围或变量。",
+    "typical_error": "在函数 y=2x 中，学生认为 x 一定有一个具体的值等着去求出来。",
+    "cause": "早期解方程训练的固化，使得学生把“未知数”等同于“唯一解”，缺乏变量思维。"
+  },
+  {
+    "id": "math_algebra_negative_12",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "有理数",
+    "name": "带有负号的变量一定是负数",
+    "description": "看到代数式前面有负号（如 -a），就下意识认为它是一个负数。",
+    "typical_error": "当 a = -3 时，觉得 -a 是 -3，因为前面有负号。",
+    "cause": "视觉上的直观干扰，未能理解负号在代数式中不仅表示负数，还表示“取相反数”的运算。"
+  },
+  {
+    "id": "math_probability_gambler_14",
+    "subject": "数学",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "概率",
+    "name": "赌徒谬误",
+    "description": "认为独立事件的概率会受到之前事件发生结果的影响。",
+    "typical_error": "掷硬币已经连续出了5次正面，下一次出反面的概率肯定比正面大。",
+    "cause": "对大数定律的误解，认为概率的“平衡”会在短期的局部序列中强制实现。"
+  },
+  {
+    "id": "math_function_continuous_15",
+    "subject": "数学",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "函数的图像",
+    "name": "所有函数图像都是连续曲线",
+    "description": "认为所有函数的图像必定是一条平滑的直线或曲线，无法接受分段函数或离散点函数。",
+    "typical_error": "画 y=[x] (取整函数) 的图像时，强行把各个阶梯状的线段连起来。",
+    "cause": "初高中阶段接触的大多数初等函数都是连续函数，形成了思维定势。"
+  },
+  {
+    "id": "math_equation_extraneous_16",
+    "subject": "数学",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "分式方程与无理方程",
+    "name": "不理解增根产生的本质",
+    "description": "知道解分式方程要检验，但只把这当做一道程序，不理解去分母时扩大了未知数取值范围从而产生了增根。",
+    "typical_error": "遇到“产生增根求参数”的题目时束手无策，因为平时只知道把结果代进去算等不等于0。",
+    "cause": "教学中重解题步骤的机械训练，轻视了对方程同解变形原理的逻辑剖析。"
+  },
+  {
+    "id": "math_power_zero_17",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "整式的乘除",
+    "name": "任何数的0次方都是0",
+    "description": "认为一个数乘以0次就是0，而不是1。",
+    "typical_error": "计算 5^0 的结果时，写答案为 0。",
+    "cause": "将指数运算退化为乘法运算（如 5×0=0），没有理解指数运算法则 a^m / a^n = a^(m-n) 的推导过程。"
+  },
+  {
+    "id": "math_geometry_diagonal_18",
+    "subject": "数学",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "特殊平行四边形",
+    "name": "充分必要条件混淆",
+    "description": "认为对角线互相垂直的四边形一定是正方形或菱形，忽略了“平行四边形”这一大前提。",
+    "typical_error": "证明一个四边形是菱形时，只证了对角线互相垂直，忘了先证它是平行四边形。",
+    "cause": "记忆性质定理和判定定理时，条件遗漏，缺乏严密的逻辑演绎习惯。"
+  },
+  {
+    "id": "math_inequality_multiply_25",
+    "subject": "数学",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "不等式",
+    "name": "忽略不等式乘变量时的符号讨论",
+    "description": "在解不等式时，两边同乘或同除一个含有未知数的式子，却不讨论该式子的正负性直接保留原不等号。",
+    "typical_error": "解 1/x < 2 时，直接两边乘以 x，得到 1 < 2x。",
+    "cause": "解方程（等式两边同乘只要不为0即可）的定势思维，掩盖了不等式保向性的严苛条件。"
+  },
+  {
+    "id": "math_fraction_cancel_29",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "分式",
+    "name": "分式约分的非法操作",
+    "description": "在对含有加减法的分式进行约分时，直接划去分子分母中相同的加项，而不是提取公因式。",
+    "typical_error": "把 (a+b)/(a+c) 中的 a 上下划掉，得到结果 b/c。",
+    "cause": "对分数基本性质（分子分母同乘除非零数）的本质不理解，将“乘除操作”错误泛化为“加减部分也可以抵消”。"
+  },
+  {
+    "id": "math_geometry_altitude_08_alt_junior",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "三角形的高",
+    "name": "直角三角形没有高",
+    "description": "认为高必须是一条单独画出来的线，而不能是三角形已有的边。",
+    "typical_error": "画直角三角形的高时，只画出斜边上的高，认为直角边不是高。",
+    "cause": "对“高”的垂直定义理解不够灵活。"
+  },
+  {
+    "id": "math_arithmetic_multiply_larger_09_alt_junior",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "分数的乘法",
+    "name": "除法总是使结果变小",
+    "description": "认为一个数除以另一个数，商一定小于被除数。",
+    "typical_error": "计算 5 ÷ 0.5 时，觉得结果 10 是错的。",
+    "cause": "自然数除法经验（均分）对小数/分数除法（包含除）的阻碍。"
+  },
+  {
+    "id": "math_statistics_average_27_alt_junior",
+    "subject": "数学",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "统计学",
+    "name": "众数一定在数据的中间",
+    "description": "将众数与中位数的概念和几何位置混淆。",
+    "typical_error": "寻找众数时，先将数据排序，然后找中间那个数。",
+    "cause": "对三个集中趋势统计量的核心物理意义（频率最高 vs 位置居中）不加区分。"
+  }
+]

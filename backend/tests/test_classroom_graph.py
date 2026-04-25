@@ -38,8 +38,28 @@ class FakeStudentAgent:
         )
 
 
+class FakeMisconceptionStudentAgent:
+    def __init__(self, *, persona, context, **kwargs):
+        self.persona = persona
+        self.context = context
+
+    async def respond(self, teacher_utterance: str) -> StudentReply:
+        assert self.context.key_points == ["分数", "比较大小"]
+        return StudentReply(
+            speaker_id=self.persona.id,
+            intent="answer_question",
+            content="我觉得大小不一样也可以叫二分之一。",
+            emotion="困惑",
+            triggered_misconception_id="math_fraction_average_01",
+        )
+
+
 def fake_factory(**kwargs):
     return FakeStudentAgent(**kwargs)
+
+
+def misconception_factory(**kwargs):
+    return FakeMisconceptionStudentAgent(**kwargs)
 
 
 @pytest.fixture
@@ -198,3 +218,28 @@ def test_build_classroom_graph_returns_compiled_graph() -> None:
     graph = build_classroom_graph()
     assert graph is not None
     assert hasattr(graph, "ainvoke")
+
+
+@pytest.mark.asyncio
+async def test_student_reply_end_event_keeps_triggered_misconception_id(lesson, stage, students):
+    queue: asyncio.Queue = asyncio.Queue()
+    graph = ClassroomGraph(
+        director=FakeDirector(),
+        student_agent_factory=misconception_factory,
+        event_queue=queue,
+    )
+    state = initial_classroom_state(
+        session_id="sess-misconception",
+        lesson_meta=lesson,
+        stage=stage,
+        students=students,
+    )
+
+    await graph.run_turn(state, "什么是二分之一？")
+
+    events = []
+    while not queue.empty():
+        events.append(queue.get_nowait())
+    end_events = [event for event in events if event.type == "student_reply_end"]
+    assert end_events
+    assert end_events[0].triggered_misconception_id == "math_fraction_average_01"

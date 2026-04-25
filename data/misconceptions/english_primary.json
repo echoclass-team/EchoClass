@@ -1,0 +1,110 @@
+[
+  {
+    "id": "eng_grammar_3rdsingular_01",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "一般现在时",
+    "name": "忽略第三人称单数变化",
+    "description": "在一般现在时中，当主语是第三人称单数时，动词忘记加 s 或 es。",
+    "typical_error": "He like playing basketball.",
+    "cause": "母语（汉语）中动词没有时态和人称的屈折变化，导致学生在英语输出时频繁遗忘这一语法规则。"
+  },
+  {
+    "id": "eng_grammar_beverb_02",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "动词的用法",
+    "name": "滥用 be 动词",
+    "description": "在不需要连系动词的实义动词前随意加上 be 动词，或将 be 动词与实义动词原形连用。",
+    "typical_error": "I am agree with you. / I am come from China.",
+    "cause": "初学时对 'I am a student' 句型印象深刻，错误地将 'am' 作为 '我' 的固有搭配，或者用汉语的'是'去硬套。"
+  },
+  {
+    "id": "eng_vocabulary_chinglish_03",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "交际用语",
+    "name": "中式英语思维直译",
+    "description": "用汉语的词汇搭配和句法结构直接逐字翻译成英语，忽视英语的地道表达。",
+    "typical_error": "How to say this in English? / I very like apples.",
+    "cause": "语感未建立，习惯在脑海中先生成中文句子，再机械翻译成英文，缺乏语境词块（chunk）积累。"
+  },
+  {
+    "id": "eng_grammar_past_double_04",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "一般过去时",
+    "name": "动词过去式双写规则滥用",
+    "description": "对于不符合“重读闭音节单辅音字母结尾”的动词，也盲目双写尾字母加ed。",
+    "typical_error": "I visitedd my grandma yesterday. / He openedd the door.",
+    "cause": "对拼写规则的机械记忆，没有真正理解“重读闭音节”的发音前提条件。"
+  },
+  {
+    "id": "eng_preposition_in_on_at_06",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "介词搭配",
+    "name": "时间/地点介词 in/on/at 混用",
+    "description": "无法区分在不同时间尺度或空间维度下 in/on/at 的确切用法，经常混用。",
+    "typical_error": "I was born at 2010. / The book is in the desk (原本想表达在桌面上).",
+    "cause": "这三个介词在汉语中常常都可以翻译为“在...里/上/时”，缺乏英语空间和时间粒度的隐喻思维。"
+  },
+  {
+    "id": "eng_pronoun_case_09",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "代词的主宾格",
+    "name": "介词/动词后代词主宾格混淆",
+    "description": "在介词或动词之后，本应使用宾格代词，却错误地使用了主格代词。",
+    "typical_error": "Let I go. / This is a secret between you and I.",
+    "cause": "汉语中代词（如“我”）在句子充当主语或宾语时形态不发生变化，导致英语输出时忽视了格的屈折变化。"
+  },
+  {
+    "id": "eng_syntax_therebe_16",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "There be 句型",
+    "name": "There be 结构与 have 连用",
+    "description": "将表示“存在”的 There be 句型与表示“拥有”的动词 have/has 糅杂在一起。",
+    "typical_error": "There have a book on the desk. / There is have many people in the room.",
+    "cause": "汉语“桌子上【有】一本书”中的“有”字对应的英文词汇选择不当，未能区分存在的有和拥有的有。"
+  },
+  {
+    "id": "eng_noun_plural_irregular_22",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "名词的数",
+    "name": "不规则名词复数盲目加 s",
+    "description": "对于单复数同形或者发生内部元音变化的不规则名词，依然套用加 -s/-es 的一般规则。",
+    "typical_error": "There are many sheeps on the hill. / Three childs are playing.",
+    "cause": "规则泛化，儿童在语言习得过程中常见的“过度规则化（over-regularization）”现象。"
+  },
+  {
+    "id": "eng_syntax_verb_verb_27",
+    "subject": "英语",
+    "stage": [
+      "p_upper"
+    ],
+    "topic": "基本句型",
+    "name": "两个实义动词直接连用",
+    "description": "在一个简单句中，把两个表示动作的实义动词没有任何连接词或非谓语形式就并列在一起。",
+    "typical_error": "I like play basketball. / She go buy some food.",
+    "cause": "汉语是可以连动句（如我喜欢打篮球、她去买食物）的，英语则要求“一个句子只能有一个核心谓语”，这是两种语言最大的句法差异之一。"
+  }
+]

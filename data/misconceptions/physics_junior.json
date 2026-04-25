@@ -1,0 +1,302 @@
+[
+  {
+    "id": "physics_force_animism_01",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "力的概念",
+    "name": "泛灵论残留",
+    "description": "认为只有生物（人或动物）才能施加力，非生物没有意识所以不能施力。",
+    "typical_error": "桌子是没有生命的，所以桌子不会给书本施加支持力，只有我的手托着书本才叫施力。",
+    "cause": "儿童早期的“万物有灵论”残留，以自我感知为中心，将“用力”与“肌肉收缩”等主观感受绑定。"
+  },
+  {
+    "id": "physics_force_contact_02",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "力的作用效果",
+    "name": "接触才能受力",
+    "description": "不理解非接触力（超距力）的存在，认为物体之间必须相互接触才能发生力的作用。",
+    "typical_error": "磁铁隔着空气怎么能把铁钉吸过来呢？肯定不是因为力，力必须碰到才行。",
+    "cause": "日常生活中最常见的推、拉、提、压都是接触力，缺乏对电磁力、重力等场力的抽象认知。"
+  },
+  {
+    "id": "physics_force_oneway_03",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "力的相互作用",
+    "name": "力的作用是单向的",
+    "description": "忽略反作用力，认为只有主动方在施加力，被动方只受力不施力；或者认为大物体的力大于小物体的力。",
+    "typical_error": "鸡蛋碰石头，石头没坏鸡蛋碎了，说明石头对鸡蛋的力大，鸡蛋对石头没有力或者力很小。",
+    "cause": "将力理解为一种可以拥有和转移的属性，而非两个物体间的相互作用；容易被宏观运动效果迷惑。"
+  },
+  {
+    "id": "physics_motion_force_04",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "牛顿第一定律",
+    "name": "力是维持物体运动的原因",
+    "description": "认为物体要保持运动就必须持续受力，如果没有力作用，物体就会停下来。",
+    "typical_error": "自行车不踩就不走了，说明没有推力，物体就会静止。力就是让它动起来的原因。",
+    "cause": "亚里士多德式的日常直觉，没有将摩擦力/阻力考虑在内，无法想象理想光滑平面的情况。"
+  },
+  {
+    "id": "physics_kinematics_acceleration_05",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "加速度与速度",
+    "name": "速度大则加速度大",
+    "description": "将描述运动快慢的物理量（速度）与描述速度变化快慢的物理量（加速度）混为一谈。",
+    "typical_error": "飞机在天空中飞得那么快，它的加速度一定非常大。",
+    "cause": "对“变化率”概念的认知缺失，容易把状态量和过程量混淆。"
+  },
+  {
+    "id": "physics_buoyancy_mass_06",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "浮力",
+    "name": "浮力取决于物体的质量",
+    "description": "认为重的物体一定会沉，轻的物体一定会浮，忽略了密度和排开液体体积的作用。",
+    "typical_error": "铁块那么重肯定沉下去，木块轻所以浮起来，和体积没关系。",
+    "cause": "生活经验的简单归纳，没有建立起物体受到的浮力与其排开液体所受重力之间的定量关系（阿基米德原理）。"
+  },
+  {
+    "id": "physics_motion_inertia_07",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "惯性",
+    "name": "惯性是一种力",
+    "description": "将惯性误认为是一种维持物体运动的作用力，会随时间“消耗殆尽”。",
+    "typical_error": "扔出去的石头最终停下来，是因为它的惯性力用光了。",
+    "cause": "语言使用上的误导（如日常说“借着惯性的力量”）以及未能彻底摒弃“冲力说”。"
+  },
+  {
+    "id": "physics_thermodynamics_heat_08",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "内能与热量",
+    "name": "热量与温度混淆",
+    "description": "认为温度高的物体“含有”更多的热量，把热量当成一种可以储存在物体内部的实体（热质说）。",
+    "typical_error": "这杯开水有100度，它里面包含的热量比那杯冷水多得多。",
+    "cause": "未能区分状态量（温度、内能）和过程量（热量），热量只存在于热传递的过程中。"
+  },
+  {
+    "id": "physics_circuit_current_09",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "串联电路",
+    "name": "电流沿途消耗",
+    "description": "认为电流在流经串联电路中的各个用电器时会被“用掉”，导致后面的电流比前面的小。",
+    "typical_error": "串联电路里，第一个灯泡最亮，后面的灯泡因为电流被前面消耗了，所以变暗了。",
+    "cause": "把电流类比为水流被截流或物质被消耗，不理解电荷守恒和电路的整体稳态。"
+  },
+  {
+    "id": "physics_optics_straight_10",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "光的传播",
+    "name": "光总是绝对直线传播",
+    "description": "只记住了“光沿直线传播”，忽略了“在同种均匀介质中”这一前提条件，遇到折射现象产生认知冲突。",
+    "typical_error": "筷子插在水里看起来折断了，那是因为光在这个时候不遵守直线传播定律了。",
+    "cause": "对物理定律成立的边界条件关注不够，导致概念绝对化。"
+  },
+  {
+    "id": "physics_kinematics_displacement_11",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "位移与路程",
+    "name": "位移和路程混为一谈",
+    "description": "认为物体的位移大小就等于它运动的路程长度，不理解位移是带有方向的矢量（始末位置的有向线段）。",
+    "typical_error": "操场跑一圈400米，所以位移就是400米。",
+    "cause": "日常生活语言中“走了多远”通常指路程，掩盖了物理学中空间位置变化的矢量特征。"
+  },
+  {
+    "id": "physics_force_friction_12",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "摩擦力",
+    "name": "摩擦力一定是阻力",
+    "description": "认为摩擦力总是阻碍物体的运动，永远和物体的运动方向相反。",
+    "typical_error": "人走路时，地面给脚的摩擦力一定是向后的，因为它阻碍脚的运动。",
+    "cause": "日常经验多观察到滑动摩擦力使物体减速，未认识到静摩擦力也可以作为动力驱动物体前进。"
+  },
+  {
+    "id": "physics_work_energy_14",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "功和功率",
+    "name": "做功越多功率越大",
+    "description": "认为机器做的总功越多，其功率就越大，忽略了做功的时间因素。",
+    "typical_error": "拖拉机耕了一百亩地，轿车只开了十公里，所以拖拉机的功率比轿车大。",
+    "cause": "日常生活对“功率大（劲大）”的通俗理解，未能掌握物理中“做功快慢”的严谨定义。"
+  },
+  {
+    "id": "physics_electrostatics_charge_17",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "静电现象",
+    "name": "摩擦起电创造了电荷",
+    "description": "认为摩擦起电的过程中，是物体通过摩擦无中生有地“产生”了电荷。",
+    "typical_error": "丝绸摩擦玻璃棒，玻璃棒上本来没电，摩擦之后生成了正电荷。",
+    "cause": "宏观现象掩盖了微观本质，不了解电子在不同物体间的转移机制。"
+  },
+  {
+    "id": "physics_circuit_voltage_18",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "电压与电流",
+    "name": "无电流则无电压",
+    "description": "认为电压是由电流产生的，如果电路断开没有电流流动，电源两端就没有电压。",
+    "typical_error": "开关断开后，电池两端就没有电压了，因为它没有对外供电。",
+    "cause": "因果关系倒置，没有理解电压是形成电流的“原因”（类似水压），它客观存在于电源两端。"
+  },
+  {
+    "id": "physics_magnetism_monopole_19",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "磁现象",
+    "name": "认为存在磁单极子",
+    "description": "认为把一根条形磁铁从中间截断，就能得到一个单独的 N 极和单独的 S 极。",
+    "typical_error": "我把磁铁敲断，这一半就全是 N 极，那一半就全是 S 极。",
+    "cause": "用切断实物的日常经验去推演磁场的微观偶极子模型，缺乏分子电流假说或磁畴的观念。"
+  },
+  {
+    "id": "physics_electromagnetism_induction_20",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "电磁感应",
+    "name": "只要运动就有感应电流",
+    "description": "认为只要导体在磁场中运动，就一定能产生感应电流，忽略了“闭合回路”和“切割磁感线”两个条件。",
+    "typical_error": "一根直导线顺着磁场方向运动，或者回路没闭合时在磁场里动，也认为有感应电流。",
+    "cause": "对法拉第电磁感应定律的条件记忆不全，只记住了“动生电”的简略说法。"
+  },
+  {
+    "id": "physics_optics_real_image_21",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "透镜成像",
+    "name": "眼睛能看到的都是实像",
+    "description": "无法区分实像和虚像的物理本质，认为既然眼睛能看见，那它就是实实在在存在的“实像”。",
+    "typical_error": "照镜子看到里面有个我，我能看到它，所以平面镜成的是实像。",
+    "cause": "用日常语义中的“实在”去曲解物理学中光线实际汇聚形成“实像”的光学定义。"
+  },
+  {
+    "id": "physics_thermodynamics_temperature_22",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "物态变化",
+    "name": "沸腾时温度持续升高",
+    "description": "认为水在沸腾的过程中，只要继续加热，水的温度就会一直往上飙升。",
+    "typical_error": "水已经100度开了，再烧一会儿它就会变成120度、150度。",
+    "cause": "“加热必升温”的强经验干扰，未能理解相变过程中吸收的热量用于破坏分子间作用力而非增加动能。"
+  },
+  {
+    "id": "physics_waves_sound_25",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "声现象",
+    "name": "声音在真空中也能传播",
+    "description": "认为声音就像光一样，不需要任何介质就可以在宇宙太空中传播。",
+    "typical_error": "星球大战电影里飞船爆炸在太空中会发出巨大的轰隆声，这是符合科学的。",
+    "cause": "科幻影视作品的误导，未能深刻理解机械波的本质是介质中粒子的集体振动。"
+  },
+  {
+    "id": "physics_optics_color_28",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "光的色彩",
+    "name": "物体的颜色是它自身发出的",
+    "description": "认为不透明物体具有某种颜色，是因为它内部“含有”这种颜色的光并散发出来。",
+    "typical_error": "红色的衣服之所以是红色，是因为衣服本身会发红光。",
+    "cause": "未能理解不透明物体的颜色是由它反射的色光决定的这一光学机制。"
+  },
+  {
+    "id": "physics_circuit_short_29",
+    "subject": "物理",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "电路故障",
+    "name": "短路只是灯不亮，没有危险",
+    "description": "认为电源被短路后，只是用电器不工作了，不会产生任何严重后果。",
+    "typical_error": "用一根导线把电池两端直接连起来也没事，顶多就是接在旁边的灯泡不亮了。",
+    "cause": "缺乏对欧姆定律 I=U/R 在极端情况（R趋近于0）下的灾难性后果（电流激增发热）的定量评估。"
+  },
+  {
+    "id": "physics_force_oneway_03_alt_junior",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "力的相互作用",
+    "name": "速度快的物体受到的力更大",
+    "description": "认为物体运动的速度大小直接反映了它受力的大小。",
+    "typical_error": "两车相撞，开得快的车受到的撞击力更大。",
+    "cause": "将日常生活中的“冲力”感受与牛顿第三定律相悖。"
+  },
+  {
+    "id": "physics_motion_force_04_alt_junior",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "牛顿第一定律",
+    "name": "没有力物体就会停下来",
+    "description": "典型的亚里士多德式错误，认为力是维持物体运动的原因。",
+    "typical_error": "推桌子桌子才走，不推就停了，说明运动需要力。",
+    "cause": "生活经验中摩擦力无处不在的干扰。"
+  },
+  {
+    "id": "physics_motion_inertia_07_alt_junior",
+    "subject": "物理",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "惯性",
+    "name": "质量越小物体的惯性越大",
+    "description": "反向直觉，认为轻的东西容易被推得动，所以它的“惯性”大。",
+    "typical_error": "乒乓球很容易改变方向，所以它的惯性比铅球大。",
+    "cause": "对惯性概念（维持原来运动状态的性质）的彻底反面理解。"
+  }
+]

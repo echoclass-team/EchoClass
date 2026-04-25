@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import random
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -15,6 +16,7 @@ import pytest
 
 from agents.student import StudentAgent
 from llm.client import LLMClient
+from schemas.misconception import Misconception
 from schemas.student import ClassroomContext, Intent, Persona, StudentReply
 
 # ============================================================ Fixtures
@@ -157,6 +159,19 @@ def _make_agent(mock_llm: LLMClient, persona: Persona) -> StudentAgent:
     return StudentAgent(llm=mock_llm, persona=persona, context=ctx)
 
 
+def _fraction_misconception() -> Misconception:
+    return Misconception(
+        id="math_fraction_average_01",
+        subject="数学",
+        stage=["p_middle"],
+        topic="分数的初步认识",
+        name="不理解平均分",
+        description="忽略平均分前提",
+        typical_error="大小不一样也可以叫二分之一",
+        cause="生活经验中的一半不要求严格等大",
+    )
+
+
 # ============================================================ Tests
 
 
@@ -253,6 +268,145 @@ async def test_prompt_contains_persona_and_context(
 
     # user message 是老师发言
     assert messages[1]["content"] == utterance
+
+
+async def test_prompt_contains_matched_misconception_details() -> None:
+    """prompt 应包含匹配迷思的 id、typical_error、cause。"""
+    mock_llm = _make_mock_llm("小红", "同学们，什么是分数？谁能告诉我？")
+    ctx = ClassroomContext(
+        subject="数学",
+        topic="分数",
+        key_points=["分数的初步认识"],
+    )
+    persona = WEAK_STUDENT.model_copy(update={"stage_id": "p_middle"})
+    misconception = _fraction_misconception()
+    agent = StudentAgent(
+        llm=mock_llm,
+        persona=persona,
+        context=ctx,
+        misconceptions=[misconception],
+        rng=random.Random(999),
+    )
+
+    await agent.respond("同学们，什么是分数？谁能告诉我？")
+
+    system_msg = mock_llm.chat.call_args[0][0][0]["content"]
+    assert misconception.id in system_msg
+    assert misconception.typical_error in system_msg
+    assert misconception.cause in system_msg
+
+
+async def test_weak_student_auto_fills_triggered_misconception_id() -> None:
+    """薄弱学生触发迷思且 LLM 未返回 id 时，自动补充触发 id。"""
+    mock_llm = _make_mock_llm("小红", "同学们，什么是分数？谁能告诉我？")
+    ctx = ClassroomContext(subject="数学", topic="分数", key_points=["分数的初步认识"])
+    persona = WEAK_STUDENT.model_copy(update={"stage_id": "p_middle"})
+    misconception = _fraction_misconception()
+    agent = StudentAgent(
+        llm=mock_llm,
+        persona=persona,
+        context=ctx,
+        misconceptions=[misconception],
+        rng=random.Random(1),
+    )
+
+    reply = await agent.respond("同学们，什么是分数？谁能告诉我？")
+
+    assert reply.triggered_misconception_id == misconception.id
+    system_msg = mock_llm.chat.call_args[0][0][0]["content"]
+    assert "本轮触发" in system_msg
+
+
+async def test_strong_student_without_trigger_has_no_trigger_requirement() -> None:
+    """优秀学生未触发时，prompt 不出现本轮触发要求且 reply id 为空。"""
+    mock_llm = _make_mock_llm("小华", "同学们，什么是分数？谁能告诉我？")
+    ctx = ClassroomContext(subject="数学", topic="分数", key_points=["分数的初步认识"])
+    persona = STRONG_STUDENT.model_copy(update={"stage_id": "p_middle"})
+    agent = StudentAgent(
+        llm=mock_llm,
+        persona=persona,
+        context=ctx,
+        misconceptions=[_fraction_misconception()],
+        rng=random.Random(1),
+    )
+
+    reply = await agent.respond("同学们，什么是分数？谁能告诉我？")
+
+    assert reply.triggered_misconception_id is None
+    system_msg = mock_llm.chat.call_args[0][0][0]["content"]
+    assert "⚠️ 本轮触发" not in system_msg
+
+
+async def test_untriggered_llm_misconception_id_is_cleared() -> None:
+    """RNG 未触发时，即使 LLM 自行填写候选 id，也应清空以保证概率可控。"""
+    reply_json = json.dumps(
+        {
+            "speaker_id": "小华",
+            "intent": "answer_question",
+            "content": "分数是平均分的一部分。",
+            "emotion": "自信",
+            "triggered_misconception_id": "math_fraction_average_01",
+        },
+        ensure_ascii=False,
+    )
+    mock_message = MagicMock()
+    mock_message.content = reply_json
+    mock_choice = MagicMock()
+    mock_choice.message = mock_message
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_resp.usage = None
+    mock_llm = MagicMock(spec=LLMClient)
+    mock_llm.chat = AsyncMock(return_value=mock_resp)
+    ctx = ClassroomContext(subject="数学", topic="分数", key_points=["分数的初步认识"])
+    persona = STRONG_STUDENT.model_copy(update={"stage_id": "p_middle"})
+    agent = StudentAgent(
+        llm=mock_llm,
+        persona=persona,
+        context=ctx,
+        misconceptions=[_fraction_misconception()],
+        rng=random.Random(1),
+    )
+
+    reply = await agent.respond("同学们，什么是分数？谁能告诉我？")
+
+    assert reply.triggered_misconception_id is None
+
+
+async def test_non_answer_reply_clears_triggered_misconception_id() -> None:
+    """只有 answer_question 才记录触发的学科迷思。"""
+    reply_json = json.dumps(
+        {
+            "speaker_id": "小红",
+            "intent": "passive",
+            "content": "嗯……",
+            "emotion": "紧张",
+            "triggered_misconception_id": "math_fraction_average_01",
+        },
+        ensure_ascii=False,
+    )
+    mock_message = MagicMock()
+    mock_message.content = reply_json
+    mock_choice = MagicMock()
+    mock_choice.message = mock_message
+    mock_resp = MagicMock()
+    mock_resp.choices = [mock_choice]
+    mock_resp.usage = None
+    mock_llm = MagicMock(spec=LLMClient)
+    mock_llm.chat = AsyncMock(return_value=mock_resp)
+    ctx = ClassroomContext(subject="数学", topic="分数", key_points=["分数的初步认识"])
+    persona = WEAK_STUDENT.model_copy(update={"stage_id": "p_middle"})
+    agent = StudentAgent(
+        llm=mock_llm,
+        persona=persona,
+        context=ctx,
+        misconceptions=[_fraction_misconception()],
+        rng=random.Random(1),
+    )
+
+    reply = await agent.respond("同学们，什么是分数？谁能告诉我？")
+
+    assert reply.triggered_misconception_id is None
 
 
 # --- 边缘情况 ---

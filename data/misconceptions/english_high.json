@@ -1,0 +1,98 @@
+[
+  {
+    "id": "eng_clause_relative_13",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "定语从句",
+    "name": "定语从句多余代词",
+    "description": "在使用关系代词引导的定语从句时，在从句内部又重复使用了一个指代先行词的代词。",
+    "typical_error": "The book which I bought it yesterday is very interesting.",
+    "cause": "关系代词在句法上已经充当了从句的宾语，但学生在心理认知上仍把从句当成一个独立的完整句子去填充成分。"
+  },
+  {
+    "id": "eng_grammar_subjunctive_14",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "虚拟语气",
+    "name": "虚拟语气条件句错用真实时态",
+    "description": "在非真实的假设条件句（if从句）中，依然使用一般现在时或一般将来时，而不是时态后退。",
+    "typical_error": "If I am a bird, I will fly in the sky (想表达虚拟语气).",
+    "cause": "缺乏“通过改变时态来表达假设与非真实感”的形态学概念，直接进行中英对照翻译。"
+  },
+  {
+    "id": "eng_inversion_partial_21",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "倒装句",
+    "name": "否定副词放句首不倒装",
+    "description": "当 seldom, hardly, never, not only 等否定或半否定副词放在句首时，后面紧跟的句子不使用部分倒装结构。",
+    "typical_error": "Never I have seen such a beautiful place. / Hardly I could believe my eyes.",
+    "cause": "陈述语序的思维定势过强，在处理强调句式时忘记进行语法的助动词提前操作。"
+  },
+  {
+    "id": "eng_clause_noun_26",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "名词性从句",
+    "name": "认为所有 that 都可省且不做成分",
+    "description": "在同位语从句或主语从句中，随意省略引导词 that，或者把定语从句里的关系代词 that 和名词性从句的连词 that 混为一谈。",
+    "typical_error": "The fact he stole the money is clear. (省略了同位语从句引导词 that)",
+    "cause": "初中学过宾语从句中的 that 可以省略，便以偏概全，且对 that 在从句中是否充当主宾成分的句法分析能力不足。"
+  },
+  {
+    "id": "eng_clause_word_order_08_alt_high",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "宾语从句",
+    "name": "定语从句的引导词可以随便省略",
+    "description": "认为无论什么情况下都可以省略that或which。",
+    "typical_error": "The man is standing there is my uncle. (省略了who/that且缺动词变化)",
+    "cause": "不清楚只有当关系代词在从句中作宾语时才能省略的规则。"
+  },
+  {
+    "id": "eng_tense_present_perfect_11_alt_high",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "现在完成时",
+    "name": "完成时必须有for或since",
+    "description": "认为没有这两个标志词就不能用现在完成时。",
+    "typical_error": "I have finished my homework. (学生认为这句错，必须加时间状语)",
+    "cause": "将充分条件当成了必要条件。"
+  },
+  {
+    "id": "eng_voice_passive_12_alt_high",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "被动语态",
+    "name": "所有动词都有被动语态",
+    "description": "不区分及物动词和不及物动词，统统使用被动结构。",
+    "typical_error": "The accident was happened last night.",
+    "cause": "没有掌握“不及物动词无被动”的铁律。"
+  },
+  {
+    "id": "eng_preposition_marry_25_alt_high",
+    "subject": "英语",
+    "stage": [
+      "h"
+    ],
+    "topic": "及物动词搭配",
+    "name": "到达某地永远用arrive in",
+    "description": "忽略了到达小地点时应该用 arrive at。",
+    "typical_error": "We arrived in the bus stop at 8:00.",
+    "cause": "介词固定搭配记忆不精确。"
+  }
+]

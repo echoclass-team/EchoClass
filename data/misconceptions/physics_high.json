@@ -1,0 +1,158 @@
+[
+  {
+    "id": "physics_force_gravity_13",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "万有引力与重力",
+    "name": "重力就是地球的引力",
+    "description": "将重力和地球对物体的万有引力完全等同，忽略了地球自转产生的向心力分量。",
+    "typical_error": "物体在赤道和两极受到的重力应该完全一样大，因为引力公式里距离地心没变。",
+    "cause": "在初中阶段为了简化模型，往往将两者混为一谈，导致高中学习更精细模型时产生认知冲突。"
+  },
+  {
+    "id": "physics_energy_conservation_15",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "机械能守恒",
+    "name": "机械能守恒等同于能量守恒",
+    "description": "遇到任何运动过程，都想当然地套用机械能守恒定律，忽略了摩擦生热等其他形式能量转化的条件。",
+    "typical_error": "物体从粗糙斜面滑下，列方程时直接写 mgh = 1/2 mv^2。",
+    "cause": "对机械能守恒的前提条件（只有重力或弹力做功）认识模糊，泛化了能量守恒的思想。"
+  },
+  {
+    "id": "physics_momentum_conserve_16",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "动量守恒定律",
+    "name": "动量守恒条件绝对化",
+    "description": "认为系统必须绝对不受任何外力才能动量守恒，不理解在内力远大于外力（如爆炸、碰撞）时可以近似守恒。",
+    "typical_error": "在空中的炮弹爆炸，因为受到了重力，所以爆炸瞬间不能用动量守恒定律。",
+    "cause": "对物理定律近似适用条件的灵活性掌握不够，思维刻板化。"
+  },
+  {
+    "id": "physics_relativity_time_23",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "相对论",
+    "name": "时间流逝是绝对的",
+    "description": "根深蒂固地认为在宇宙任何地方、任何运动状态下，时间的流逝速度都是完全一样的。",
+    "typical_error": "不可能存在双生子佯谬，不管哥哥坐宇宙飞船飞多快，他们的时间流逝绝对是一样的。",
+    "cause": "牛顿绝对时空观与低速宏观生活经验的完美契合，使得对洛伦兹变换产生本能的排斥。"
+  },
+  {
+    "id": "physics_quantum_photon_24",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "量子物理",
+    "name": "光子就是极小的经典粒子",
+    "description": "把光子想象成极其微小的台球一样的物质颗粒，拥有确定的轨迹。",
+    "typical_error": "光子在双缝干涉实验中，要么从左边缝穿过去，要么从右边缝穿过去，不可能同时兼顾。",
+    "cause": "波粒二象性的概念过于反直觉，学生习惯性地退回经典力学的粒子模型来寻求心理安全感。"
+  },
+  {
+    "id": "physics_mechanics_centripetal_26",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "圆周运动",
+    "name": "向心力是一种单独的力",
+    "description": "认为向心力是与重力、弹力、摩擦力并列的一种特殊性质的力，在受力分析时会额外画出一个向心力。",
+    "typical_error": "汽车转弯时，受力分析画了重力、支持力、摩擦力，还要单独画一个指向圆心的‘向心力’。",
+    "cause": "将按效果命名的力（向心力）与按性质命名的力混淆，不理解向心力必须是其他力的合力或分力。"
+  },
+  {
+    "id": "physics_mechanics_weightlessness_27",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "超重与失重",
+    "name": "失重就是不受重力",
+    "description": "认为处于失重状态的物体（如绕地卫星内的宇航员）是因为脱离了地球引力，或者重力消失了。",
+    "typical_error": "宇航员在太空中飘浮是因为太空中没有重力了。",
+    "cause": "名词字面意义的严重误导，未能理解视重（测力计读数）和实际重力的区别。"
+  },
+  {
+    "id": "physics_atomic_nucleus_30",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "原子核",
+    "name": "忽略强相互作用",
+    "description": "利用电磁学知识，认为原子核内挤满了带正电的质子，它们应该互相排斥而导致原子核爆炸解体。",
+    "typical_error": "同性相斥，原子核里那么多质子挤在一起，肯定无法稳定存在。",
+    "cause": "经典物理学观念的前摄抑制，尚未引入自然界四大基本力中的“强相互作用”概念。"
+  },
+  {
+    "id": "physics_kinematics_acceleration_05_alt_high",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "加速度与速度",
+    "name": "加速度为负物体就在减速",
+    "description": "只看加速度的正负号，不结合速度的正负号来判断运动状态。",
+    "typical_error": "加速度 a = -2m/s²，所以物体一定在做减速运动。",
+    "cause": "未能理解加速度的正负只代表方向，不代表大小的增加或减少。"
+  },
+  {
+    "id": "physics_kinematics_displacement_11_alt_high",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "位移与路程",
+    "name": "位移的大小等于路程",
+    "description": "在不是单向直线运动的情况下，将矢量与标量等同对待。",
+    "typical_error": "绕操场跑了一圈，位移是400米。",
+    "cause": "初学阶段标量向矢量思维转换困难。"
+  },
+  {
+    "id": "physics_force_friction_12_alt_high",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "摩擦力",
+    "name": "摩擦力一定是阻力",
+    "description": "认为摩擦力的方向总是与物体的运动方向相反。",
+    "typical_error": "人在走路时，地面对鞋底的摩擦力是向后的阻力。",
+    "cause": "没有弄清摩擦力是与“相对运动（趋势）”方向相反，它可以是动力。"
+  },
+  {
+    "id": "physics_electromagnetism_induction_20_alt_high",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "电磁感应",
+    "name": "磁场越强感应电动势越大",
+    "description": "混淆了磁通量的大小与磁通量变化率的区别。",
+    "typical_error": "把线圈放在很强的磁铁旁边不动，就会有很大的电流。",
+    "cause": "法拉第电磁感应定律中“变化率”概念的缺失。"
+  },
+  {
+    "id": "physics_optics_real_image_21_alt_high",
+    "subject": "物理",
+    "stage": [
+      "h"
+    ],
+    "topic": "透镜成像",
+    "name": "虚像不能用相机拍下来",
+    "description": "认为虚像不是实际光线汇聚成的，所以照相机无法捕捉到它。",
+    "typical_error": "镜子里的自己是虚像，所以用手机对着镜子拍不到里面的人像。",
+    "cause": "不知道相机镜头（凸透镜）可以将发散的光线再次汇聚成实像落在底片上。"
+  }
+]

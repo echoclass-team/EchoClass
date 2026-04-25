@@ -1,0 +1,374 @@
+[
+  {
+    "id": "eng_noun_uncountable_plural_05",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "名词的数",
+    "name": "不可数名词误加s",
+    "description": "将一些在汉语中可以计数的概念（如面包、新闻、建议），在英语中也当做可数名词变复数。",
+    "typical_error": "I have two good news for you. / Can you give me some advices?",
+    "cause": "两种语言在认知分类上的差异，用汉语的逻辑去套用英语的物质名词或抽象名词。"
+  },
+  {
+    "id": "eng_verb_infinitive_gerund_07",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "非谓语动词",
+    "name": "动名词与不定式混用",
+    "description": "在固定搭配的动词后，错误地使用了 to do 代替 doing，反之亦然。",
+    "typical_error": "I enjoy to read books. / I want going to the park.",
+    "cause": "没有总结出不定式通常表示“未做、目的”，动名词通常表示“已做、习惯”的深层语义区别，纯靠死记硬背经常记混。"
+  },
+  {
+    "id": "eng_clause_word_order_08",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "宾语从句",
+    "name": "从句语序错误保留疑问语序",
+    "description": "在宾语从句中，未能将疑问句转换为陈述语序。",
+    "typical_error": "I don't know where does he live. / Could you tell me what time is it?",
+    "cause": "疑问句结构（倒装）的印记过深，在嵌套进复杂句时没有进行及时的心理认知重构。"
+  },
+  {
+    "id": "eng_article_abuse_10",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "冠词用法",
+    "name": "泛指时滥用定冠词",
+    "description": "在表示泛指某一类事物时（可数名词复数或不可数名词前），画蛇添足地加上定冠词 the。",
+    "typical_error": "I really like the apples (想表达我喜欢吃苹果). / The money is important.",
+    "cause": "受汉语“特指/泛指”界限模糊的影响，觉得加个 the 听起来更顺口，没有掌握零冠词的表意功能。"
+  },
+  {
+    "id": "eng_tense_present_perfect_11",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "现在完成时",
+    "name": "混淆现在完成时与一般过去时",
+    "description": "无法体会现在完成时“对现在造成影响”的语用语境，或者错误地将现在完成时与明确的过去时间状语连用。",
+    "typical_error": "I have seen that movie yesterday.",
+    "cause": "这两种时态在翻译成中文时常常都可以用“了”或“过”来表达，缺乏英语特有的时态轴观念。"
+  },
+  {
+    "id": "eng_voice_passive_12",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "被动语态",
+    "name": "不及物动词误用被动语态",
+    "description": "遇到表示“发生、出现”等意义的不及物动词时，受中文被动语态思维的影响，强行加 be+done。",
+    "typical_error": "The accident was happened last night. / The problem was appeared suddenly.",
+    "cause": "对动词的及物与不及物属性缺乏敏感度，不知道只有及物动词（带宾语）才能转换为被动语态的主语。"
+  },
+  {
+    "id": "eng_vocabulary_borrow_lend_15",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "词汇辨析",
+    "name": "混淆 borrow 和 lend",
+    "description": "分不清“借入”和“借出”，在需要使用 lend 的地方使用了 borrow，反之亦然。",
+    "typical_error": "Can you borrow me your pen? (你想向别人借笔)",
+    "cause": "汉语中“借”这个词是双向的（我借给你/我向你借），导致学生在处理英语具有方向性的动作词汇时发生混淆。"
+  },
+  {
+    "id": "eng_article_a_an_17",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "不定冠词",
+    "name": "看字母不看发音选 a/an",
+    "description": "只根据单词首字母是否是元音字母（a,e,i,o,u）来决定用 a 还是 an，而不是根据首音素的发音。",
+    "typical_error": "a hour, an university, an European country.",
+    "cause": "小学阶段老师为了方便记忆传授的绝对规则被死板套用，未掌握国际音标关于元音因素和辅音因素的区别。"
+  },
+  {
+    "id": "eng_pronoun_reflexive_18",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "反身代词",
+    "name": "随意使用反身代词做主语",
+    "description": "在不需要强调的情况下，直接将反身代词作为句子的主语使用。",
+    "typical_error": "Myself and Tom went to the cinema. / Myself did it.",
+    "cause": "受某些不规范口语的影响，或者想规避主格宾格选择的麻烦，把 myself 当成了一个更“高级”的 I 的替代词。"
+  },
+  {
+    "id": "eng_adj_ed_ing_19",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "形容词",
+    "name": "-ed 和 -ing 结尾形容词混淆",
+    "description": "无法区分修饰人的感受（通常用-ed）和修饰事物特征（通常用-ing）的形容词的用法。",
+    "typical_error": "I am very interesting in this book. / The news is very excited.",
+    "cause": "没弄清主动（令人...的）和被动（感到...的）词源逻辑，纯靠死记硬背容易记反。"
+  },
+  {
+    "id": "eng_conjunction_although_but_20",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "连词用法",
+    "name": "Although 和 but 连用",
+    "description": "在一个由 although/though 引导的让步状语从句后，主句还要加上 but 作为连词。",
+    "typical_error": "Although it was raining, but we still went out.",
+    "cause": "受汉语“虽然...但是...”关联词固定搭配的深度负迁移，不理解英语中从句和主句只需要一个连系词即可连接。"
+  },
+  {
+    "id": "eng_grammar_conditional_23",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "状语从句时态",
+    "name": "条件句中主将从将",
+    "description": "在 if 引导的条件状语从句中，当主句是一般将来时，从句也错误地使用了一般将来时。",
+    "typical_error": "I will stay at home if it will rain tomorrow.",
+    "cause": "逻辑上的合理推断（既然是明天的事，那当然要用将来时）与英语“主将从现”的特殊语法规定产生冲突。"
+  },
+  {
+    "id": "eng_vocabulary_say_speak_tell_talk_24",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "词汇辨析",
+    "name": "say/speak/tell/talk 混用",
+    "description": "四个表示“说”的动词在实际使用中搭配混乱，分不清及物/不及物以及侧重点。",
+    "typical_error": "He talked me a story. / Can you say English?",
+    "cause": "汉语中只有一个统摄性的“说”字，学生难以区分英语中强调内容、语言种类、讲述动作、交流过程的细分词汇。"
+  },
+  {
+    "id": "eng_preposition_marry_25",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "及物动词搭配",
+    "name": "及物动词画蛇添足加介词",
+    "description": "在某些直接接宾语的及物动词后面，强行加上在汉语翻译里看似必要的介词。",
+    "typical_error": "He married with a doctor. / Let's discuss about the problem.",
+    "cause": "被汉语翻译（如“和...结婚”、“讨论关于...”）误导，无法形成英语及物动词直接及物的语感。"
+  },
+  {
+    "id": "eng_comparative_more_er_28",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "比较级",
+    "name": "双重比较级",
+    "description": "在形容词比较级前面已经加了 more 的情况下，还在词尾加 -er，或者反过来。",
+    "typical_error": "This book is more cheaper than that one. / He is more taller.",
+    "cause": "为了强调“更”的意思，把两种变成比较级的规则（加more和加-er）叠加使用了。"
+  },
+  {
+    "id": "eng_adverb_hardly_29",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "副词辨析",
+    "name": "hardly 认作 hard 的副词形式",
+    "description": "认为 hardly 就是 hard（努力地）的副词形式，表示“非常努力”。",
+    "typical_error": "He works hardly, so he gets good grades. (想表达他学习很努力)",
+    "cause": "机械套用“形容词+ly=副词”的构词规律，不知道 hard 本身既是形容词又是副词，而 hardly 意思是“几乎不”。"
+  },
+  {
+    "id": "eng_grammar_tag_question_30",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "反义疑问句",
+    "name": "忽视前含有隐性否定词的反义疑问",
+    "description": "在遇到带有 hardly, never, few, little 等隐性否定词的陈述句时，其后的附加疑问句依然用了否定形式。",
+    "typical_error": "He hardly speaks English, doesn't he?",
+    "cause": "由于句子没有出现明显的 not 或 no，学生没有识别出句子的否定属性，导致未能遵守“前否后肯”的规则。"
+  },
+  {
+    "id": "eng_grammar_3rdsingular_01_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "一般现在时",
+    "name": "主语是复数时动词也加s",
+    "description": "错误地将名词复数加-s的规则套用到动词上。",
+    "typical_error": "They plays basketball every day.",
+    "cause": "混淆了名词变复数与动词第三人称单数的形式变化。"
+  },
+  {
+    "id": "eng_grammar_beverb_02_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "动词的用法",
+    "name": "实义动词前必须加be动词",
+    "description": "在所有的英语句子中都习惯性地加上be动词。",
+    "typical_error": "I am agree with you.",
+    "cause": "受汉语“我是...”句式的影响，或对英语基本句型缺乏概念。"
+  },
+  {
+    "id": "eng_vocabulary_chinglish_03_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "交际用语",
+    "name": "名词直接做动词使用",
+    "description": "在英语中直接套用汉语词汇的多功能性，不考虑词性转换。",
+    "typical_error": "I will message you later. (此句在口语中虽可，但学生易犯类似 I pencil it 的错)",
+    "cause": "缺乏对英语词缀变化和词性分类的重视。"
+  },
+  {
+    "id": "eng_vocabulary_chinglish_03_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "交际用语",
+    "name": "名词直接做动词使用",
+    "description": "在英语中直接套用汉语词汇的多功能性，不考虑词性转换。",
+    "typical_error": "I will message you later. (此句在口语中虽可，但学生易犯类似 I pencil it 的错)",
+    "cause": "缺乏对英语词缀变化和词性分类的重视。"
+  },
+  {
+    "id": "eng_grammar_past_double_04_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "一般过去时",
+    "name": "所有动词过去式都是直接加ed",
+    "description": "忽视了不规则动词的存在。",
+    "typical_error": "He goed to school yesterday.",
+    "cause": "规则的过度泛化。"
+  },
+  {
+    "id": "eng_preposition_in_on_at_06_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "介词搭配",
+    "name": "表示星期几前面用in",
+    "description": "混淆时间介词的用法，认为时间前面都可以用in。",
+    "typical_error": "I have an English class in Monday.",
+    "cause": "没有精确记忆“in表泛指长时间，on表具体某一天，at表具体时刻”的口诀。"
+  },
+  {
+    "id": "eng_verb_infinitive_gerund_07_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "非谓语动词",
+    "name": "介词后接动词原形",
+    "description": "认为只要是动词连用，后面就跟原形。",
+    "typical_error": "I am good at play chess.",
+    "cause": "不了解介词的宾语通常是名词或动名词形式。"
+  },
+  {
+    "id": "eng_pronoun_case_09_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "代词的主宾格",
+    "name": "物主代词和人称代词混用",
+    "description": "在表达“我的书”时，使用了人称代词的主格。",
+    "typical_error": "I book is on the table.",
+    "cause": "汉语中“我书”可以直接说，忽略了英语中所有格的严格要求。"
+  },
+  {
+    "id": "eng_article_abuse_10_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "冠词用法",
+    "name": "专有名词前必须加the",
+    "description": "看到大写的专有名词就认为必须加定冠词以示特指。",
+    "typical_error": "The China is a big country.",
+    "cause": "对零冠词的使用场合（如国名、人名等）记忆不牢。"
+  },
+  {
+    "id": "eng_syntax_therebe_16_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "There be 句型",
+    "name": "There be句型可以用has代替be",
+    "description": "受汉语“那里有”的影响，将其直译为 there has。",
+    "typical_error": "There has an apple on the desk.",
+    "cause": "母语负迁移，将表存在的“有”与表所属的“有”混为一谈。"
+  },
+  {
+    "id": "eng_adj_ed_ing_19_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "形容词",
+    "name": "-ed形容词只能修饰人，-ing只能修饰物",
+    "description": "机械记忆口诀，不能灵活处理特殊语境。",
+    "typical_error": "He is an interested man. (本意想表达他是个有趣的人)",
+    "cause": "没有理解-ing表主动/性质，-ed表被动/状态的本质规律。"
+  },
+  {
+    "id": "eng_conjunction_although_but_20_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_upper"
+    ],
+    "topic": "连词用法",
+    "name": "Because和so可以连用",
+    "description": "受汉语“因为...所以...”句式结构的影响。",
+    "typical_error": "Because it was raining, so I stayed at home.",
+    "cause": "中英逻辑连接词使用习惯的差异（英语从句和主句间只需一个连词）。"
+  },
+  {
+    "id": "eng_noun_plural_irregular_22_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "名词的数",
+    "name": "不可数名词加s变复数",
+    "description": "认为只要是“很多”的概念，名词就要加-s。",
+    "typical_error": "I need some informations.",
+    "cause": "对英语中可数与不可数概念的认知缺失。"
+  },
+  {
+    "id": "eng_syntax_verb_verb_27_alt_junior",
+    "subject": "英语",
+    "stage": [
+      "j_lower"
+    ],
+    "topic": "基本句型",
+    "name": "一个句子可以有两个谓语动词",
+    "description": "不用连词连接，直接在一个简单句中塞入两个动词。",
+    "typical_error": "I like play football.",
+    "cause": "汉语里“我喜欢踢球”连用，英语则需非谓语形式转化。"
+  }
+]
