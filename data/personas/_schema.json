@@ -2,7 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://echoclass.dev/schemas/persona.json",
   "title": "EchoClass Student Persona",
-  "description": "虚拟学生人设定义。基于皮亚杰认知发展阶段理论设计，用于驱动 StudentAgent 的角色扮演行为。",
+  "description": "虚拟学生人设定义。基于皮亚杰认知发展阶段理论设计，用于驱动 1v1 答疑陪练中 StudentAgent 的角色扮演行为。",
+  "$comment": "v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation），由 stage.piaget_stage 统一约束认知阶段；family_background 降级为可选。",
   "type": "object",
   "required": [
     "id",
@@ -13,16 +14,11 @@
     "stage_id",
     "subject_level",
     "personality",
-    "cognitive_stage",
     "speech_style",
     "catchphrases",
     "misconception_tendencies",
     "attention_span",
-    "interaction_frequency",
     "behavior_traits",
-    "emotional_tendency",
-    "learning_motivation",
-    "family_background",
     "avatar_seed",
     "summary"
   ],
@@ -96,14 +92,6 @@
       "minLength": 10,
       "description": "性格特征描述（2-3 句话）"
     },
-    "cognitive_stage": {
-      "type": "string",
-      "enum": [
-        "concrete_operational",
-        "formal_operational"
-      ],
-      "description": "皮亚杰认知发展阶段。小学生一般为 concrete_operational（具体运算），初中生一般为 formal_operational（形式运算）"
-    },
     "speech_style": {
       "type": "string",
       "minLength": 10,
@@ -134,15 +122,6 @@
       ],
       "description": "注意力持续时间。short=容易走神, medium=一般, long=高度专注"
     },
-    "interaction_frequency": {
-      "type": "string",
-      "enum": [
-        "low",
-        "medium",
-        "high"
-      ],
-      "description": "课堂互动频率。low=很少主动发言, medium=适度参与, high=频繁发言"
-    },
     "behavior_traits": {
       "type": "array",
       "items": {
@@ -151,24 +130,10 @@
       "minItems": 2,
       "description": "课堂行为标签列表，如 ['积极举手', '爱抢答']"
     },
-    "emotional_tendency": {
-      "type": "string",
-      "minLength": 5,
-      "description": "情绪倾向描述，如 '容易因答错而沮丧' 或 '总是保持乐观'"
-    },
-    "learning_motivation": {
-      "type": "string",
-      "enum": [
-        "intrinsic",
-        "extrinsic",
-        "low"
-      ],
-      "description": "学习动机类型。intrinsic=内在驱动, extrinsic=外在驱动（如家长期望）, low=动力不足"
-    },
     "family_background": {
       "type": "string",
       "minLength": 10,
-      "description": "简要家庭背景描述，影响学习态度和行为模式"
+      "description": "简要家庭背景描述，可选；当前 prompt 模板未直接消费，作为人设语料补充与未来扩展材料"
     },
     "avatar_seed": {
       "type": "string",

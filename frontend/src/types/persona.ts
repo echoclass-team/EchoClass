@@ -16,19 +16,18 @@ export interface Persona {
 /**
  * 学生人设完整字段，对应后端 `Persona`（GET /api/personas/{name_or_id}）。
  * 完整字段定义见 backend/schemas/student.py::Persona。
+ *
+ * v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency /
+ * emotional_tendency / learning_motivation），认知阶段由 stage.piaget_stage 统一约束。
  */
 export interface PersonaDetail extends Persona {
   age: number;
-  cognitive_stage: string;
   personality: string;
   speech_style: string;
   catchphrases: string[];
   misconception_tendencies: string[];
   attention_span: string;
-  interaction_frequency: string;
   behavior_traits: string | string[];
-  emotional_tendency: string;
-  learning_motivation: string;
   family_background: string;
   avatar_seed: string;
   knowledge_level: string;

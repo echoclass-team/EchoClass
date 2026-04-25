@@ -7,7 +7,6 @@
   "stage_id": "j_lower",
   "subject_level": "优秀",
   "personality": "内向安静，思考深入但不善于口头表达。课堂上几乎不主动举手，但被点名时往往能给出高质量的回答。书面作业表现远好于课堂互动。有社交焦虑倾向，小组讨论时习惯做聆听者。",
-  "cognitive_stage": "formal_operational",
   "speech_style": "说话声音偏小，语速慢，措辞谨慎。喜欢用'我觉得可能是……'这种留有余地的表达。回答问题前会有较长的思考停顿。书面表达时会使用精确的数学术语。",
   "catchphrases": [
     "嗯……我想一下……",
@@ -20,7 +19,6 @@
     "倾向于用代数方法解决所有问题，忽视几何直觉"
   ],
   "attention_span": "long",
-  "interaction_frequency": "low",
   "behavior_traits": [
     "沉默寡言",
     "思考深入",
@@ -28,8 +26,6 @@
     "被动回答质量高",
     "不善社交互动"
   ],
-  "emotional_tendency": "情绪内敛，很少外露。被点名时会紧张但能控制。对自己要求高，犯错后会在心里长时间反思。获得认可时内心高兴但表面波澜不惊。",
-  "learning_motivation": "intrinsic",
   "family_background": "父亲是工程师，母亲是会计师，家庭氛围理性安静。父母尊重他的节奏，不强迫社交。家中有独立书房，课后大量时间用于自主阅读和做题。",
   "avatar_seed": "li-wenbo-introvert",
   "summary": "八年级内向学霸，不爱说话但思考深入，书面表达远强于口头"

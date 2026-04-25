@@ -52,13 +52,10 @@ def test_persona_rich_fields(personas: list[Persona]) -> None:
         assert p.grade
         assert 6 <= p.age <= 18
         assert p.stage_id in VALID_STAGE_IDS
-        assert p.cognitive_stage in {"concrete_operational", "formal_operational"}
         assert p.speech_style
         assert len(p.catchphrases) >= 3
         assert len(p.misconception_tendencies) >= 1
         assert p.attention_span in {"short", "medium", "long"}
-        assert p.interaction_frequency in {"low", "medium", "high"}
-        assert p.emotional_tendency
         assert p.summary
 
 
