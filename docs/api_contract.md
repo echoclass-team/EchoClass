@@ -238,128 +238,222 @@ interface Suggestion {
 
 ---
 
-## 3. WebSocket `/ws/sessions/{session_id}`
+## 3. WebSocket `/ws/qa-sessions/{session_id}` — 1v1 答疑陪练
+
+> **状态**：v1（M2 冻结） · 关联 Issue #71
+> **后端实现**：`backend/api/qa_ws.py`（A 端） · 协议模型：`backend/schemas/ws_events.py`（A 端）
+> **前端实现**：`frontend/lib/qa-ws.ts`（B 端）
+> **变更流程**：协议字段、type 枚举、错误码任一改动须开 PR 修改本节 + `schemas/ws_events.py`，A + B 双 approve 后方可合入
+
+> ⚠️ **历史遗留**：早期设计的"多学生并发课堂"WebSocket 协议（含 `director_event` / `board_update` / 多 reply 并发）已废弃。M1 答疑陪练 pivot (#74) 后改为 1v1 串行模型，仅保留下文协议。
 
 ### 3.1 连接
 
-- **URL**：`ws://localhost:8000/ws/sessions/{session_id}?token=<opaque>`
+- **URL**：`ws://localhost:8000/ws/qa-sessions/{session_id}`
 - **协议**：文本帧，**每帧一条 JSON**（JSON Lines）
-- **心跳**：客户端每 30s 发 `{"type":"ping"}`，服务端回 `{"type":"pong"}`
+- **心跳**：M2 暂不实现 ping/pong；30 秒空闲不视为异常。后续如需要再扩展
+- **单 session 单连接**：第二次连同一 `session_id` 时，旧连接收到 `{"type":"error","code":"replaced"}` 并被服务端关闭（关闭码 `1000`）
 - **关闭码**：
-  - `1000` 正常关闭
-  - `4001` 鉴权失败
-  - `4004` 会话不存在
-  - `4009` 会话已结束
+  - `1000` 正常关闭（含被新连接挤掉）
+  - `4004` `session_id` 不存在
+  - `4009` session 已结束（已发过 `summary` 后再连）
 
-### 3.2 客户端 → 服务端
+### 3.2 通用约定
+
+- **服务端 → 客户端** 每帧带单调递增的 `seq: number`（从 0 起，连接生命周期内唯一），客户端可据此检测乱序 / 丢帧
+- **客户端 → 服务端** 每帧可带可选 `timestamp: ISO8601`（便于排错），服务端不做强校验
+- 嵌入对象（`LessonMeta` / `StudentQuestion`）直接复用业务 schema，与 REST 接口一致；前端按需取字段
+
+### 3.3 客户端 → 服务端
 
 ```ts
 type ClientMessage =
-  | TeacherUtterance
-  | TeacherAction
-  | Ping;
+  | SelectDialog
+  | TeacherMessage
+  | Resolve
+  | Abandon;
 
-interface TeacherUtterance {
-  type: "teacher_utterance";
-  utterance_id: UUID;               // 客户端生成
-  content: string;
-  sent_at: ISO8601;
+interface SelectDialog {
+  type: "select_dialog";
+  dialog_id: string;                // == StudentQuestion.id
+  timestamp?: ISO8601;
 }
 
-interface TeacherAction {
-  type: "teacher_action";
-  action: "call_on_student" | "pause" | "resume" | "write_on_board";
-  payload: {
-    speaker_id?: string;            // call_on_student 用
-    text?: string;                  // write_on_board 用
-  };
+interface TeacherMessage {
+  type: "teacher_message";
+  dialog_id: string;
+  text: string;                     // 师范生本轮发言；非空
+  timestamp?: ISO8601;
 }
 
-interface Ping { type: "ping"; }
+interface Resolve {
+  type: "resolve";
+  dialog_id: string;
+  source?: "teacher_marked" | "self_resolve";  // 默认 "teacher_marked"
+  timestamp?: ISO8601;
+}
+
+interface Abandon {
+  type: "abandon";
+  dialog_id: string;
+  timestamp?: ISO8601;
+}
 ```
 
-### 3.3 服务端 → 客户端
+**语义**：
+
+- `select_dialog`：从队列里挑一个学生进入 1v1 对话；幂等（已 active 时无副作用）
+- `teacher_message`：师范生在某个 active dialog 内发言；服务端响应若干 `reply_chunk` + 一个 `reply_end`。若 dialog 处于 `pending` 服务端会自动 `start_dialog` 后再处理
+- `resolve`：标记 dialog 为已解答。`source` 区分是师范生主动点确认（`teacher_marked`）还是承认学生 `[懂了]` 自我宣称（`self_resolve`）
+- `abandon`：放弃 dialog；转 `abandoned` 状态后不再可继续
+
+### 3.4 服务端 → 客户端
 
 ```ts
 type ServerMessage =
-  | StudentReplyStart
-  | StudentReplyChunk
-  | StudentReplyEnd
-  | DirectorEvent
-  | BoardUpdate
-  | SessionEnd
-  | ErrorMessage
-  | Pong;
+  | SessionInit
+  | DialogActive
+  | ReplyChunk
+  | ReplyEnd
+  | DialogResolved
+  | DialogAbandoned
+  | Summary
+  | ErrorMessage;
 
-interface StudentReplyStart {
-  type: "student_reply_start";
-  reply_id: UUID;                   // 本条发言 ID
-  speaker_id: string;
-  intent: "answer_question" | "ask_question" | "off_topic" | "passive";
-  emotion: "neutral" | "curious" | "confused" | "confident" | "distracted";
-  trigger: "teacher_prompt" | "spontaneous" | "peer_reaction";
-  started_at: ISO8601;
+interface SessionInit {
+  type: "session_init";
+  seq: number;                      // 通常 0
+  timestamp: ISO8601;
+  session_id: string;
+  lesson: LessonMeta;               // 直接复用 §1 LessonMeta
+  students: WsStudentInfo[];        // 本场参与的学生
+  questions: StudentQuestion[];     // 学生主动构思好的问题队列；与 next_pending 顺序一致
 }
 
-interface StudentReplyChunk {
-  type: "student_reply_chunk";
-  reply_id: UUID;
-  delta: string;                    // 增量 token
-  seq: number;                      // 从 0 递增
+interface WsStudentInfo {
+  id: string;
+  name: string;
+  stage_id: string;
+  subject_level: string;            // "优秀" | "中等" | "薄弱"
+  avatar_seed: string;
+  summary: string;                  // 一句话概括
 }
 
-interface StudentReplyEnd {
-  type: "student_reply_end";
-  reply_id: UUID;
-  full_content: string;             // 完整文本（用于客户端校验）
-  ended_at: ISO8601;
+interface DialogActive {
+  type: "dialog_active";
+  seq: number;
+  timestamp: ISO8601;
+  dialog_id: string;
 }
 
-interface DirectorEvent {
-  type: "director_event";
-  event: "hand_raise" | "whisper" | "distraction" | "group_noise";
-  speaker_id?: string;              // 若事件针对特定学生
-  description: string;
+interface ReplyChunk {
+  type: "reply_chunk";
+  seq: number;                      // 全连接单调递增
+  timestamp: ISO8601;
+  dialog_id: string;
+  delta: string;                    // 增量文本（不含 [懂了] 标记）
+  chunk_seq: number;                // 同 dialog 内单调递增，从 0 起
 }
 
-interface BoardUpdate {
-  type: "board_update";
-  taught_points: string[];          // 全量（不是 diff），方便前端直接渲染
+interface ReplyEnd {
+  type: "reply_end";
+  seq: number;
+  timestamp: ISO8601;
+  dialog_id: string;
+  full_content: string;             // 完整回复（已剥离标记，权威文本）
+  self_resolved: boolean;           // LLM 是否在末尾打了 [懂了]
 }
 
-interface SessionEnd {
-  type: "session_end";
-  reason: "teacher_ended" | "timeout" | "error";
-  summary_url: string;              // 指向 /api/sessions/{id}/report
+interface DialogResolved {
+  type: "dialog_resolved";
+  seq: number;
+  timestamp: ISO8601;
+  dialog_id: string;
+  source: "teacher_marked" | "self_resolve";
+}
+
+interface DialogAbandoned {
+  type: "dialog_abandoned";
+  seq: number;
+  timestamp: ISO8601;
+  dialog_id: string;
+}
+
+interface Summary {
+  type: "summary";
+  seq: number;
+  timestamp: ISO8601;
+  data: Record<string, unknown>;    // QASession.summary() 返回结构
 }
 
 interface ErrorMessage {
   type: "error";
-  code: number;
+  seq: number;
+  timestamp: ISO8601;
+  code: WsErrorCode;
   message: string;
+  dialog_id?: string;
 }
 
-interface Pong { type: "pong"; }
+type WsErrorCode =
+  | "dialog_not_found"
+  | "dialog_already_ended"
+  | "session_not_found"
+  | "invalid_message"
+  | "replaced"
+  | "llm_failed"
+  | "internal_error";
 ```
 
-### 3.4 典型消息序列
+### 3.5 典型消息序列
 
 ```
-Client → Server: {"type":"teacher_utterance", "content":"什么是分数？", ...}
-Server → Client: {"type":"director_event", "event":"hand_raise", "speaker_id":"stu_01", ...}
-Server → Client: {"type":"student_reply_start", "reply_id":"r1", "speaker_id":"stu_01", ...}
-Server → Client: {"type":"student_reply_chunk", "reply_id":"r1", "delta":"分数就是", "seq":0}
-Server → Client: {"type":"student_reply_chunk", "reply_id":"r1", "delta":"…一个数字…", "seq":1}
-Server → Client: {"type":"student_reply_end",   "reply_id":"r1", ...}
-Server → Client: {"type":"student_reply_start", "reply_id":"r2", "speaker_id":"stu_03", ...}
-...（多个学生可能并发，通过 reply_id 区分）
-Server → Client: {"type":"board_update", "taught_points":["分数的定义","1/2 示例"]}
+Server → Client: {"type":"session_init","seq":0,"session_id":"sess-1","lesson":{...},"students":[...],"questions":[...]}
+Client → Server: {"type":"select_dialog","dialog_id":"q-1"}
+Server → Client: {"type":"dialog_active","seq":1,"dialog_id":"q-1"}
+Client → Server: {"type":"teacher_message","dialog_id":"q-1","text":"你说说看你是怎么想的？"}
+Server → Client: {"type":"reply_chunk","seq":2,"dialog_id":"q-1","delta":"嗯……","chunk_seq":0}
+Server → Client: {"type":"reply_chunk","seq":3,"dialog_id":"q-1","delta":"我觉得分母","chunk_seq":1}
+Server → Client: {"type":"reply_chunk","seq":4,"dialog_id":"q-1","delta":"是下面那个数？","chunk_seq":2}
+Server → Client: {"type":"reply_end","seq":5,"dialog_id":"q-1","full_content":"嗯……我觉得分母是下面那个数？","self_resolved":false}
+Client → Server: {"type":"teacher_message","dialog_id":"q-1","text":"对的！分母代表分成几份。"}
+Server → Client: {"type":"reply_chunk","seq":6,"dialog_id":"q-1","delta":"哦！我懂了。","chunk_seq":0}
+Server → Client: {"type":"reply_end","seq":7,"dialog_id":"q-1","full_content":"哦！我懂了。","self_resolved":true}
+Client → Server: {"type":"resolve","dialog_id":"q-1","source":"self_resolve"}
+Server → Client: {"type":"dialog_resolved","seq":8,"dialog_id":"q-1","source":"self_resolve"}
 ```
 
-**关键不变式**：
-- 任意时刻，一个 `reply_id` 的 chunk 必须按 `seq` 顺序；前端收到乱序需丢弃或 reorder。
-- 多个学生并发发言时，多个 `reply_id` 的 chunk 可以交错。
-- 每个 `start` 必有对应 `end`；没有 `end` 视为流中断，前端显示"对话中断"标志。
+### 3.6 关键不变式
+
+- **流式 chunk 顺序**：同一 `dialog_id` 的 `reply_chunk` 序列保证按 `chunk_seq` 升序到达；后端不会把不同 dialog 的 chunk 交错（单 session 串行处理 `teacher_message`）
+- **Hold-back 缓冲**：`reply_chunk.delta` **绝不会**包含末尾 `[懂了]` 标记字符（agent 侧已过滤）。前端可无脑拼接 delta；`reply_end` 到达时再用 `full_content` 校正一次显示文本
+- **每个 reply 必有 end**：每个 `reply_chunk` 序列末尾一定跟一个 `reply_end`；连接断开视为流中断，前端显示"对话中断"标志
+- **seq 单调递增**：服务端任意类型帧都共享同一 `seq` 计数器，从 0 起，每发一帧 +1
+- **客户端→服务端 不带 seq**：对称性上略不一致，但客户端发送的帧少且无序约束，省下复杂度
+
+### 3.7 与 Pydantic 模型对照
+
+后端实现以 `backend/schemas/ws_events.py` 为权威来源；本节文档与该模块保持一致。
+模型导出名速查：
+
+| TS interface | Pydantic class |
+|---|---|
+| `SelectDialog` | `WsSelectDialog` |
+| `TeacherMessage` | `WsTeacherMessage` |
+| `Resolve` | `WsResolve` |
+| `Abandon` | `WsAbandon` |
+| `SessionInit` | `WsSessionInit` |
+| `DialogActive` | `WsDialogActive` |
+| `ReplyChunk` | `WsReplyChunk` |
+| `ReplyEnd` | `WsReplyEnd` |
+| `DialogResolved` | `WsDialogResolved` |
+| `DialogAbandoned` | `WsDialogAbandoned` |
+| `Summary` | `WsSummary` |
+| `ErrorMessage` | `WsError` |
+| `WsStudentInfo` | `WsStudentInfo` |
+| `WsErrorCode` | `WsErrorCode` (Literal) |
+
+前端如需自动同步类型，可后续补一个 `pydantic-to-typescript` 生成步骤；M2 阶段先手抄。
 
 ---
 
@@ -450,3 +544,4 @@ interface StageListItem {
 | 版本 | 日期 | 变更 | 作者 |
 |---|---|---|---|
 | v0-draft | 2026-04-22 | 初稿 | Cascade |
+| v1 (#71) | 2026-04-25 | §3 替换为 1v1 答疑陪练 WebSocket 协议（`/ws/qa-sessions/{session_id}`），废弃多学生课堂模型；新增 `backend/schemas/ws_events.py` Pydantic 模型作为权威 schema | A-Agent |
