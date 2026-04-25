@@ -1,0 +1,158 @@
+[
+  {
+    "id": "math_limit_reach_19",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "极限",
+    "name": "极限是永远达不到的值",
+    "description": "认为变量可以无限接近极限值，但永远不可能等于极限值。",
+    "typical_error": "认为 0.999... 无限循环小数永远小于 1，不可能等于 1。",
+    "cause": "生活语言中“无限逼近”的概念干扰了严格的数学定义，未能理解动态趋近过程与静态结果的区别。"
+  },
+  {
+    "id": "math_derivative_extremum_20",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "导数及其应用",
+    "name": "导数为0的点必是极值点",
+    "description": "认为只要 f'(x)=0，该点就一定是函数的极值点，忽略了导数符号在两侧是否发生改变的条件。",
+    "typical_error": "求函数 y=x^3 的极值时，算出 x=0 时导数为0，就断定 x=0 是极小值或极大值点。",
+    "cause": "把极值点存在的必要条件当作了充分条件，没有结合函数图像（如拐点）进行全面分析。"
+  },
+  {
+    "id": "math_integral_area_21",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "定积分",
+    "name": "定积分必定为正数",
+    "description": "因为定积分经常用于求曲边梯形的面积，就认为定积分的结果一定是表示面积的正数。",
+    "typical_error": "计算积分上下限在 x 轴下方的函数时，得到负数结果觉得算错了。",
+    "cause": "几何意义对代数运算的强干扰，未能在更高抽象层次上区分积分值与面积面积绝对值的区别。"
+  },
+  {
+    "id": "math_vector_multiply_22",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "平面向量",
+    "name": "向量的数量积还是一个向量",
+    "description": "认为两个向量相乘（点乘），结果应该还是一个带有方向的向量。",
+    "typical_error": "计算 a·b 后，给结果加上了方向，或者在后续运算中继续把标量当向量去点乘。",
+    "cause": "实数乘法具有封闭性，导致学生想当然地认为向量乘法的封闭性也依然成立。"
+  },
+  {
+    "id": "math_complex_compare_23",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "复数",
+    "name": "虚数可以比较大小",
+    "description": "认为带有虚数单位 i 的复数也可以像实数那样通过大于小于号比较大小。",
+    "typical_error": "判断命题“若 a,b 为复数，且 a>b，则 a-b>0”为真。",
+    "cause": "实数集的良序性质被无意识地泛化到了复数集，未能理解复平面缺乏自然全序关系的本质。"
+  },
+  {
+    "id": "math_logarithm_add_24",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "对数函数",
+    "name": "对数运算法则的线性错觉",
+    "description": "认为 log(a+b) = log(a) + log(b)。",
+    "typical_error": "化简 log2(3+5) 时，写成了 log2(3) + log2(5)。",
+    "cause": "乘法分配律 f(a+b) = f(a)+f(b) (当 f 为线性函数时) 的深度烙印，被滥用于非线性运算。"
+  },
+  {
+    "id": "math_trig_linear_26",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "三角函数",
+    "name": "三角函数的分配律错觉",
+    "description": "认为 sin(A+B) = sinA + sinB。",
+    "typical_error": "求 sin(75°) 时，写成 sin(45°+30°) = sin45° + sin30°。",
+    "cause": "同样是线性思维泛化的结果，认为函数符号 f 就相当于一个系数，可以直接乘进去。"
+  },
+  {
+    "id": "math_solid_projection_28",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "立体几何",
+    "name": "直观图面积等于实际面积",
+    "description": "在使用斜二测画法画立体图形的直观图时，认为直观图上图形的面积就等于原图形的面积。",
+    "typical_error": "计算直观图中一个三角形的面积，把它当作原立体图形在该面上底面积去算体积。",
+    "cause": "未能在二维直观图（视觉变形）与三维真实空间属性之间建立清晰的换算机制。"
+  },
+  {
+    "id": "math_set_element_30",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "集合",
+    "name": "集合元素的互异性遗忘",
+    "description": "在求含有参数的集合元素时，求出参数后不代回原集合检验是否导致了元素重复。",
+    "typical_error": "求集合 A={x, x^2-1} 中 x 的值，解出 x=1，但不检验代入后集合变成 A={1, 0} 是合法的，若 x=-1/2 算出则忽略重复的情况（例子可能不严谨，但指代不检验互异性）。",
+    "cause": "集合作为高中的第一个抽象概念，其内隐的“互异性”规则不如明显的计算规则容易引起警觉。"
+  },
+  {
+    "id": "math_probability_gambler_14_alt_high",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "概率",
+    "name": "概率为0的事件一定不发生",
+    "description": "在几何概型或连续型随机变量中，错误地将概率为0等同于不可能事件。",
+    "typical_error": "认为在数轴上随机取一个点，取到恰好是0.5的概率是0，所以根本取不到。",
+    "cause": "离散概率模型的直观感受无法平滑过渡到连续统中。"
+  },
+  {
+    "id": "math_function_continuous_15_alt_high",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "函数的图像",
+    "name": "函数的定义域必须是连续的区间",
+    "description": "无法接受定义在离散点集或不连通区间上的函数。",
+    "typical_error": "认为 y = n (n为自然数) 这样的数列不是函数。",
+    "cause": "初中大量接触连续函数图像导致的定势。"
+  },
+  {
+    "id": "math_equation_extraneous_16_alt_high",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "分式方程与无理方程",
+    "name": "不等式两边平方后解集不变",
+    "description": "解不等式时，随意在两边同时平方，不考虑式子的正负性。",
+    "typical_error": "解 x > -2 时，两边平方得到 x² > 4。",
+    "cause": "等式同解变形规律的滥用。"
+  },
+  {
+    "id": "math_inequality_multiply_25_alt_high",
+    "subject": "数学",
+    "stage": [
+      "h"
+    ],
+    "topic": "不等式",
+    "name": "解绝对值不等式可以不分类讨论",
+    "description": "遇到 |x| < a 时，直接去绝对值符号而不考虑正负区间。",
+    "typical_error": "解 |x-1| > 2 得到 x-1 > 2 即 x > 3，漏掉了负数情况。",
+    "cause": "缺乏严密的逻辑分类讨论思想。"
+  }
+]

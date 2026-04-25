@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Misconceptions Schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "迷思概念唯一标识，格式建议：学科缩写_话题_序号（如 math_fraction_01）"
+      },
+      "subject": {
+        "type": "string",
+        "description": "所属学科"
+      },
+      "stage": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "适用的学段列表，如 [\"p_middle\", \"p_upper\"]"
+      },
+      "topic": {
+        "type": "string",
+        "description": "知识点或话题"
+      },
+      "name": {
+        "type": "string",
+        "description": "迷思概念的简短名称"
+      },
+      "description": {
+        "type": "string",
+        "description": "错误认知的具体描述"
+      },
+      "typical_error": {
+        "type": "string",
+        "description": "学生常犯的典型错误表现（可以是台词或解题过程）"
+      },
+      "cause": {
+        "type": "string",
+        "description": "产生该迷思的认知原因分析"
+      }
+    },
+    "required": ["id", "subject", "stage", "topic", "name", "description", "typical_error", "cause"],
+    "additionalProperties": false
+  }
+}
