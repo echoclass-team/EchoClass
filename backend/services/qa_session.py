@@ -1,9 +1,9 @@
 """QASession — 1v1 答疑陪练的轻量编排服务。
 
-设计目标（详见 ``docs/PIVOT.md``）：
-- 取代旧的 ``ClassroomGraph`` LangGraph 状态机
-- 不是回合制，每个 ``DialogSession`` 是独立的多轮 1v1 对话
-- 用普通异步类即可，无需引入图框架
+设计目标：
+- 每个 ``DialogSession`` 是独立的多轮 1v1 对话
+- 用普通异步类即可承载，无需引入复杂的图框架
+- 学生 Agent 主动提问，师范生从问题队列里挑选并 1v1 解答
 
 核心数据流::
 
@@ -61,7 +61,9 @@ class QASession:
         所有学生提出的问题对应的对话会话，key 为 dialog_id（== question.id）。
     """
 
-    def __init__(self, *, lesson_meta: LessonMeta, session_id: str | None = None) -> None:
+    def __init__(
+        self, *, lesson_meta: LessonMeta, session_id: str | None = None
+    ) -> None:
         self.id = session_id or str(uuid.uuid4())
         self.lesson_meta = lesson_meta
         self.dialogs: dict[str, DialogSession] = {}
@@ -200,12 +202,12 @@ class QASession:
 
         agent = self._agents.get(dialog.student_id)
         if agent is None:
-            raise QASessionError(
-                f"no student agent registered for {dialog.student_id}"
-            )
+            raise QASessionError(f"no student agent registered for {dialog.student_id}")
 
         now = datetime.now(timezone.utc)
-        dialog.messages.append(DialogMessage(role="teacher", content=text, timestamp=now))
+        dialog.messages.append(
+            DialogMessage(role="teacher", content=text, timestamp=now)
+        )
 
         result = await agent.respond_in_dialog(
             question=dialog.question,
@@ -238,7 +240,9 @@ class QASession:
         dialog.resolution_source = source
         if dialog_id in self._pending_order:
             self._pending_order.remove(dialog_id)
-        logger.info("QASession[%s] resolved dialog %s via %s", self.id, dialog_id, source)
+        logger.info(
+            "QASession[%s] resolved dialog %s via %s", self.id, dialog_id, source
+        )
         return dialog
 
     def abandon_dialog(self, dialog_id: str) -> DialogSession:
@@ -264,9 +268,7 @@ class QASession:
 
         # 按重点维度的覆盖率（去重）
         covered_points = {
-            d.question.linked_key_point
-            for d in resolved
-            if d.question.linked_key_point
+            d.question.linked_key_point for d in resolved if d.question.linked_key_point
         }
         # 破除的迷思
         broken_misconceptions = {

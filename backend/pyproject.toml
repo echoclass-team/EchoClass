@@ -1,7 +1,7 @@
 [project]
 name = "echoclass-backend"
 version = "0.1.0"
-description = "EchoClass backend — FastAPI + LangGraph multi-agent virtual classroom."
+description = "EchoClass backend — FastAPI · 师范生 1v1 答疑陪练系统。"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "EchoClass Team" }]
@@ -10,8 +10,6 @@ license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
-    "langgraph>=0.2.0",
-    "langchain-openai>=0.2.0",
     "openai>=1.40.0",
     "chromadb>=0.5.0",
     "pydantic>=2.8.0",

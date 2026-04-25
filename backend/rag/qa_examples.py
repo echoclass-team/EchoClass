@@ -1,8 +1,7 @@
 """学段 few-shot 示例集合加载模块。
 
 `data/qa_examples/<stage_id>.json` 为每个学段提供 2 个 ask 范例 + 2 个 chat 范例，
-用于注入到 student_ask.j2 / student_chat.j2 prompt 中显著提升 LLM 输出质量
-（详见 docs/PIVOT.md M1 阶段路线图）。
+用于注入到 student_ask.j2 / student_chat.j2 prompt 中显著提升 LLM 输出质量。
 
 设计要点：
 - 数据驱动：范例放 JSON，与代码解耦，便于 Role C / Role A 协作维护

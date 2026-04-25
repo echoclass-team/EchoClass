@@ -15,8 +15,6 @@
 - 简易模式（name / personality / knowledge_level / behavior_traits）
 - 完整模式（从 data/personas/*.json 加载，18 字段）
 
-老课堂回合制 ``respond()`` 接口已随产品转型废弃，详见 ``docs/PIVOT.md``。
-
 典型用法::
 
     from agents.student import StudentAgent
@@ -123,7 +121,7 @@ class StudentAgent:
     ) -> list[StudentQuestion]:
         """根据教案 + 自身人设生成一组学生想问的问题（宽生成 + self-check + 多样性筛选）。
 
-        流程（详见 docs/PIVOT.md M1 阶段）::
+        流程::
 
             1. 第一次 LLM：用 student_ask.j2 生成 count + overshoot 个候选
             2. 解析校验为 list[StudentQuestion]
@@ -221,10 +219,9 @@ class StudentAgent:
     ) -> DialogReplyResult:
         """1v1 答疑陪练里的一轮回应。
 
-        与回合制 ``respond`` 不同：
-        - 输入是单一 ``StudentQuestion``（而非整堂课上下文）+ 对话历史
-        - 输出是**纯文本**学生话语（而非含 intent/emotion 的 JSON）
-        - 检测末尾 ``[懂了]`` 标记 → ``self_resolved=True``，由上游 orchestrator 决定是否结束会话
+        - 输入是单一 ``StudentQuestion`` + 对话历史
+        - 输出是**纯文本**学生话语，末尾可能含 ``[懂了]`` 标记
+        - 检测末尾 ``[懂了]`` → ``self_resolved=True``，由上游 orchestrator 决定是否结束会话
 
         Parameters
         ----------

@@ -1,4 +1,4 @@
-"""StudentAgent 相关的 Pydantic 模型。
+"""学生人设与课堂上下文相关的 Pydantic 模型。
 
 包含：
 - Persona：学生人设（兼容简易 4 字段 和 data/personas/ 完整 18 字段两种模式）
@@ -6,9 +6,7 @@
 - ClassroomContext：课堂上下文（科目、话题、对话历史）
 - load_personas()：从 JSON 文件加载人设列表
 
-注：旧回合制 ``StudentReply`` / ``Intent`` 已随产品转型迁出至
-``backend/legacy/schemas/student_reply.py``，新方向的对话回复模型
-参见 ``schemas.dialog.DialogReplyResult``。
+学生在 1v1 答疑陪练中的回复模型参见 ``schemas.dialog.DialogReplyResult``。
 """
 
 from __future__ import annotations
