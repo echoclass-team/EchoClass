@@ -6,8 +6,6 @@
 参赛项目：**华东师范大学开发者大赛 2026 · 大语言模型创新应用开发赛道**
 赛事官网：<https://developer.ecnu.edu.cn/competition2026/>
 
-> 📌 **2026-04 项目转型说明**：项目已从早期的"多 Agent 虚拟课堂试讲"收敛到**1v1 答疑陪练**形态。原 Director / Evaluator / FIAS 多维评估等设计已弃用。完整论证见 [`docs/proposal.md`](./docs/proposal.md)。
-
 ---
 
 ## ✨ 项目简介
