@@ -83,3 +83,38 @@ class DialogReplyResult(BaseModel):
         description="LLM 是否在末尾输出了 [懂了] 标记，表示学生认为问题已解决",
     )
     raw: str = Field(default="", description="LLM 原始输出（含可能的标记），便于排错")
+
+
+StudentStreamEventType = Literal["delta", "final"]
+"""StudentAgent 流式事件的两种类型：
+
+- ``delta``：增量文本片段，UI 应追加到当前学生气泡里
+- ``final``：流结束，``result`` 是结构化的最终结果（含 self_resolved）
+"""
+
+
+class StudentStreamEvent(BaseModel):
+    """``StudentAgent.stream_in_dialog`` 产生的流式事件。
+
+    使用方式::
+
+        async for evt in agent.stream_in_dialog(...):
+            if evt.type == "delta":
+                ui.append(evt.delta)
+            else:  # final
+                ui.replace(evt.result.content)
+                if evt.result.self_resolved:
+                    propose_resolve()
+
+    设计要点：
+    - delta 不会包含末尾的 ``[懂了]`` 标记（agent 内部用 hold-back 缓冲过滤）
+    - final.content 是权威最终文本，UI 收到 final 时建议覆盖一次以处理边界差异
+    - delta 可能为空字符串（流未产出新可见文本时不发，但调用方应宽松对待）
+    """
+
+    type: StudentStreamEventType = Field(..., description="事件类型")
+    delta: str = Field(default="", description="增量文本（仅 type=delta 时有意义）")
+    result: DialogReplyResult | None = Field(
+        default=None,
+        description="最终结构化结果（仅 type=final 时非空）",
+    )
