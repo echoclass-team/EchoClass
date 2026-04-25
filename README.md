@@ -1,107 +1,171 @@
 # EchoClass
 
-> AI-powered Q&A coaching for pre-service teachers.
-> 师范生 1v1 答疑陪练系统 —— 让未来的教师在走上讲台前先被 AI 学生「问倒」几百次。
+> AI-powered 1v1 Q&A coach for pre-service teachers.
+> 师范生 1v1 答疑陪练系统 —— 让未来的教师在走上讲台前，先反复练习"被学生追问"。
 
 参赛项目：**华东师范大学开发者大赛 2026 · 大语言模型创新应用开发赛道**
 赛事官网：<https://developer.ecnu.edu.cn/competition2026/>
+
+> 📌 **2026-04 项目转型说明**：项目已从早期的"多 Agent 虚拟课堂试讲"收敛到**1v1 答疑陪练**形态。原 Director / Evaluator / FIAS 多维评估等设计已弃用。完整论证见 [`docs/proposal.md`](./docs/proposal.md)。
 
 ---
 
 ## ✨ 项目简介
 
-### 背景
+### 痛点
 
-师范生最高频、最痛苦的备课动作不是「讲课」，而是**被学生问倒**：
+师范生在象牙塔里积累了大量教育学理论，但**真正走上讲台前缺乏与"会问真实问题的学生"反复对练的机会**：
 
-- **真人试讲难**：组织一节真实课堂代价高，一次只能留下 40 分钟录音和模糊印象
-- **反馈滞后**：导师点评稀缺，错了就是真的失败，没有重来一次的机会
-- **学生反应千差万别**：薄弱生、优等生、走神生、爱跑题生 —— 真实课堂只能遇到一种组合
-- **教案到实战的鸿沟**：写教案时计划详尽，一到课堂就发现「这个概念孩子根本听不懂」
+- **同伴扮演的温室效应**：师范生互相扮"小学生"时背景太接近，提不出真实的儿童式困惑
+- **答疑场景比试讲更稀缺**：多数人**没经历过一次完整的"被学生连续追问"**，而那才是教学功底真正的试金石
+- **缺乏脚手架训练**：识别学生迷思 → 命中错误前提 → 用合适粒度逐步纠偏，这套能力只能在大量真实对话中习得
 
 ### 使用流程
 
-EchoClass 是一个基于教育学双层建模的 1v1 答疑陪练系统：
+```
+[1] 上传教案（PDF / Markdown / TXT）→ 自动抽取学科 / 学段 / 教学目标 / 重点 / 难点
+[2] 选学段 + 挑虚拟学生人设（6 学段 × 3 学生 = 18 种典型组合）
+[3] 学生根据教案"主动提问" → 多个候选问题供老师选
+[4] 老师选一个问题进入 1v1 答疑对话（流式渲染）
+    · 学生按人设说话，带犹豫 / 口头禅 / 孩子腔
+    · 含错误前提的问题不轻易"懂"，要被讲到点子上才行
+[5] 学生末尾输出 [懂了] 标记 → self_resolved 触发该题结束
+[6] 进下一题 / 切学生 / 结束 session
+```
 
-1. **上传教案** — PDF / Markdown / TXT，系统自动解析并抽取学科、学段、教学目标、知识点、难点
-2. **选择学段与学生** — 6 档学段（小学 3 + 初中 2 + 高中 1）× 每档 3 种典型学生 = 18 个虚拟学生人设
-3. **学生主动提问** — AI 学生根据自己的人设 × 教案内容**主动构思**会问老师的问题（5 类 category × 3 档难度，关联具体教学重点与学科迷思）
-4. **微信式 1v1 答疑** — 师范生从问题队列里挑学生进入 1v1 对话；多个学生可切换
-5. **退出总结** — 统计已解答 / 放弃数、覆盖的教学重点、破除的学科迷思
+### 关键设计点
 
-### 核心设计
+- **双层人设建模（学段共性 × 个体差异）**
+  6 档学段特征库（皮亚杰认知阶段 + 思维方式 + 语言风格）做硬性认知边界，避免 LLM "小学一年级开口讲微积分"的超模问题；18 个学生人设叠加性格、口头禅、迷思倾向。
 
-- **双层教育学建模**：6 档学段特征库（基于皮亚杰认知发展阶段、维果茨基最近发展区、埃里克森心理社会理论、《中小学心理健康教育指导纲要》）约束认知上限，再叠加个体人设（性格、口头禅、学业水平、迷思倾向），避免 LLM 常见的「小学一年级开口讲微积分」失真。
+- **学科迷思概念库驱动错误生成**
+  21 份学科 × 学段迷思 JSON（覆盖小初高数/理/化/生/语文/英语/史地政），由 `match_misconceptions(subject, stage_id, key_points, ...)` 动态匹配最多 3 条注入 prompt——薄弱学生的错误不是随机的，而是**真实教学研究里发现的典型迷思**。
 
-- **学生主动提问**：颠倒「老师讲、学生答」的传统模拟范式，更接近真实辅导场景，也最贴师范生备课时的高频痛点（「如果学生这样问我能答上来吗？」）。
+- **学生提问的"宽生成 + self-check + 多样性筛选"管线**
+  `StudentAgent.generate_questions` 二阶段：第一阶段宽生成 N + overshoot 个候选；第二阶段让 agent 自评 (人设贴合度 + 教育价值 + 教案相关性)，剔除 keep=false / score<60；最后按类别多样性贪心 + self_score 排序取 top N。
 
-- **学科迷思概念库驱动**：学生的错误前提不是随机的，而是从学科常见迷思库里挑选（如小学分数加法常把分子分母分别相加）。`stuck_misconception` 类问题的对话只有当老师**真正击中错误前提**时学生才会承认「懂了」。
+- **流式 `[懂了]` HOLDBACK 缓冲**
+  学生末尾的 `[懂了]` 标记不能流式推到前端，否则会破坏体验。`stream_in_dialog` 在推送增量时永远保留尾部 16 字符不发出，流结束后剥离 `[懂了]` 再补一个 `delta` 事件 + 最终 `final` 事件——前端只看到学生自然说完话。
 
-- **二阶段 self-check 提升问题质量**：`generate_questions` 内部跑两次 LLM —— 先宽生成 N+overshoot 个候选，再让 agent 自评（人设贴合度 + 教育价值 + 教案相关性），最后类别多样性筛选取 top N。
+- **维果茨基脚手架的强制练习**
+  prompt 显式约束：含 `stuck_misconception` 类别的问题，**老师不真正讲到错误前提之前学生不会"懂"**。逼迫师范生练习"识别迷思 → 命中靶心 → 分级解释"。
 
-- **同学段 few-shot 注入**：6 个学段各维护 2 个 ask 范例 + 2 个 chat 范例（[`data/qa_examples/`](./data/qa_examples/)），渲染 prompt 时按当前 persona 自动挑选注入，显著提升口语化与人设贴合度。
+## 📌 当前进度
 
-- **教案 RAG 检索**：上传的教案被解析、切片、向量化并索引，问题与对话围绕教案实际内容展开。
+> 阶段划分见 [`docs/roles.md`](./docs/roles.md)。详细任务分解：A / B / C 各角色 M1 / M2 / M3 表。
+
+### 后端（A-Agent）— M1 已收尾，M2 进行中
+
+- ✅ FastAPI 脚手架 + CORS + `/health` + 统一 `ApiResponse` 响应包络
+- ✅ `LLMClient`：OpenAI 兼容（ChatECNU ecnu-max 默认）+ tenacity 重试 + token 日志 + stream 包装
+- ✅ `StudentAgent` 三件套：
+  - `generate_questions` — 宽生成 + self-check + 多样性筛选
+  - `respond_in_dialog` — 多轮 1v1 对话
+  - `stream_in_dialog` — 流式推送 + `[懂了]` HOLDBACK 缓冲
+- ✅ 教案 RAG：`parser`（pymupdf4llm）→ `extractor`（LLM 抽取 LessonMeta）→ `indexer`（500 token 切片 + Chroma 向量化）
+- ✅ 学科迷思 RAG：`match_misconceptions(subject, stage_id, key_points, ...)`
+- ✅ 6 学段 ask/chat few-shot 范例选择器（`rag.qa_examples`）
+- ✅ `QASession` 骨架（services 层）：问题队列 + 1v1 对话状态机
+- ✅ REST API：`/api/lessons/upload|{id}` · `/api/stages[/{id}]` · `/api/personas[/{name_or_id}]`
+- ✅ 139+ 单元 / 集成测试（mock LLM 不走网络）
+- 🚧 WebSocket 1v1 流式答疑端到端（M2 与 B 共建）
+- 🚧 持久化（SQLite，B 主导）
+- 📋 答疑后反馈 Agent（迷思命中率 / 脚手架质量打分，M3）
+
+### 前端（B-Full）— M1 已收尾，M2 进行中
+
+- ✅ Next.js 14（App Router）+ TypeScript + TailwindCSS 脚手架
+- ✅ Setup 三段式：`/setup/stage`（学段）→ `/setup/config`（教案 + 学生）→ `/classroom/demo`（演示骨架）
+- ✅ 教案上传（调用 `/api/lessons/upload`）+ 本地教案库 localStorage 暂存
+- ✅ `apiFetch` 统一 client（`ApiResponse` envelope 解析 + `ApiError` 类）
+- ✅ 类型定义严格对齐后端 schema（Stage / Persona / LessonMeta / LessonRecord）
+- 🚧 1v1 答疑 UI（提问列表 → 选题 → 流式对话 + `[懂了]` 视觉处理）
+- 🚧 WebSocket client + 后端 endpoint 端到端
+- 🚧 `/api/sessions` REST + SQLite 持久化
+- 📋 答疑反馈页可视化（迷思命中高亮 / 轮次拆解 / 改进建议卡片，M3）
+
+### 产品 / 评测（C-Prod）— M1 已收尾，M2 进行中
+
+- ✅ 立项书 v1（1v1 答疑陪练版，[`docs/proposal.md`](./docs/proposal.md)）
+- ✅ 6 学段 stage_profile JSON
+- ✅ 18 学生人设 JSON（已于 v1.1 移除 4 个 Director 时代死字段，详见 [`docs/persona_design.md`](./docs/persona_design.md)）
+- ✅ 21 份学科 × 学段迷思概念库 JSON
+- ✅ 6 份跨学段样例教案（小低 / 小中 / 小高 / 初低 / 初高 / 高中，PDF + Markdown + meta）
+- ✅ 6 学段 ask/chat few-shot 范例集合（与 A 协作落入 `rag/qa_examples`）
+- 🚧 答疑专项评估 Rubric 初版 + 评估 prompt v1
+- 🚧 用户测试方案（招募标准 + 测试任务卡 + 反馈表）
+- 📋 真人师范生测试 × 5+ 轮 + Demo 视频 + 答辩 PPT（M3）
 
 ## 🏗️ 技术栈
 
 | 层 | 技术 | Owner |
 |---|---|---|
-| **前端** | Next.js 14（App Router）· TypeScript · TailwindCSS · shadcn/ui · Zustand · TanStack Query · Recharts | **B** |
-| **API / 协议** | FastAPI · WebSocket（JSON Lines）· REST · CORS · uv | **B** |
-| **Agent 编排** | 1v1 dialog session 管理（普通 async service 类）· few-shot + self-check 二阶段质量增强 | **A** |
-| **LLM 接入** | ChatECNU ecnu-max（OpenAI 兼容接口）· openai 客户端 · tenacity 重试 · token 使用日志 | **A** |
-| **RAG** | Chroma 向量库 · pymupdf4llm（PDF → Markdown）· Jinja2 Prompt 模板 · 500 token 切片 | **A** |
-| **教育学建模** | 6 档学段认知特征库 · 18 个学生人设 JSON · 学科迷思概念库 · 6 学段 few-shot 范例 | A / C |
-| **持久化** | SQLite（会话 / 消息） | **B** |
-| **评估** | Flanders 互动分析 · 自定义 Rubric · LLM-as-a-Judge | A / C |
-| **测试** | pytest + pytest-asyncio（后端）· Vitest + Playwright（前端，可选） | A / B |
+| **前端** | Next.js 14（App Router）· TypeScript · TailwindCSS · shadcn/ui · Zustand · TanStack Query · Recharts · lucide-react | **B** |
+| **API / 协议** | FastAPI · WebSocket（JSON Lines）· REST · uv 依赖管理 · 统一 `ApiResponse` 包络 | **B** |
+| **Agent** | StudentAgent（generate_questions + respond_in_dialog + stream_in_dialog）· QASession 编排 · 宽生成 + self-check 二阶段 | **A** |
+| **LLM 接入** | OpenAI 兼容（ChatECNU ecnu-max 默认；可切 DeepSeek / Qwen）· openai 客户端 · tenacity 重试 · token 使用日志 | **A** |
+| **RAG** | Chroma 向量库 · pymupdf4llm（PDF → Markdown）· Jinja2 Prompt 模板 · 500 token 切片 · 迷思动态匹配 · few-shot 选择器 | **A** |
+| **教育学建模** | 6 档学段认知特征库（皮亚杰 / 维果茨基）· 18 学生人设 JSON · 21 份学科迷思概念库 | A / C |
+| **持久化** | SQLite（会话 / 对话 / 问题记录，M2） | **B** |
+| **评估** | 答疑专项 Rubric · LLM-as-a-Judge（M2 设计中） | A / C |
+| **测试** | pytest + pytest-asyncio（后端 mock LLM）· Vitest + Playwright（前端，可选） | A / B |
 
 ## 📁 目录结构
 
 ```
 EchoClass/
 ├── backend/                     # Python 3.11+ · FastAPI
-│   ├── agents/
-│   │   └── student.py           # StudentAgent — generate_questions / respond_in_dialog
-│   ├── services/
-│   │   └── qa_session.py        # QASession orchestrator（1v1 答疑会话编排）
-│   ├── rag/
+│   ├── agents/                  # StudentAgent（generate_questions / respond_in_dialog / stream_in_dialog）
+│   ├── services/                # QASession（1v1 答疑会话编排）
+│   ├── rag/                     # 教案与迷思 RAG
 │   │   ├── parser.py            # PDF / MD / TXT → 纯文本（pymupdf4llm）
-│   │   ├── extractor.py         # LLM 抽取 LessonMeta（subject/grade/topic/objectives/key_points/difficult_points）
+│   │   ├── extractor.py         # LLM 抽取 subject / grade / topic / objectives / key_points / difficult_points
 │   │   ├── indexer.py           # 500 token 切片 + Chroma 向量化
-│   │   ├── misconceptions.py    # 学科迷思概念库（按 stage/subject/key_point 匹配）
-│   │   └── qa_examples.py       # 6 学段 few-shot 范例集合（按 persona 自动挑选）
-│   ├── llm/                     # LLMClient 封装（chat / stream + 重试 + 日志）
-│   ├── prompts/
+│   │   ├── misconceptions.py    # 学科迷思库加载 + match_misconceptions
+│   │   └── qa_examples.py       # 6 学段 ask/chat few-shot 范例选择器
+│   ├── llm/                     # LLMClient 封装（chat / stream + 重试 + token 日志）
+│   ├── prompts/                 # Jinja2 Prompt 模板
 │   │   ├── student_ask.j2       # 学生根据教案生成问题（含同学段 few-shot）
-│   │   ├── student_chat.j2      # 学生 1v1 多轮对话（含 [懂了] 自我宣称解决）
-│   │   ├── student_check.j2     # 二阶段 self-check 评分
-│   │   └── extractor.j2         # 教案元数据抽取
-│   ├── schemas/
+│   │   ├── student_chat.j2     # 学生 1v1 多轮对话（含 [懂了] 自我宣称解决）
+│   │   ├── student_check.j2    # 二阶段 self-check 评分
+│   │   └── extractor.j2        # 教案元数据抽取
+│   ├── api/                     # REST 路由 + WebSocket endpoint（M2）
+│   │   ├── lessons.py           # POST /api/lessons/upload · GET /api/lessons/{id}
+│   │   ├── stages.py            # GET /api/stages · GET /api/stages/{id}
+│   │   ├── personas.py          # GET /api/personas · GET /api/personas/{name_or_id}
+│   │   └── response.py          # ApiResponse 包络辅助
+│   ├── schemas/                 # Pydantic 模型
 │   │   ├── stage.py             # StageProfile（学段认知特征）
-│   │   ├── student.py           # Persona / ClassroomContext
-│   │   ├── lesson.py            # LessonMeta / LessonRecord / RecommendedPersonasData
+│   │   ├── student.py           # Persona / ClassroomContext（v1.1 收紧到 14 字段）
+│   │   ├── lesson.py            # LessonMeta / LessonRecord
 │   │   ├── question.py          # StudentQuestion（含 self_score / category / difficulty / linked_*）
-│   │   ├── dialog.py            # DialogSession / DialogMessage / DialogReplyResult
-│   │   └── misconception.py     # Misconception
-│   ├── api/                     # REST 路由（B 端）
-│   ├── db/                      # SQLite 持久化（B 端规划中）
+│   │   ├── dialog.py            # DialogSession / DialogMessage / DialogReplyResult / StudentStreamEvent
+│   │   ├── misconception.py     # Misconception
+│   │   └── api.py               # 统一 ApiResponse 包络
+│   ├── db/                      # SQLite（会话持久化，M2）
 │   ├── scripts/                 # 冒烟测试与 CLI demo
-│   └── tests/                   # pytest 单元与集成测试
-├── frontend/                    # TypeScript · Next.js 14 + TailwindCSS（B 端）
+│   │   ├── try_qa_session.py    # 1v1 答疑陪练交互 demo（真实 LLM）
+│   │   ├── try_lesson_rag.py    # 教案 RAG 完整管线
+│   │   └── validate_personas.py # 18 个 persona JSON 完整性校验（不调 LLM）
+│   ├── tests/                   # pytest 单元 / 集成测试
+│   ├── main.py                  # FastAPI 入口
+│   └── pyproject.toml
+├── frontend/                    # TypeScript · Next.js 14
+│   ├── src/app/                 # App Router：首页 / setup / classroom / lessons / sessions
+│   ├── src/components/setup/    # Setup 流程（学段 / 教案 / 人设）
+│   ├── src/lib/api/             # apiFetch 客户端（ApiResponse envelope + ApiError）
+│   ├── src/lib/setup-storage.ts # 本地教案库 localStorage 持久化
+│   └── src/types/               # Stage / Persona / Lesson 类型（严格对齐后端）
 ├── data/
 │   ├── stage_profiles/          # 6 档学段认知特征 JSON
-│   ├── personas/                # 18 个学生人设 JSON
-│   ├── qa_examples/             # 6 学段 few-shot 范例集合
-│   ├── lesson_samples/          # 样例教案（PDF + Markdown + 解析预期）
-│   ├── misconceptions/          # 学科迷思概念库
-│   └── eval_rubrics/            # 评估评分标准（规划中）
+│   ├── personas/                # 18 学生人设 JSON（v1.1 schema 14 字段）
+│   ├── misconceptions/          # 21 份学科 × 学段迷思概念库
+│   └── lesson_samples/          # 6 份跨学段样例教案（PDF + MD + meta）
 ├── docs/
-│   ├── roles.md                 # 三人分工细则
+│   ├── roles.md                 # 三人分工细则（M1/M2/M3 阶段计划）
 │   ├── api_contract.md          # API 合约
-│   ├── persona_design.md        # 人设设计文档
-│   └── proposal.md              # 立项书
+│   ├── persona_design.md        # 学生人设设计文档（v1.1 适配 1v1）
+│   └── proposal.md              # 立项书 v1（1v1 答疑陪练）
 ├── .github/                     # PR / Issue 模板
 ├── CONTRIBUTING.md              # 协作规范
 └── README.md
@@ -113,42 +177,39 @@ EchoClass/
 
 | 角色 | 代号 | 负责人 | 核心职责 | 代码领地 |
 |---|---|---|---|---|
-| **Agent 工程师** | `A-Agent` | **[@Nekooo915](https://github.com/Nekooo915)** | LLMClient 封装、StudentAgent（提问 + 1v1 对话）、QASession 编排器、教案 RAG 管线、迷思库 / few-shot 数据加载 | `backend/{agents,services,rag,llm,prompts,schemas}` |
-| **全栈工程师** | `B-Full` | **[@Traumere7](https://github.com/Traumere7)** | 前端答疑 UI（微信式多对话切换）、WebSocket 端到端、REST 路由、会话持久化、视觉与落地页 | `frontend/`、`backend/{api,db}` |
-| **产品 / 评测** | `C-Prod` | **[@IST00](https://github.com/IST00)** | 立项书与产品展示材料、学生人设设计、学科迷思概念库、评估 Rubric、用户测试、Demo 视频 | `data/`、`docs/`、`backend/prompts/` |
+| **Agent 工程师** | `A-Agent` | **[@Nekooo915](https://github.com/Nekooo915)** | LLM 客户端封装、StudentAgent 三件套、RAG 管线、QASession 编排、流式 `StudentStreamEvent` 生产 | `backend/{agents,services,rag,llm,prompts,schemas}` |
+| **全栈工程师** | `B-Full` | **[@Traumere7](https://github.com/Traumere7)** | 前端 1v1 答疑 UI 与反馈页、**WebSocket 端到端**（消费 A 的 `stream_in_dialog`）、REST 路由、SQLite 会话持久化、视觉与落地页 | `frontend/`、`backend/{api,db}` |
+| **产品 / 评测** | `C-Prod` | **[@IST00](https://github.com/IST00)** | 立项书与答辩材料、学生人设设计与维护、学科迷思概念库、答疑专项评估 Rubric、用户测试、Demo 视频 | `data/`、`docs/`、`backend/prompts/` |
 
-### A ↔ B 协议（待对齐）
+### A ↔ B 内部契约
 
-- A 通过 `services/qa_session.QASession` 暴露：`spawn` / `next_pending` / `start_dialog` / `send_teacher_message` / `mark_resolved` / `abandon_dialog` / `summary`
-- B 在 WebSocket endpoint 中 consume `QASession` 事件并编码为 JSON Lines 帧推给前端
-- 前后端事件协议在 `docs/api_contract.md` 与 issue 中固化
+- A 暴露 `StudentAgent.stream_in_dialog` 这个 async generator，产出 `StudentStreamEvent`（`delta` × N + `final`）
+- B 在 WS endpoint `async for` 这个 generator → 序列化为 JSON Lines 推给前端
+- 事件 schema 在 `backend/schemas/dialog.py` + `backend/schemas/events.py`（M2 待补 WS 包装）；任何变更须两人连署
+
+### M1 / M2 / M3 一览
+
+| 阶段 | A-Agent | B-Full | C-Prod |
+|---|---|---|---|
+| **M1** ✅ | StudentAgent 三件套 + RAG + 迷思 + few-shot + QASession 骨架 | FastAPI 脚手架 + REST + 前端 Setup 三段式 + apiFetch | 立项书 v1 + 6 学段 + 18 人设 + 21 迷思库 + 6 样例教案 + few-shot 范例 |
+| **M2** 🚧 | QASession 端到端打磨 + 流式 `[懂了]` 稳定性 + WS 事件契约 | WebSocket 端到端 + 1v1 答疑 UI + SQLite 持久化 + shadcn/ui 升级 | 答疑专项 Rubric + 评估 prompt + 用户测试方案 + 示范片段 |
+| **M3** 📋 | 答疑后反馈 Agent + 性能调优 + （stretch）ASR/TTS | 反馈页可视化 + 落地页 + 视觉打磨 | 真人测试 × 5+ 轮 + 答辩 PPT + Demo 视频 |
 
 ## 🚦 协作 & 开发
 
 - **协作规范**：[`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - **分工细则**：[`docs/roles.md`](./docs/roles.md)
+- **任务看板**：<https://github.com/orgs/echoclass-team/projects/1>
+- **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>
 - **API 合约**：[`docs/api_contract.md`](./docs/api_contract.md)
 - **人设设计**：[`docs/persona_design.md`](./docs/persona_design.md)
 - **立项书**：[`docs/proposal.md`](./docs/proposal.md)
-- **任务看板**：<https://github.com/orgs/echoclass-team/projects/1>
-- **Issue 列表**：<https://github.com/echoclass-team/EchoClass/issues>
-
-### 路线图
-
-| 里程碑 | 范围 | 状态 |
-|---|---|---|
-| **M1 — 后端 1v1 闭环** | StudentAgent.generate_questions / respond_in_dialog · QASession orchestrator · 6 学段 few-shot · 二阶段 self-check · CLI demo · 单元 / 集成测试 | ✅ 完成 |
-| **M2 — 前后端联调** | 流式 chunk · WebSocket 协议 · 微信式 1v1 UI · 多学生切换 · 队列红点提醒 | ⏳ 进行 |
-| **M3 — 评估闭环** | 学生自我宣称解决判定 · 师范生手动 override · 退出 summary 报告 · 评估 Rubric | ⏳ |
-| **M4 — 产品打磨** | 评估 Agent 自动判分 · 用户测试 · Demo 视频 · PPT | ⏳ |
-
-完整 issue 列表见 GitHub。
 
 ### 新成员 Onboarding
 
-1. 阅读本 README + [`CONTRIBUTING.md`](./CONTRIBUTING.md) + [`docs/roles.md`](./docs/roles.md)
+1. 阅读本 README + [`CONTRIBUTING.md`](./CONTRIBUTING.md) + [`docs/roles.md`](./docs/roles.md) + [`docs/proposal.md`](./docs/proposal.md)
 2. 认领自己的 Role（A / B / C）
-3. 从 [Issue 列表](https://github.com/echoclass-team/EchoClass/issues) 里挑一个分配给自己
+3. 从 Issue 列表里挑一个本里程碑（`m2`）的任务，分配给自己
 4. 按 [`CONTRIBUTING.md`](./CONTRIBUTING.md) 流程开分支、写代码、开 PR
 
 ```bash
@@ -157,20 +218,17 @@ gh issue develop <N> --repo echoclass-team/EchoClass --checkout
 
 ### 本地启动后端
 
-完整分平台部署文档：
-
-- macOS / Linux：[`docs/setup_macos_linux.md`](./docs/setup_macos_linux.md)
-- Windows：[`docs/setup_windows.md`](./docs/setup_windows.md)
-
-精简版见 [`backend/README.md`](./backend/README.md)。快速开始：
+详见 [`backend/README.md`](./backend/README.md)。快速开始：
 
 ```bash
 cd backend
-uv sync --extra dev                       # 安装依赖（需先装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh）
+uv sync --extra dev                       # 安装依赖（先装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh）
 cp .env.example .env                      # 填入 OPENAI_API_KEY 等
 uv run uvicorn main:app --reload --port 8000
-# 验证：curl http://localhost:8000/health  →  {"status":"ok"}
-uv run pytest                             # 全部单元 / 集成测试
+# 验证：curl http://localhost:8000/health        →  {"status":"ok"}
+# 查看学段：curl http://localhost:8000/api/stages
+# 查看人设：curl http://localhost:8000/api/personas
+uv run pytest                             # 运行全部测试
 ```
 
 ### 本地启动前端
@@ -178,25 +236,35 @@ uv run pytest                             # 全部单元 / 集成测试
 ```bash
 cd frontend
 npm install
-npm run dev                               # 启动在 http://localhost:3000
+npm run dev                               # http://localhost:3000
 ```
 
-前端默认连后端 `http://localhost:8000`，覆盖在 `frontend/.env.local` 设置：
+前端默认连后端 `http://localhost:8000`，覆盖请在 `frontend/.env.local`：
 
 ```
 NEXT_PUBLIC_API_BASE=http://localhost:8000
 ```
 
-### 1v1 答疑陪练 demo（真实 LLM）
+页面入口：
+
+- `/` — 首页 + 本地教案库预览
+- `/setup/stage` — 选学段
+- `/setup/config` — 选教案 + 选学生
+- `/classroom/demo` — 课堂演示骨架（M2 替换为 1v1 答疑 UI）
+
+### 常用命令
 
 ```bash
-cd backend
-uv run python scripts/try_qa_session.py --lesson math_p3_fraction --students 2 --questions 3
+# 1v1 答疑陪练交互 demo（真实 LLM）
+uv run python scripts/try_qa_session.py
+uv run python scripts/try_qa_session.py --lesson math_h2_derivative --students 2 --questions 2
+
+# 教案 RAG 完整管线（解析 → 抽取 → 索引）
+uv run python scripts/try_lesson_rag.py
+
+# 18 个 persona JSON 完整性校验（不调 LLM）
+uv run python scripts/validate_personas.py
 ```
-
-交互命令：`/resolve` 标记已解答 · `/abandon` 放弃 · `/switch` 切换学生 · `/done` 结束 session。
-
-可选学段教案：`math_p2_addition` · `math_p3_fraction` · `math_p5_area` · `math_j3_quadratic` · `math_h2_derivative` · `physics_j2_force`。
 
 ## 📜 License
 

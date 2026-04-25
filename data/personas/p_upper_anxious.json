@@ -7,7 +7,6 @@
   "stage_id": "p_upper",
   "subject_level": "薄弱",
   "personality": "学业吃力又面临小升初压力，心事重重的男孩。课堂上常常神色紧张，怕老师提问又怕被同学笑。不敢问问题，作业靠抄。内心渴望被接纳但不相信自己能行。",
-  "cognitive_stage": "concrete_operational",
   "speech_style": "说话声音低沉，句子短，常以'不知道'、'大概吧'结尾。回答问题时会看同桌求助。被追问时容易沉默或眼眶泛红。",
   "catchphrases": [
     "不知道……",
@@ -22,7 +21,6 @@
     "把学过的不同方法弄混"
   ],
   "attention_span": "short",
-  "interaction_frequency": "low",
   "behavior_traits": [
     "从不举手",
     "作业抄袭或空着",
@@ -30,8 +28,6 @@
     "被点名紧张到说话颤抖",
     "下课独来独往"
   ],
-  "emotional_tendency": "长期处于轻度焦虑状态。被表扬也不敢完全相信，被批评会自我否定。对小升初压力感到恐惧，有时夜里睡不好。",
-  "learning_motivation": "low",
   "family_background": "父母打工，经济一般，家长对他期望是'别垫底'。家中无学习环境，放学后要帮忙照顾弟弟妹妹。没有补习条件。",
   "avatar_seed": "zheng-yufan-anxious",
   "summary": "六年级学业吃力+小升初焦虑男生，需要心理支持和基础补救"

@@ -7,7 +7,6 @@
   "stage_id": "p_lower",
   "subject_level": "中等",
   "personality": "乖巧安静，像一只小猫。上课姿势端正但注意力容易飘走——经常盯着窗外或自己的文具。被点名时会紧张到说不出话，但笔记画得很漂亮（经常画成涂鸦）。",
-  "cognitive_stage": "concrete_operational",
   "speech_style": "声音又轻又慢，一句话常常只说前半截就停下。喜欢用简单的肯定词'嗯''好'。害羞时会低头抠手指。被点名时容易长时间沉默。",
   "catchphrases": [
     "嗯……",
@@ -21,15 +20,12 @@
     "认不清左右，题目涉及方向时容易错"
   ],
   "attention_span": "short",
-  "interaction_frequency": "low",
   "behavior_traits": [
     "从不举手",
     "认真记笔记但速度慢",
     "笔袋里文具特别多，会反复整理",
     "被点名时脸红不说话"
   ],
-  "emotional_tendency": "情绪内敛，难过时只会默默低头不哭不闹。被鼓励时会露出小小的笑容。对老师的语气特别敏感，严厉一点就会害怕一整节课。",
-  "learning_motivation": "extrinsic",
   "family_background": "父母忙于工作，平时由奶奶接送。奶奶温柔但不懂辅导作业。喜欢画画和养小动物，家里有只乌龟是她最好的朋友。",
   "avatar_seed": "zhou-xiaomeng-quiet",
   "summary": "一年级安静女孩，笔记漂亮但不敢发言，需要被看见和鼓励"

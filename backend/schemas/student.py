@@ -22,7 +22,9 @@ class Persona(BaseModel):
 
     兼容两种构造方式：
     1. 简易模式（4 字段）：name / personality / knowledge_level / behavior_traits
-    2. 完整模式（从 data/personas/*.json 加载）：包含全部 18 字段
+    2. 完整模式（从 data/personas/*.json 加载）：包含全部 14 字段。
+       v1.1 (2026-04-25) 移除 4 个死字段：cognitive_stage / interaction_frequency /
+       emotional_tendency / learning_motivation。认知阶段由 stage.piaget_stage 统一约束。
     """
 
     # --- 核心身份 ---
@@ -39,10 +41,6 @@ class Persona(BaseModel):
     # --- 认知与学业 ---
     subject_level: str = Field(default="", description="学科水平：优秀/中等/薄弱")
     personality: str = Field(..., description="性格特征描述")
-    cognitive_stage: str = Field(
-        default="",
-        description="皮亚杰认知阶段：concrete_operational / formal_operational",
-    )
 
     # --- 语言风格 ---
     speech_style: str = Field(default="", description="说话风格描述")
@@ -57,19 +55,12 @@ class Persona(BaseModel):
     attention_span: str = Field(
         default="medium", description="注意力：short/medium/long"
     )
-    interaction_frequency: str = Field(
-        default="medium", description="互动频率：low/medium/high"
-    )
     behavior_traits: str | list[str] = Field(
         ..., description="课堂行为倾向（字符串或列表）"
     )
 
-    # --- 心理与背景 ---
-    emotional_tendency: str = Field(default="", description="情绪倾向描述")
-    learning_motivation: str = Field(
-        default="", description="学习动机：intrinsic/extrinsic/low"
-    )
-    family_background: str = Field(default="", description="家庭背景描述")
+    # --- 背景 ---
+    family_background: str = Field(default="", description="家庭背景描述，可选")
 
     # --- 系统辅助 ---
     avatar_seed: str = Field(default="", description="头像种子")
