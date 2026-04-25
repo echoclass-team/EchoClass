@@ -6,5 +6,5 @@
 - schemas.lesson：LessonMeta / LessonRecord / RecommendedPersonasData
 - schemas.misconception：Misconception
 - schemas.question：StudentQuestion（含 self_score / category / difficulty / linked_*）
-- schemas.dialog：DialogSession / DialogMessage / DialogReplyResult / DialogStatus
+- schemas.dialog：DialogSession / DialogMessage / DialogReplyResult / DialogStatus / StudentStreamEvent
 """

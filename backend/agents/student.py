@@ -11,6 +11,11 @@
    在 1v1 对话中根据老师发言多轮回应。输出为 ``DialogReplyResult``（
    含是否出现 ``[懂了]`` 标记的 ``self_resolved`` 字段）。
 
+3. ``stream_in_dialog(...)``
+   ``respond_in_dialog`` 的流式版本，逐 token 推送 ``StudentStreamEvent``：
+   先若干 ``delta`` 事件（已剥离末尾 ``[懂了]`` 标记），最后一个 ``final``
+   事件携带完整 ``DialogReplyResult``。供 WebSocket 端点直接转发。
+
 人设支持：
 - 简易模式（name / personality / knowledge_level / behavior_traits）
 - 完整模式（从 data/personas/*.json 加载，18 字段）
@@ -45,7 +50,7 @@ from rag.qa_examples import (
     select_ask_examples,
     select_chat_examples,
 )
-from schemas.dialog import DialogMessage, DialogReplyResult
+from schemas.dialog import DialogMessage, DialogReplyResult, StudentStreamEvent
 from schemas.lesson import LessonMeta
 from schemas.misconception import Misconception
 from schemas.question import StudentQuestion
@@ -237,6 +242,95 @@ class StudentAgent:
         DialogReplyResult
             ``content`` 已剥离 ``[懂了]`` 标记，``self_resolved`` 反映该标记是否出现。
         """
+        messages = self._build_chat_messages(
+            question=question,
+            teacher_utterance=teacher_utterance,
+            dialog_history=dialog_history,
+        )
+        resp = await self.llm.chat(messages, temperature=self.temperature)
+        raw = resp.choices[0].message.content or ""
+        logger.debug("StudentAgent.respond_in_dialog raw: %s", raw)
+        return self._parse_dialog_reply(raw)
+
+    async def stream_in_dialog(
+        self,
+        *,
+        question: StudentQuestion,
+        teacher_utterance: str,
+        dialog_history: list[DialogMessage] | None = None,
+    ):
+        """``respond_in_dialog`` 的流式版本：逐 token 推送 ``StudentStreamEvent``。
+
+        事件序列::
+
+            delta(text=...)     # 0..N 个，按 LLM 增量分片推送
+            ...
+            final(result=DialogReplyResult)   # 总最后一个
+
+        关键行为：
+        - delta 推送时会保留尾部 ``HOLDBACK`` 个字符不发，避免把可能成为
+          ``[懂了]`` 标记的尾巴提前 emit 到前端
+        - 流结束时用 ``_parse_dialog_reply`` 处理完整原文，得到剥离标记后的
+          ``content`` 与 ``self_resolved``；若 final.content 还有未推送的尾部，
+          会先补一个 ``delta`` 事件，再推 ``final``
+        - LLM 上游异常会原地抛出，由调用方处理
+
+        Yields
+        ------
+        StudentStreamEvent
+        """
+        messages = self._build_chat_messages(
+            question=question,
+            teacher_utterance=teacher_utterance,
+            dialog_history=dialog_history,
+        )
+
+        accumulated = ""
+        emitted_len = 0
+        holdback = self._STREAM_HOLDBACK_CHARS
+
+        async for chunk in self.llm.stream(messages, temperature=self.temperature):
+            choices = getattr(chunk, "choices", None) or []
+            if not choices:
+                continue
+            delta_obj = getattr(choices[0], "delta", None)
+            piece = getattr(delta_obj, "content", None) if delta_obj else None
+            if not piece:
+                continue
+            accumulated += piece
+            safe_len = max(emitted_len, len(accumulated) - holdback)
+            if safe_len > emitted_len:
+                yield StudentStreamEvent(
+                    type="delta",
+                    delta=accumulated[emitted_len:safe_len],
+                )
+                emitted_len = safe_len
+
+        logger.debug("StudentAgent.stream_in_dialog raw: %s", accumulated)
+        final = self._parse_dialog_reply(accumulated)
+
+        # 已 emit 的是 raw 前缀，final.content 是 strip + 剥离标记后的版本。
+        # 若 final.content 仍以已 emit 的文本为前缀，把剩余部分作为最后一个 delta 推出，
+        # 让前端在 final 到达前已渲染到完整可见文本，减少跳变。
+        already_emitted = accumulated[:emitted_len]
+        if final.content.startswith(already_emitted):
+            tail = final.content[len(already_emitted) :]
+            if tail:
+                yield StudentStreamEvent(type="delta", delta=tail)
+
+        yield StudentStreamEvent(type="final", result=final)
+
+    # 流式 hold-back 长度：[懂了] / [ 懂了 ] / 末尾换行最长 ~ 12 字符，留 16 安全冗余
+    _STREAM_HOLDBACK_CHARS: int = 16
+
+    def _build_chat_messages(
+        self,
+        *,
+        question: StudentQuestion,
+        teacher_utterance: str,
+        dialog_history: list[DialogMessage] | None,
+    ) -> list[dict[str, Any]]:
+        """渲染 student_chat.j2 prompt 并拼装 chat messages（共享给同步/流式）。"""
         chat_examples = self._select_chat_examples()
         prompt = self._chat_template.render(
             persona=self.persona,
@@ -246,14 +340,10 @@ class StudentAgent:
             teacher_utterance=teacher_utterance,
             chat_examples=chat_examples,
         )
-        messages: list[dict[str, Any]] = [
+        return [
             {"role": "system", "content": prompt},
             {"role": "user", "content": teacher_utterance},
         ]
-        resp = await self.llm.chat(messages, temperature=self.temperature)
-        raw = resp.choices[0].message.content or ""
-        logger.debug("StudentAgent.respond_in_dialog raw: %s", raw)
-        return self._parse_dialog_reply(raw)
 
     # ---------------------------------------------------- Q/A coach helpers
 
