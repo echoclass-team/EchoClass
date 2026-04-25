@@ -42,7 +42,7 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 
 ## 📌 当前进度
 
-截至本次更新（PR 进行中，仍在第一阶段收尾 / 第二阶段起步）：
+截至本次更新（第一阶段主体已完成，第二阶段核心链路推进中）：
 
 **后端（A-Agent）**
 
@@ -53,20 +53,23 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 - ✅ 6 档学段认知特征库（StageProfile，基于皮亚杰 / 维果茨基 / 埃里克森）
 - ✅ StudentAgent × StageProfile 联调（学段共性层 + 个体差异层）
 - ✅ 教案 RAG 管线：parser（pymupdf4llm）→ extractor（LLM 结构化抽取）→ indexer（Chroma 切片向量化）
-- ✅ REST API：`/api/lessons/upload|{id}` · `/api/stages[/{id}]` · `/api/personas[/{name_or_id}]`
+- ✅ REST API：`/api/lessons/upload|{id}` · `/api/lessons/{id}/recommended-personas` · `/api/stages[/{id}]` · `/api/personas[/{name_or_id}]`
 - ✅ **统一响应包络 `ApiResponse`**：`{code, message, data, request_id}`，错误也走同一结构（全局 HTTPException handler）
 - ✅ 6 份跨学段样例教案（小低 / 小中 / 小高 / 初低 / 初高 / 高中，Markdown + PDF + 解析预期）
-- ✅ 96 条单元 & 集成测试全绿
-- ⏳ DirectorAgent / EvaluatorAgent / LangGraph 状态机（第二阶段）
-- ⏳ WebSocket 事件流（A 生产 → B 消费）
+- ✅ DirectorAgent 多学生调度器（规则层硬约束 + LLM 软判断）
+- ✅ LangGraph 课堂核心状态机（A 侧 graph core + internal AgentEvent + checkpoint）
+- ✅ 137 条单元 & 集成测试全绿
+- ⏳ WebSocket / sessions / AgentEvent adapter 端到端集成（第二阶段）
+- ⏳ EvaluatorAgent 与诊断报告链路（第三阶段）
 
 **前端（B-Full）**
 
 - ✅ Next.js 14 + TypeScript + TailwindCSS 脚手架
-- ✅ Setup 流程：学段选择（`/setup/stage`）→ 教案 + 学生配置（`/setup/config`）→ 课堂演示页
+- ✅ Setup 流程雏形：学段选择（`/setup/stage`）→ 教案 + 学生配置（`/setup/config`）→ 课堂演示页
 - ✅ 教案上传（调用 `/api/lessons/upload`） + 本地教案库暂存（localStorage）
 - ✅ `apiFetch` 统一 API client（ApiError 类 + envelope 解析 + `code !== 0` 业务错误抛异常）
 - ✅ 类型定义严格对齐后端 schema（Stage / Persona / LessonMeta / LessonRecord）
+- ⏳ Setup 流程调整：教案 → 默认学段与默认学生 → 开始模拟（对接推荐学生接口）
 - ⏳ 虚拟课堂 UI + WebSocket client（第二阶段）
 - ⏳ 诊断报告页面 + 数据可视化（第三阶段）
 - ⏳ shadcn/ui 组件化（Toast / Skeleton / Alert 替换手写）
@@ -99,24 +102,26 @@ EchoClass 是一个基于多 Agent 协作的虚拟课堂陪练系统：
 ```
 EchoClass/
 ├── backend/                     # Python 3.11+ · FastAPI + LangGraph
-│   ├── agents/                  # StudentAgent（已完成）· DirectorAgent（规划中）· EvaluatorAgent（规划中）
+│   ├── agents/                  # StudentAgent / DirectorAgent（已完成）· EvaluatorAgent（规划中）
 │   ├── rag/                     # 教案解析、抽取、切片、Chroma 索引
 │   │   ├── parser.py            # PDF / MD / TXT → 纯文本
 │   │   ├── extractor.py         # LLM 抽取 subject/grade/topic/objectives/key_points/difficult_points
 │   │   └── indexer.py           # 500 token 切片 + Chroma 向量化
 │   ├── llm/                     # LLMClient 封装（chat / stream + 重试 + 日志）
-│   ├── graph/                   # LangGraph 状态机（规划中）
+│   ├── graph/                   # LangGraph 课堂核心状态机 + checkpoint
 │   ├── api/                     # REST + WebSocket 路由
-│   │   ├── lessons.py           # POST /api/lessons/upload · GET /api/lessons/{id}
+│   │   ├── lessons.py           # POST /api/lessons/upload · GET /api/lessons/{id} · GET /api/lessons/{id}/recommended-personas
 │   │   ├── stages.py            # GET /api/stages · GET /api/stages/{id}
 │   │   └── personas.py          # GET /api/personas · GET /api/personas/{name_or_id}
 │   ├── schemas/                 # Pydantic 模型
 │   │   ├── stage.py             # StageProfile（学段认知特征）
 │   │   ├── student.py           # Persona / ClassroomContext / StudentReply
-│   │   └── lesson.py            # LessonMeta / LessonRecord
+│   │   ├── lesson.py            # LessonMeta / LessonRecord / RecommendedPersonasData
+│   │   └── events.py            # graph internal AgentEvent（WS wire 格式待 #25 对齐）
 │   ├── db/                      # 会话持久化（SQLite，规划中）
 │   ├── prompts/                 # Jinja2 Prompt 模板
 │   │   ├── student.j2           # 学生 Agent（学段共性 + 个体人设叠加）
+│   │   ├── director.j2          # Director Agent 多学生调度
 │   │   └── extractor.j2         # 教案元数据抽取
 │   ├── scripts/                 # 冒烟测试脚本
 │   └── tests/                   # pytest 单元与集成测试
@@ -178,6 +183,36 @@ EchoClass/
 - **人设设计文档**：[`docs/persona_design.md`](./docs/persona_design.md)
 - **立项书**：[`docs/proposal.md`](./docs/proposal.md)
 
+### 当前 Issue 推进顺序
+
+> 以 GitHub Issues 为准；本节只记录当前推荐顺序和关键依赖，避免在评论中分散维护。
+
+**第一优先级：打通课堂实时链路**
+
+1. **#21 总体集成协调**：冻结 sessions、WebSocket、AgentEvent、报告数据源等跨角色接口。
+2. **#39 Sessions API / SQLite 持久化**：提供 `POST /api/sessions`、session store、messages 表，并桥接 #24 的 graph checkpoint；是 #25 / #26 / #29 / #31 的后端基础。
+3. **#25 WebSocket / AgentEvent wire 协议**：实现 WS endpoint、JSON Lines 编码、全局事件顺序、chunk 顺序与错误处理；可与 #39 并行设计，最终 endpoint 依赖 #39。
+4. **#65 DirectorDecision → AgentEvent adapter**：在 #25 字段稳定后，把 Director / graph 内部事件正式映射到可推送事件。
+5. **#61 Setup 流程调整**：基于已合入的推荐学生接口，完成“教案 → 默认学段与默认学生 → 开始模拟”；开始课堂按钮最终依赖 #39 / #26。
+
+**第二优先级：课堂体验与评估闭环**
+
+6. **#26 虚拟课堂 UI / WS client**：可先用 mock UI 推进；真实联调依赖 #61 / #39 / #25 / #65。
+7. **#28 学科迷思概念库**：为 StudentAgent 与 Evaluator 提供可检索的错误生成依据。
+8. **#27 EvaluatorAgent**：依赖课堂 transcript、教案与 rubric；可先基于 mock transcript 开发。
+9. **#29 诊断报告生成后端**：依赖 #27 与 #39，读取课堂消息、Director 历史和评估结果。
+10. **#30 诊断报告前端页面**：依赖 #29，前期可用 mock report 做 UI。
+11. **#40 课堂结束与报告生成链路**：串联 session end、Evaluator、报告持久化与跳转。
+
+**第三优先级：端到端打磨与展示**
+
+12. **#31 端到端 Demo 联调**：依赖 setup、session、WS、adapter、classroom UI 与 report 链路稳定。
+13. **#32 部署 / 环境配置**：在主链路稳定后统一整理。
+14. **#33 品牌视觉 / 首页 / 暗色模式**：可与主链路并行做基础设计，最终 polish 等 #26 / #30 页面稳定后完成。
+15. **#34 Demo 脚本与答辩材料**：依赖可演示链路。
+16. **#35 性能与稳定性调优**：依赖端到端链路成型。
+17. **#36 用户测试与反馈迭代**：最后阶段执行。
+
 ### 新成员 Onboarding
 
 1. 阅读本 README + [`CONTRIBUTING.md`](./CONTRIBUTING.md) + [`docs/roles.md`](./docs/roles.md)
@@ -202,7 +237,7 @@ uv run uvicorn main:app --reload --port 8000
 # 验证：curl http://localhost:8000/health        →  {"status":"ok"}
 # 查看学段：curl http://localhost:8000/api/stages
 # 查看人设：curl http://localhost:8000/api/personas
-uv run pytest                             # 运行全部测试（当前 96 条）
+uv run pytest                             # 运行全部测试（当前 137 条）
 ```
 
 ### 本地启动前端
@@ -219,11 +254,12 @@ npm run dev                               # 启动在 http://localhost:3000
 NEXT_PUBLIC_API_BASE=http://localhost:8000
 ```
 
-页面入口：
+页面入口（当前实现 + 规划中的 setup 调整）：
 
 - `/` — 首页 + 本地教案库预览
-- `/setup/stage` — 选择学段
-- `/setup/config` — 选教案 + 选学生
+- `/setup/stage` — 选择学段（旧 setup 流程）
+- `/setup/config` — 选教案 + 选学生（旧 setup 流程）
+- `/setup/lesson` → `/setup/students` — 规划中的教案优先 setup 流程（见 #61）
 - `/classroom/demo` — 课堂演示（WebSocket 待接入）
 
 ### 常用命令
@@ -231,6 +267,9 @@ NEXT_PUBLIC_API_BASE=http://localhost:8000
 ```bash
 # 冒烟测试 — StudentAgent 在不同人设下的回复
 uv run python scripts/try_student_agent.py
+
+# 冒烟测试 — DirectorAgent 多学生调度
+uv run python scripts/try_director.py
 
 # 冒烟测试 — 学段特征对生成回复的约束效果
 uv run python scripts/try_stage_profile.py
