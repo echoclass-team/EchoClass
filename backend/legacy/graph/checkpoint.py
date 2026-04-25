@@ -12,11 +12,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 
-from graph.state import ClassroomState, state_from_jsonable, state_to_jsonable
+from legacy.graph.state import ClassroomState, state_from_jsonable, state_to_jsonable
 
 
 class CheckpointStore(Protocol):
-    async def save_checkpoint(self, session_id: str, state: ClassroomState, *, node: str, event_seq: int) -> None: ...
+    async def save_checkpoint(
+        self, session_id: str, state: ClassroomState, *, node: str, event_seq: int
+    ) -> None: ...
     async def load_latest(self, session_id: str) -> ClassroomState | None: ...
 
 
@@ -24,8 +26,12 @@ class InMemoryCheckpointStore:
     def __init__(self) -> None:
         self._items: dict[str, list[dict[str, object]]] = {}
 
-    async def save_checkpoint(self, session_id: str, state: ClassroomState, *, node: str, event_seq: int) -> None:
-        self._items.setdefault(session_id, []).append({"node": node, "event_seq": event_seq, "state": state_to_jsonable(state)})
+    async def save_checkpoint(
+        self, session_id: str, state: ClassroomState, *, node: str, event_seq: int
+    ) -> None:
+        self._items.setdefault(session_id, []).append(
+            {"node": node, "event_seq": event_seq, "state": state_to_jsonable(state)}
+        )
 
     async def load_latest(self, session_id: str) -> ClassroomState | None:
         rows = self._items.get(session_id) or []
@@ -58,12 +64,21 @@ class SQLiteCheckpointStore:
                 """
             )
 
-    async def save_checkpoint(self, session_id: str, state: ClassroomState, *, node: str, event_seq: int) -> None:
+    async def save_checkpoint(
+        self, session_id: str, state: ClassroomState, *, node: str, event_seq: int
+    ) -> None:
         payload = json.dumps(state_to_jsonable(state), ensure_ascii=False)
         with self._connect() as conn:
             conn.execute(
                 "INSERT INTO classroom_checkpoints (session_id, turn_index, node, event_seq, state_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (session_id, state["turn_index"], node, event_seq, payload, datetime.now(timezone.utc).isoformat()),
+                (
+                    session_id,
+                    state["turn_index"],
+                    node,
+                    event_seq,
+                    payload,
+                    datetime.now(timezone.utc).isoformat(),
+                ),
             )
 
     async def load_latest(self, session_id: str) -> ClassroomState | None:

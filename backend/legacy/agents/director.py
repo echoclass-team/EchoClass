@@ -17,7 +17,12 @@ from jinja2 import Environment, FileSystemLoader
 from pydantic import ValidationError
 
 from llm.client import LLMClient
-from schemas.director import DirectorConfig, DirectorDecision, Message, StudentAction
+from legacy.schemas.director import (
+    DirectorConfig,
+    DirectorDecision,
+    Message,
+    StudentAction,
+)
 from schemas.stage import StageProfile
 from schemas.student import Persona
 
@@ -146,7 +151,9 @@ class DirectorAgent:
                 aliases[student.id] = sid
         return by_id, aliases
 
-    def _called_student(self, utterance: str, students: list[Persona]) -> Persona | None:
+    def _called_student(
+        self, utterance: str, students: list[Persona]
+    ) -> Persona | None:
         """识别老师是否点名某学生。
 
         只匹配常见点名句式，避免把“小红花”“不是小红”误判为点名。
@@ -320,7 +327,10 @@ class DirectorAgent:
 
         if student.interaction_frequency == "high":
             return "raise_hand", 4
-        if student.interaction_frequency == "low" and self.config.activity_level == "low":
+        if (
+            student.interaction_frequency == "low"
+            and self.config.activity_level == "low"
+        ):
             return "silent", 1
         return "raise_hand", 3
 
@@ -409,7 +419,11 @@ class DirectorAgent:
                     for peer_sid in by_id
                     if peer_sid != sid
                 )
-                if sid not in fair_sids or in_cooldown or (quota_full and has_under_quota_peer):
+                if (
+                    sid not in fair_sids
+                    or in_cooldown
+                    or (quota_full and has_under_quota_peer)
+                ):
                     continue
 
             normalized.append(
@@ -425,7 +439,9 @@ class DirectorAgent:
 
         normalized = self._keep_single_speak(normalized)
         normalized = self._dedupe_same_student(normalized)
-        normalized = sorted(normalized, key=lambda item: item.priority, reverse=True)[: self.config.max_actions_per_turn]
+        normalized = sorted(normalized, key=lambda item: item.priority, reverse=True)[
+            : self.config.max_actions_per_turn
+        ]
         delay = self._bounded_llm_delay(llm_decision.next_action_delay_ms, base)
 
         return DirectorDecision(

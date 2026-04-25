@@ -11,15 +11,15 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-from agents.director import DirectorAgent
+from legacy.agents.director import DirectorAgent
+from legacy.schemas.director import Message
 from llm.client import LLMClient
-from schemas.director import Message
 from schemas.stage import load_stage_profile_by_id
 from schemas.student import load_personas
 
@@ -28,7 +28,9 @@ async def main() -> None:
     stage = load_stage_profile_by_id("p_lower")
     if stage is None:
         raise RuntimeError("未找到 p_lower stage profile")
-    students = [persona for persona in load_personas() if persona.stage_id == stage.id][:5]
+    students = [persona for persona in load_personas() if persona.stage_id == stage.id][
+        :5
+    ]
     if len(students) < 3:
         raise RuntimeError(
             f"学段 {stage.id} 可用学生不足 3 个：仅找到 {len(students)} 个 persona.stage_id 匹配的学生"
@@ -40,8 +42,17 @@ async def main() -> None:
     print(f"📡 base_url={llm.base_url}\n")
 
     agent = DirectorAgent(llm=llm)
-    history = [Message(role="teacher", speaker_id="teacher", content="今天我们学习分数。", timestamp_seconds=0)]
-    decision = await agent.decide("同学们，谁来说说 1/2 表示什么？", stage, students, history, 30)
+    history = [
+        Message(
+            role="teacher",
+            speaker_id="teacher",
+            content="今天我们学习分数。",
+            timestamp_seconds=0,
+        )
+    ]
+    decision = await agent.decide(
+        "同学们，谁来说说 1/2 表示什么？", stage, students, history, 30
+    )
 
     print("actions:")
     for action in decision.actions:

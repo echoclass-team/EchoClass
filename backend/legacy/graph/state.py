@@ -7,8 +7,8 @@ from typing import Any, TypedDict
 
 from pydantic import BaseModel, TypeAdapter
 
-from schemas.director import DirectorDecision, Message
-from schemas.events import AgentEventModel
+from legacy.schemas.director import DirectorDecision, Message
+from legacy.schemas.events import AgentEventModel
 from schemas.lesson import LessonMeta
 from schemas.stage import StageProfile
 from schemas.student import Persona
@@ -69,15 +69,21 @@ def state_from_jsonable(data: dict[str, Any]) -> ClassroomState:
         transcript=[Message(**m) for m in data.get("transcript", [])],
         blackboard=list(data.get("blackboard", [])),
         taught_points=set(data.get("taught_points", [])),
-        pending_questions=[PendingQuestion(**q) for q in data.get("pending_questions", [])],
-        director_history=[DirectorDecision(**d) for d in data.get("director_history", [])],
+        pending_questions=[
+            PendingQuestion(**q) for q in data.get("pending_questions", [])
+        ],
+        director_history=[
+            DirectorDecision(**d) for d in data.get("director_history", [])
+        ],
         elapsed_seconds=int(data.get("elapsed_seconds", 0)),
         started_at=datetime.fromisoformat(data["started_at"]),
         event_seq=int(data.get("event_seq", 0)),
         turn_index=int(data.get("turn_index", 0)),
         last_teacher_utterance=data.get("last_teacher_utterance"),
         incoming_teacher_utterance=data.get("incoming_teacher_utterance"),
-        pending_events=[_event_adapter.validate_python(e) for e in data.get("pending_events", [])],
+        pending_events=[
+            _event_adapter.validate_python(e) for e in data.get("pending_events", [])
+        ],
     )
 
 
