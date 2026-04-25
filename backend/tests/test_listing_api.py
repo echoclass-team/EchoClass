@@ -8,7 +8,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from main import app
-from schemas.lesson import LessonMeta
+from api.lessons import _store, infer_stage_id_from_grade
+from schemas.lesson import LessonMeta, LessonRecord
 
 
 SAMPLE_META_JSON = {
@@ -141,6 +142,14 @@ class TestPersonasAPI:
 
 
 class TestLessonsAPI:
+    @pytest.fixture(autouse=True)
+    def clean_lesson_store(self):
+        original = _store.copy()
+        _store.clear()
+        yield
+        _store.clear()
+        _store.update(original)
+
     @patch("api.lessons.index_lesson", return_value=5)
     @patch("api.lessons.extract_lesson_meta")
     @patch("api.lessons.parse_bytes", return_value="教案纯文本")
@@ -194,3 +203,87 @@ class TestLessonsAPI:
             files={"file": ("test.docx", b"content", "application/octet-stream")},
         )
         assert resp.status_code == 400
+
+    @pytest.mark.parametrize(
+        ("grade", "expected"),
+        [
+            ("一年级", "p_lower"),
+            ("小学二年级", "p_lower"),
+            ("三年级", "p_middle"),
+            ("小学四年级", "p_middle"),
+            ("5年级", "p_upper"),
+            ("P6", "p_upper"),
+            ("七年级", "j_lower"),
+            ("初二", "j_lower"),
+            ("初中一年级", "j_lower"),
+            ("J1", "j_lower"),
+            ("九年级", "j_upper"),
+            ("初三", "j_upper"),
+            ("初中三年级", "j_upper"),
+            ("J3", "j_upper"),
+            ("高一", "h"),
+            ("高中二年级", "h"),
+            ("H2", "h"),
+            ("高中", "h"),
+        ],
+    )
+    def test_infer_stage_id_from_grade(self, grade: str, expected: str) -> None:
+        assert infer_stage_id_from_grade(grade) == expected
+
+    async def test_recommend_personas_for_lesson(self, client: AsyncClient) -> None:
+        lesson_id = "lesson-p3"
+        _store[lesson_id] = LessonRecord(
+            lesson_id=lesson_id,
+            filename="test.md",
+            meta=LessonMeta(**SAMPLE_META_JSON),
+        )
+
+        resp = await client.get(f"/api/lessons/{lesson_id}/recommended-personas")
+
+        assert resp.status_code == 200
+        data = assert_wrapped(resp.json())
+        assert data["lesson_id"] == lesson_id
+        assert data["stage_id"] == "p_middle"
+        assert data["stage_name"]
+        assert data["recommended_count"] == len(data["students"])
+        assert data["persona_ids"] == [student["id"] for student in data["students"]]
+        assert all(student["stage_id"] == "p_middle" for student in data["students"])
+
+    async def test_recommend_personas_respects_count(self, client: AsyncClient) -> None:
+        lesson_id = "lesson-count"
+        _store[lesson_id] = LessonRecord(
+            lesson_id=lesson_id,
+            filename="test.md",
+            meta=LessonMeta(**SAMPLE_META_JSON),
+        )
+
+        resp = await client.get(
+            f"/api/lessons/{lesson_id}/recommended-personas",
+            params={"count": 2},
+        )
+
+        assert resp.status_code == 200
+        data = assert_wrapped(resp.json())
+        assert data["recommended_count"] == 2
+        assert len(data["students"]) == 2
+
+    async def test_recommend_personas_lesson_not_found(self, client: AsyncClient) -> None:
+        resp = await client.get("/api/lessons/nonexistent/recommended-personas")
+        assert resp.status_code == 404
+
+    async def test_recommend_personas_unknown_grade(self, client: AsyncClient) -> None:
+        lesson_id = "lesson-unknown-grade"
+        _store[lesson_id] = LessonRecord(
+            lesson_id=lesson_id,
+            filename="test.md",
+            meta=LessonMeta(
+                subject="数学",
+                grade="火星年级",
+                topic="分数的初步认识",
+            ),
+        )
+
+        resp = await client.get(f"/api/lessons/{lesson_id}/recommended-personas")
+
+        assert resp.status_code == 400
+        assert "火星年级" in resp.json()["message"]
