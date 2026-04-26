@@ -1,12 +1,21 @@
-"""教育学理论卡片 POC 加载器。
+"""教育学理论卡片加载器（POC + L3 第一期）。
 
-读取 ``data/edu_theories/*.json``，把 persona 的 ``theory_anchors`` 解析为
-``ResolvedTheory`` 列表，可直接喂给 ``student_chat.j2`` 等模板的 ``resolved_theories``
-变量。
+把 persona 的 ``theory_anchors`` 解析为 ``ResolvedTheory`` 列表，
+可直接喂给 ``student_chat.j2`` 等模板的 ``resolved_theories`` 变量。
+
+加载来源（按优先级）:
+
+1. **SQLite KB**（``ECHOCLASS_KB_SOURCE=db`` 或默认值，且库存在 + 有数据时）
+2. **JSON 文件**（``data/edu_theories/*.json``，永远作为 fallback）
+
+切换方式：
+- 默认（不设环境变量）：尝试 DB，失败则 JSON fallback
+- ``ECHOCLASS_KB_SOURCE=json``：强制 JSON 路径（POC 行为，测试常用）
+- ``ECHOCLASS_KB_SOURCE=db``：强制 DB 路径，DB 异常会抛错而不是 fallback
 
 设计取舍：
-- POC 阶段就用纯 dict + Pydantic 校验，不接 SQLite，避免阻塞探索
-- 加载是 lazy + 进程级缓存（``_load_all_theories`` 只跑一次），开发期重启即可生效
+
+- 加载是 lazy + 进程级缓存（``_load_*_cached`` 只跑一次），开发期重启即可生效
 - ``resolve_persona_anchors`` 失败（卡片缺失或 trait 不存在）时**抛出明确错误**，
   不静默 fallback —— 错的锚点不应被忽略，要暴露给开发者
 """
@@ -14,13 +23,17 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
 from schemas.student import Persona, TheoryAnchor
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================ Pydantic 模型
@@ -79,13 +92,12 @@ def _default_theories_dir() -> Path:
 
 
 @lru_cache(maxsize=1)
-def _load_all_theories(
+def _load_all_theories_from_json(
     theories_dir_str: Optional[str] = None,
 ) -> dict[str, TheoryCard]:
-    """加载目录下所有理论卡片，返回 ``{id: TheoryCard}``。
+    """从 JSON 目录加载理论卡片，返回 ``{id: TheoryCard}``。
 
-    用 ``str`` 作为缓存 key（``Path`` 不 hashable in caching 上下文是 OK 的，
-    但这里统一用 str 以便测试可注入不同目录）。
+    用 ``str`` 作为缓存 key（统一用 str 以便测试可注入不同目录）。
     """
     theories_dir = (
         Path(theories_dir_str) if theories_dir_str else _default_theories_dir()
@@ -101,32 +113,101 @@ def _load_all_theories(
             data = json.load(f)
         card = TheoryCard(**data)
         if card.id != fp.stem:
-            raise ValueError(
-                f"卡片 id ({card.id}) 与文件名 ({fp.stem}) 不一致: {fp}"
-            )
+            raise ValueError(f"卡片 id ({card.id}) 与文件名 ({fp.stem}) 不一致: {fp}")
         if card.id in cards:
             raise ValueError(f"卡片 id 重复: {card.id}")
         cards[card.id] = card
     return cards
 
 
+@lru_cache(maxsize=1)
+def _load_all_theories_from_db() -> dict[str, TheoryCard]:
+    """从 SQLite KB 加载理论卡片，返回 ``{id: TheoryCard}``。
+
+    依赖 ``kb.database`` 与 ``kb.models``。库里没数据时返回空 dict（不报错），
+    由上层决定是否 fallback 到 JSON。
+    """
+    # 局部 import 避免循环依赖（database 也在 kb 包内）
+    from kb.database import get_session
+    from kb.models import Theory as DBTheory
+
+    cards: dict[str, TheoryCard] = {}
+    with get_session() as sess:
+        for row in sess.query(DBTheory).all():
+            traits: dict[str, TheoryTrait] = {}
+            for t in row.traits:
+                traits[t.trait_key] = TheoryTrait(
+                    label=t.label,
+                    operational_rules=json.loads(t.operational_rules_json),
+                )
+            cards[row.id] = TheoryCard(
+                id=row.id,
+                name_zh=row.name_zh,
+                name_en=row.name_en or "",
+                scholar=row.scholar,
+                year=row.year or 0,
+                school=row.school,
+                summary=row.summary,
+                traits=traits,
+                applies_to=json.loads(row.applies_to_json or "{}"),
+                references=json.loads(row.references_json or "[]"),
+            )
+    return cards
+
+
+KbSource = Literal["auto", "db", "json"]
+
+
+def _resolve_source() -> KbSource:
+    """从环境变量决定加载源。"""
+    val = os.environ.get("ECHOCLASS_KB_SOURCE", "auto").strip().lower()
+    if val in ("db", "json", "auto"):
+        return val  # type: ignore[return-value]
+    logger.warning("未知 ECHOCLASS_KB_SOURCE=%r，回退 'auto'", val)
+    return "auto"
+
+
 def load_theories(
     theories_dir: Path | str | None = None,
+    *,
+    source: KbSource | None = None,
 ) -> dict[str, TheoryCard]:
     """公共入口：加载所有理论卡片。
 
     Parameters
     ----------
     theories_dir : 可选
-        指定卡片目录（用于测试）。生产路径走默认 ``data/edu_theories/``。
+        指定 JSON 卡片目录（仅 JSON 路径有效）。
+    source : ``'auto'`` | ``'db'`` | ``'json'``
+        覆盖 ``ECHOCLASS_KB_SOURCE`` 环境变量。
+        - ``auto``（默认）: 先试 DB；DB 异常或为空时 fallback JSON
+        - ``db``: 强制 DB，异常会抛出
+        - ``json``: 强制 JSON
     """
-    key = str(theories_dir) if theories_dir is not None else None
-    return _load_all_theories(key)
+    src = source or _resolve_source()
+    json_key = str(theories_dir) if theories_dir is not None else None
+
+    if src == "json":
+        return _load_all_theories_from_json(json_key)
+
+    if src == "db":
+        return _load_all_theories_from_db()
+
+    # ---- auto: DB 优先，fallback JSON
+    try:
+        cards = _load_all_theories_from_db()
+        if cards:
+            return cards
+        logger.info("KB DB 无数据，fallback 到 JSON 加载")
+    except Exception as exc:  # noqa: BLE001
+        logger.info("KB DB 加载失败，fallback 到 JSON: %r", exc)
+    return _load_all_theories_from_json(json_key)
 
 
 def clear_cache() -> None:
-    """清缓存（测试用，或手动改 JSON 后强制重读）。"""
-    _load_all_theories.cache_clear()
+    """清缓存（测试用，或手动改 JSON / DB 后强制重读）。"""
+    _load_all_theories_from_json.cache_clear()
+    _load_all_theories_from_db.cache_clear()
 
 
 # ============================================================ 解析锚点
