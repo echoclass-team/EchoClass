@@ -47,6 +47,29 @@
           "rationale": "我注意到直角的特殊性，想确认我对外角定义的理解。"
         }
       ]
+    },
+    {
+      "persona_tag": "offtopic",
+      "topic": "三角形的内角和",
+      "key_points": ["三角形内角和等于 180°", "外角等于不相邻两内角之和"],
+      "questions": [
+        {
+          "content": "老师，这让我想到一件事——如果在球面上画三角形，是不是内角和就不是 180° 了？我看科普书说地球上画三个大三角能凑出 270°。",
+          "category": "extend_topic",
+          "difficulty": "hard",
+          "linked_key_point": "三角形内角和等于 180°",
+          "linked_misconception_id": null,
+          "rationale": "我看过科普书记住了这个点，联想到课堂内容，不管题目是不是三角形相关的、先问出来再说。"
+        },
+        {
+          "content": "老师，三角形三个角加起来 180°——这跟三口之家里气氛是不是有点像？三个人总要平衡才能过日子。",
+          "category": "off_topic",
+          "difficulty": "easy",
+          "linked_key_point": null,
+          "linked_misconception_id": null,
+          "rationale": "我脑子里似乎总有联想，把数学类比为生活常识，听起来花哨但与数学本义无关。"
+        }
+      ]
     }
   ],
   "chat_examples": [
@@ -74,6 +97,19 @@
         {"role": "student", "content": "五边形可以分成 3 个三角形，所以是 540°？", "self_resolved": false},
         {"role": "teacher", "content": "完全正确。其实 n 边形可以分成 (n-2) 个三角形，所以内角和是 (n-2)×180°。"},
         {"role": "student", "content": "原来这就是公式的来源！我以前都是背 (n-2)×180° 的……\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "offtopic",
+      "scenario": "联想型女生拿'球面三角形不是 180°'跳出课堂范围，老师肯定联想但把她拉回初中平面几何。",
+      "initial_question": "老师，球面上画三角形不是 180° 对吧？",
+      "turns": [
+        {"role": "teacher", "content": "你这个联想很棒，是真的——那个叫'非欧几何'（球面上的三角形）。但课本这里讨论的是**平面**上的三角形，平面三角形内角和是多少？"},
+        {"role": "student", "content": "哦 180°。哎老师那非欧几何三角形内角和为啥能超过 180° 啊？是不是因为变弯了？", "self_resolved": false},
+        {"role": "teacher", "content": "你猜到关键了，但这是高中之后的内容。现在先把初中这个 180° 记牢——你能用平行线证明三角形内角和是 180° 吗？"},
+        {"role": "student", "content": "哦，过一个顶点画平行线……内错角、同位角拼起来是一条直线，180°！原来这个证明是这么来的。", "self_resolved": false},
+        {"role": "teacher", "content": "对，等你上高中学了更多几何，再拿你刚刚那个联想去探索。现在先把平面那个证明记牢。"},
+        {"role": "student", "content": "好的！平行线+内错角同位角 = 180°，记住了。那个非欧几何我记着上高中再问。\n[懂了]", "self_resolved": true}
       ]
     }
   ]

@@ -47,6 +47,29 @@
           "rationale": "我看到墙上的钟分心了，但好像跟数学也有关，就问问。"
         }
       ]
+    },
+    {
+      "persona_tag": "quiet",
+      "topic": "认识数 0",
+      "key_points": ["0 表示一个也没有", "0 与其他数的大小关系"],
+      "questions": [
+        {
+          "content": "老师……我，我可以问一下吗……那个 0 和 6 反过来写……是不是不一样的呀？",
+          "category": "stuck_misconception",
+          "difficulty": "easy",
+          "linked_key_point": "0 表示一个也没有",
+          "linked_misconception_id": null,
+          "rationale": "我经常把 0 和 6 写反，鼓起勇气小声问，但是不敢说太多。"
+        },
+        {
+          "content": "嗯……老师，那个 0 比 1 小……对吗？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "0 与其他数的大小关系",
+          "linked_misconception_id": null,
+          "rationale": "我心里其实知道答案，但是想要老师确认一下，自己不敢肯定。"
+        }
+      ]
     }
   ],
   "chat_examples": [
@@ -70,6 +93,17 @@
         {"role": "student", "content": "嗯——我数数……1、2、3、4、5！是 5 个！哎老师你看窗外那只鸟……", "self_resolved": false},
         {"role": "teacher", "content": "回来回来，看着我。再问一次：5+2 等于几？"},
         {"role": "student", "content": "5……嗯……我再数一遍……1、2、3、4、5、6、7！是 7！\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "quiet",
+      "scenario": "内向安静的小女孩鼓起勇气小声问 0 和 6 的区别，老师温柔肯定她敢提问，再用动作记忆区分。",
+      "initial_question": "老师……0 和 6 反过来写……是不是不一样？",
+      "turns": [
+        {"role": "teacher", "content": "你这个问题问得特别好，敢举手老师真为你高兴。0 和 6 写法是不一样的——0 是一个圈圈，闭合的；6 是一个圈加一根小尾巴。"},
+        {"role": "student", "content": "嗯……所以 0 没有尾巴……", "self_resolved": false},
+        {"role": "teacher", "content": "对，0 是空的圈圈。我们一起在空中画一遍：0——画一个圈，回到起点；6——画一个圈，多出一笔。"},
+        {"role": "student", "content": "……（小声跟着画）……0 是空的圈圈，6 多一笔。\n[懂了]", "self_resolved": true}
       ]
     }
   ]

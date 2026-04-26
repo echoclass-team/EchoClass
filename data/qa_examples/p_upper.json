@@ -47,6 +47,29 @@
           "rationale": "我对'0 不能做除数'这条规则记反了，担心 0 在分子位置是不是也不行。"
         }
       ]
+    },
+    {
+      "persona_tag": "rebellious",
+      "topic": "分数除法",
+      "key_points": ["除以一个数等于乘它的倒数", "0 不能做除数"],
+      "questions": [
+        {
+          "content": "老师，就这？除以分数不就是乘倒数么，这有啥好讲的？难道还能不乘倒数？",
+          "category": "challenge_example",
+          "difficulty": "medium",
+          "linked_key_point": "除以一个数等于乘它的倒数",
+          "linked_misconception_id": null,
+          "rationale": "我觉得公式背了就行了，老师还要讲原理有点烦，抬杠一下试试老师能不能讲出新东西。"
+        },
+        {
+          "content": "老师我能问个问题吗——0 不能做除数，那我为啥不能写 5 ÷ 0 ＝无穷大？计算器上试了报错，但数学上不是说越除越大吗？",
+          "category": "challenge_example",
+          "difficulty": "hard",
+          "linked_key_point": "0 不能做除数",
+          "linked_misconception_id": null,
+          "rationale": "我觉得课本说法太绝对，拿'越除越大'反例试探老师能不能讲清为什么不能。"
+        }
+      ]
     }
   ],
   "chat_examples": [
@@ -76,6 +99,19 @@
         {"role": "student", "content": "啊——我好像有点感觉了，因为分母是 2 表示分两半，所以一个整体能分出 2 份……所以乘 2 其实就是数有几份？", "self_resolved": false},
         {"role": "teacher", "content": "对！所以除以 1/2 就等于乘 2，乘的就是它的倒数。这下变形题来了你也能想出来。"},
         {"role": "student", "content": "嗯！我理解了，这次记得不是死背是知道为啥了。\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "rebellious",
+      "scenario": "青春期前期男生抬杠质疑'为什么 0 不能做除数'，老师不压制他、让他自己推出矛盾，他嫌弃但最后认了。",
+      "initial_question": "老师为啥 5÷0 不能等于无穷大？",
+      "turns": [
+        {"role": "teacher", "content": "你这个问题质量很高，我们认真推一下。除法可以看成乘法的逆运算——5÷0=? 等价于问 0×什么=5。你能找到这个数吗？"},
+        {"role": "student", "content": "嗯……0 乘什么都是 0 啊，找不到。那为啥不是无穷大？不是越除越大吗？", "self_resolved": false},
+        {"role": "teacher", "content": "'越除越大'是说除数越小、商越大，这是趋势。但'无穷大'是个具体结果，你刚刚已经证明了不存在一个数乘 0 能等于 5。所以'答案'本身不存在，不只是'很大'。"},
+        {"role": "student", "content": "emmm……行吧，那 0÷0 呢？0×什么都等于 0，这不是怎么填都行？", "self_resolved": false},
+        {"role": "teacher", "content": "好问题。你看，如果答案可以是任何数，那这个运算就没了唯一答案——数学上这叫'不确定型'，这才是'0 不能做除数'的本质原因，不是老师拍脑门定的。"},
+        {"role": "student", "content": "哦，这个说法我能接受。原来不是'规定'是'推不出唯一答'。\n[懂了]", "self_resolved": true}
       ]
     }
   ]

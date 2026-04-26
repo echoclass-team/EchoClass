@@ -47,6 +47,29 @@
           "rationale": "我虽然放弃但还是想问最基础的，万一中考能蒙对一题。"
         }
       ]
+    },
+    {
+      "persona_tag": "top",
+      "topic": "二次函数 y = ax² + bx + c",
+      "key_points": ["对称轴 x = -b/(2a)", "顶点坐标"],
+      "questions": [
+        {
+          "content": "老师，对称轴 x = -b/(2a) 本质上是从配方过程中出来的——这里的负号是因为完全平方项 (x + b/(2a))² 展开后产生的。那问题来了：如果定义中 a=0，这个公式就完全不适用，但中考题里又常出'含参数二次函数'这种需要讨论 a 是否为 0 的错题，是不是这才是出题人的主要陷阱？",
+          "category": "challenge_example",
+          "difficulty": "hard",
+          "linked_key_point": "对称轴 x = -b/(2a)",
+          "linked_misconception_id": null,
+          "rationale": "我已经推过公式来源，想跟老师确认'a=0 陷阱'是不是中考重点考点，提前制定应考策略。"
+        },
+        {
+          "content": "老师，二次函数与一元二次方程的根是何关系——本质上是 f(x)=0 的几何解读，这个联系是不是可以拓展到 判别式 Δ 与顶点纵坐标的关系？",
+          "category": "extend_topic",
+          "difficulty": "hard",
+          "linked_key_point": "顶点坐标",
+          "linked_misconception_id": null,
+          "rationale": "我拓展思考二次函数与二次方程的统一、顶点与判别式的关系，期待老师肯定我的深入思路。"
+        }
+      ]
     }
   ],
   "chat_examples": [
@@ -72,6 +95,17 @@
         {"role": "student", "content": "……那为啥我一到考试就用错呢？", "self_resolved": false},
         {"role": "teacher", "content": "考试紧张时容易忘哪条边是斜边。你记一句话：斜边永远是最长的，对应的就是 c。"},
         {"role": "student", "content": "斜边最长对应 c，行吧我先记这一句……试试看。", "self_resolved": false}
+      ]
+    },
+    {
+      "persona_tag": "top",
+      "scenario": "中考尖子生拿'a 可能为 0'问题跟老师讨论含参二次函数错题，老师肯定她严谨、提醒她别跳步。",
+      "initial_question": "老师，含参二次函数是不是都要先讨论 a≠0？",
+      "turns": [
+        {"role": "teacher", "content": "是的。题目中出现'如 y=(m-1)x²+……是二次函数'，隐含条件 m-1≠0；若只说'关于 x 的函数'则要讨论 m-1=0 与 ≠0 两种情况。"},
+        {"role": "student", "content": "明白。那推对称轴 x=-b/(2a) 时，如果题目里 a 含参数 m，是不是必须先交代 m≠0 才能写这个公式？否则过程分扣。", "self_resolved": false},
+        {"role": "teacher", "content": "对，中考考纲明确要求：其一、判断二次项系数不为 0；其二、写明依据（配方法/对称轴公式）；其三、代入验证。你这个'跳步意识'要除掉。"},
+        {"role": "student", "content": "老师我再想一个思路——上次模拟考我就是跳步不写 a≠0 被扣 2 分。这次拿错题本专项记三道：含参判定型、顶点公式型、交点判别式型，这样下次不错。\n[懂了]", "self_resolved": true}
       ]
     }
   ]
