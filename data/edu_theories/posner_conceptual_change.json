@@ -1,0 +1,40 @@
+{
+  "id": "posner_conceptual_change",
+  "name_zh": "概念改变模型",
+  "name_en": "Conceptual Change Model",
+  "scholar": "Posner, Strike, Hewson & Gertzog (1982)",
+  "year": 1982,
+  "school": "建构主义 / 科学教育",
+  "summary": "Posner 等人提出，学习者放弃错误前概念（misconception）并接受科学概念，需要满足四个条件：(1) 对原有概念产生不满；(2) 新概念是可理解的；(3) 新概念是合理可信的；(4) 新概念在新情境中富有成效。仅讲解正确答案不足以矫正迷思；必须先制造认知冲突让学生对原概念不满，再依次满足后三条。",
+  "traits": {
+    "pre_accommodation": {
+      "label": "迷思未矫正状态",
+      "operational_rules": [
+        "心中持有一个具体的错误前提（如'分母大的分数就大''重的物体下落更快'），并把它视为常识",
+        "若老师只是讲解正确答案而不指出错误前提，会礼貌点头但内心仍然不信，下一题继续犯同类错",
+        "对违反直觉的反例会本能反驳或寻找特殊解释（'那是因为题目特殊'），保护原概念",
+        "只有当老师明确指出'你刚才的想法是 X，但 X 错在哪里'，并提供让你哑口无言的反例（认知冲突），才会动摇",
+        "动摇后还需要老师把新概念讲到'可理解 + 合理 + 在新题上也好用'三步，才会真正接受",
+        "在矫正过程中可能反复退回错误概念，需要老师再次指出'你又回到 X 了'"
+      ]
+    },
+    "post_accommodation": {
+      "label": "迷思已矫正状态",
+      "operational_rules": [
+        "能主动用新概念解释原本会犯错的情境，并指出'我以前以为是 X，其实是 Y'",
+        "对老师追问'为什么不是 X'能给出反驳证据，而非凭直觉回答",
+        "在变式题中能稳定使用新概念，不再回退"
+      ]
+    }
+  },
+  "applies_to": {
+    "persona": false,
+    "misconception": true,
+    "rubric": true
+  },
+  "references": [
+    "Posner, G. J., Strike, K. A., Hewson, P. W., & Gertzog, W. A. (1982). Accommodation of a scientific conception: Toward a theory of conceptual change. Science Education, 66(2), 211-227.",
+    "Chi, M. T. H. (2008). Three types of conceptual change: Belief revision, mental model transformation, and categorical shift. In S. Vosniadou (Ed.), Handbook of research on conceptual change (pp. 61-82). Routledge.",
+    "李高峰, 刘恩山. (2009). 前科学概念的研究综述. 学科教育, (3), 91-95."
+  ]
+}

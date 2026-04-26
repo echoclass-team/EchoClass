@@ -17,6 +17,21 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 
+class TheoryAnchor(BaseModel):
+    """Persona ↔ 教育学理论 的轻量锚定（POC 阶段，正式版会迁到 SQLite）。
+
+    通过 ``(theory_id, trait)`` 组合定位到 ``data/edu_theories/<theory_id>.json``
+    里的 ``traits[trait]``，从而把该 trait 的 ``operational_rules`` 注入 prompt。
+    """
+
+    theory_id: str = Field(
+        ..., description="理论卡片 id，对应 data/edu_theories/<id>.json"
+    )
+    trait: str = Field(
+        ..., description="理论的 trait 变体 key，对应卡片里 traits 字典的某个 key"
+    )
+
+
 class Persona(BaseModel):
     """学生人设描述。
 
@@ -65,6 +80,12 @@ class Persona(BaseModel):
     # --- 系统辅助 ---
     avatar_seed: str = Field(default="", description="头像种子")
     summary: str = Field(default="", description="一句话概括")
+
+    # --- 教育学理论锚点（POC，向后兼容默认空） ---
+    theory_anchors: list[TheoryAnchor] = Field(
+        default_factory=list,
+        description="该 persona 锚定的教育学理论 trait 列表。空表示不注入理论上下文，等同于旧行为。",
+    )
 
     # --- 兼容旧字段 ---
     knowledge_level: str = Field(

@@ -30,5 +30,15 @@
   ],
   "family_background": "父母打工，经济一般，家长对他期望是'别垫底'。家中无学习环境，放学后要帮忙照顾弟弟妹妹。没有补习条件。",
   "avatar_seed": "zheng-yufan-anxious",
-  "summary": "六年级学业吃力+小升初焦虑男生，需要心理支持和基础补救"
+  "summary": "六年级学业吃力+小升初焦虑男生，需要心理支持和基础补救",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_high_scaffolding"
+    }
+  ]
 }

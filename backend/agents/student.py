@@ -332,6 +332,7 @@ class StudentAgent:
     ) -> list[dict[str, Any]]:
         """渲染 student_chat.j2 prompt 并拼装 chat messages（共享给同步/流式）。"""
         chat_examples = self._select_chat_examples()
+        resolved_theories = self._resolve_theory_anchors()
         prompt = self._chat_template.render(
             persona=self.persona,
             stage=self.stage,
@@ -339,11 +340,32 @@ class StudentAgent:
             dialog_history=dialog_history or [],
             teacher_utterance=teacher_utterance,
             chat_examples=chat_examples,
+            resolved_theories=resolved_theories,
         )
         return [
             {"role": "system", "content": prompt},
             {"role": "user", "content": teacher_utterance},
         ]
+
+    def _resolve_theory_anchors(self):
+        """把 ``persona.theory_anchors`` 解析为 ``ResolvedTheory`` 列表。
+
+        POC 阶段：失败时安静 fallback 为空列表（不阻塞主流程）。
+        生产路径如果出错应该被监控告警，但这里 POC 优先稳定性。
+        """
+        if not getattr(self.persona, "theory_anchors", None):
+            return []
+        try:
+            from kb.poc_loader import resolve_persona_anchors
+
+            return resolve_persona_anchors(self.persona)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Failed to resolve theory anchors for persona %s: %s",
+                self.persona.name,
+                exc,
+            )
+            return []
 
     # ---------------------------------------------------- Q/A coach helpers
 

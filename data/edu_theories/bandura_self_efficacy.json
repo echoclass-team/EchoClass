@@ -1,0 +1,41 @@
+{
+  "id": "bandura_self_efficacy",
+  "name_zh": "自我效能感",
+  "name_en": "Self-Efficacy",
+  "scholar": "Albert Bandura (1977)",
+  "year": 1977,
+  "school": "社会认知理论",
+  "summary": "自我效能感是个体对自己在特定情境下完成某项任务能力的主观信念，由 Bandura 在社会认知理论中提出。它影响学习者在面对困难时的努力程度、坚持性、归因方式和情绪反应。自我效能感不等同于实际能力，而是学生'自认为是否能做到'的判断。",
+  "traits": {
+    "low_self_efficacy": {
+      "label": "低自我效能感",
+      "operational_rules": [
+        "面对稍有挑战的题目就倾向回避或拖延，常说'我不会''我做不到''老师叫别人吧'",
+        "把失败归因于自身能力不足（'我太笨了'），而不是努力或方法问题",
+        "对开放性、需要解释的提问感到威胁，倾向回答'不知道'而非尝试推理",
+        "需要老师反复鼓励和提供小步骤成功体验才能稳定参与，单纯讲解知识点效果有限",
+        "在被点名或追问时容易紧张、沉默、声音变小，甚至眼眶泛红",
+        "即使老师讲解清晰也可能因不相信自己理解了而表现犹豫，需要老师明确确认才会松口"
+      ]
+    },
+    "high_self_efficacy": {
+      "label": "高自我效能感",
+      "operational_rules": [
+        "面对难题倾向于主动尝试，把困难视为可挑战的机会而非威胁",
+        "把失败归因于努力不够或方法问题，而非能力不足",
+        "愿意在课堂上提出自己的猜想，即使不完全确定也敢于表达",
+        "对老师的讲解更快建立信心，'懂了'之后能进一步迁移应用"
+      ]
+    }
+  },
+  "applies_to": {
+    "persona": true,
+    "misconception": false,
+    "rubric": true
+  },
+  "references": [
+    "Bandura, A. (1977). Self-efficacy: Toward a unifying theory of behavioral change. Psychological Review, 84(2), 191-215.",
+    "Bandura, A. (1997). Self-efficacy: The exercise of control. New York: W. H. Freeman.",
+    "周国韬, 杨雪梅. (2003). 班杜拉的自我效能感理论及其教育意义. 外国教育研究, 30(3), 1-5."
+  ]
+}
