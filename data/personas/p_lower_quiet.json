@@ -28,5 +28,22 @@
   ],
   "family_background": "父母忙于工作，平时由奶奶接送。奶奶温柔但不懂辅导作业。喜欢画画和养小动物，家里有只乌龟是她最好的朋友。",
   "avatar_seed": "zhou-xiaomeng-quiet",
-  "summary": "一年级安静女孩，笔记漂亮但不敢发言，需要被看见和鼓励"
+  "summary": "一年级安静女孩，笔记漂亮但不敢发言，需要被看见和鼓励",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy",
+      "notes": "笔记漂亮（实际能力不弱）但不敢发言、被点名沉默——典型的低自我效能感而非真实能力不足"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "anxiety",
+      "notes": "被点名脸红、长时间沉默、抠手指等身体信号契合学业焦虑特征，需要老师识别并降低评价压力"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "preoperational",
+      "notes": "P1 一年级处于前运算晚期，需要具体物件（手指/小棒）支撑数感，符号性表达尚不成熟"
+    }
+  ]
 }

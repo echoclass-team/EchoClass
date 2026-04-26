@@ -31,5 +31,27 @@
   ],
   "family_background": "父母离异，跟父亲生活，父亲工作忙很少管他。家庭氛围冷淡，缺少情感支持。朋友圈混杂，有几个也在'躺平'的同学。",
   "avatar_seed": "xu-hao-giveup",
-  "summary": "初三放弃型男生，聪明但信心崩塌，需要情感联结重建动机"
+  "summary": "初三放弃型男生，聪明但信心崩塌，需要情感联结重建动机",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy",
+      "notes": "信心崩塌 = 极低自我效能感，'反正考不上重点'是预期失败的合理化；与基础薄弱叠加形成放弃恶性循环"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "maladaptive_ability_attribution",
+      "notes": "'反正我笨''天赋不够'类语言频出，把失败归于稳定不可控的能力，是阻断重建动机的核心归因陷阱"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "amotivation",
+      "notes": "'随便''摆烂了''都那样'明确的无动机话术；不相信努力与结果有关联，需要先重建小步骤成功体验再谈学习"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "boredom",
+      "notes": "课上趴桌子+对学习冷淡而对游戏活跃，是低控制低价值组合下的无聊表现；老师可借兴趣兜底切入但不能只停留在兴趣层"
+    }
+  ]
 }
