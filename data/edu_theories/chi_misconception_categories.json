@@ -1,0 +1,55 @@
+{
+  "id": "chi_misconception_categories",
+  "name_zh": "迷思概念三类型",
+  "name_en": "Three Types of Conceptual Change",
+  "scholar": "Michelene T. H. Chi (2008)",
+  "year": 2008,
+  "school": "认知科学 / 概念改变",
+  "summary": "Chi 把学习者的迷思概念按修正难度分为三类：(1) 错误信念——孤立的命题级错误，可通过反例直接修正；(2) 心智模型缺陷——多个错误信念组成的连贯心智模型，需要系统重构；(3) 本体论错位——把概念归错了本体类别（如把'热'当物质、把'电流'当流动液体），最难矫正，必须切换学习者所在的本体范畴。EchoClass 用此理论给迷思库分类，并指导师范生评估自己'破除迷思'的难度等级与策略选择。",
+  "traits": {
+    "false_belief": {
+      "label": "错误信念（最易修正）",
+      "operational_rules": [
+        "学生持有的是命题级别的错误（'分母大的分数就大''圆周率等于 3.14 整'），错误是孤立的、可一句话陈述的",
+        "对反例反应直接：'真的吗？我看看'，遇到 1/2 vs 1/4 的图示能立刻动摇原信念",
+        "矫正后短期内不太回退，老师讲过一次他能在下次类似题中应用新规则",
+        "矫正策略简单：呈现一个让原信念哑口无言的反例，再补一句正确表述即可",
+        "老师在课堂上识别这类迷思的标志是——学生能用一句话讲清自己的错误想法、且对'你能不能举个例子'反应得当",
+        "若反复出现同样错误，可能其实不是 false_belief 而是更深的 mental_model 问题，需要重新分类"
+      ]
+    },
+    "flawed_mental_model": {
+      "label": "心智模型缺陷（中等难度）",
+      "operational_rules": [
+        "学生持有的是多个相互关联的错误信念组成的小模型（如'温度高=分子热=分子大''重的物体下落更快'），系统性地解释一类现象",
+        "单一反例会被防御：'那是特殊情况''那个题不算'，因为模型有自我修复能力，会把反例例外化",
+        "矫正需要逐一动摇模型的多个支柱：先指出 A 错、再指出 B 错、再展示新模型如何同时解释 A 和 B",
+        "矫正过程通常需要 3-5 轮对话，且学生会反复回退到旧模型（'但我还是觉得……'），老师需要耐心识别回退点",
+        "老师在课堂上识别这类迷思的标志是——学生不仅会做错，还能用错误模型自圆其说、对反例能给出'内部一致'的解释",
+        "矫正后稳定性中等，需要在变式题里多次巩固，否则数月后可能复发"
+      ]
+    },
+    "ontological_miscategorization": {
+      "label": "本体论错位（最难修正）",
+      "operational_rules": [
+        "学生把概念归错了本体类别：把'热'当作物质、把'电流'当作流动液体、把'力'当作物体内部储存的东西、把'函数'当作一个动作而非一个对象",
+        "因为分错了本体类别，所有解释都用错类别的语言（'电流流走了''热被吸收了'），且这些语言听起来'对'，所以错误极难被自己察觉",
+        "讲解正确概念时，学生会不自觉地把新概念翻译回旧本体（老师讲'电场是空间中每点的属性'，学生听成'电场也是某种流体'）",
+        "矫正必须先让学生意识到自己用错了本体类别（'你刚才说的是物质类的语言，但电流不是物质'），这一步极为困难",
+        "本体类别切换通常需要长期、多场景的反复打磨，单节课基本无法完成，但可以做到'埋下怀疑的种子'",
+        "老师在课堂上识别这类迷思的标志是——学生用'流'、'有'、'装'、'传递'等物质性动词描述非物质概念，且对'它真的是物质吗'的提问感到困惑"
+      ]
+    }
+  },
+  "applies_to": {
+    "persona": false,
+    "misconception": true,
+    "rubric": true
+  },
+  "references": [
+    "Chi, M. T. H. (2008). Three types of conceptual change: Belief revision, mental model transformation, and categorical shift. In S. Vosniadou (Ed.), International Handbook of Research on Conceptual Change (pp. 61-82). New York: Routledge.",
+    "Chi, M. T. H., Slotta, J. D., & de Leeuw, N. (1994). From things to processes: A theory of conceptual change for learning science concepts. Learning and Instruction, 4(1), 27-43.",
+    "Vosniadou, S. (Ed.). (2013). International Handbook of Research on Conceptual Change (2nd ed.). New York: Routledge.",
+    "刘恩山, 李高峰. (2009). 前科学概念的研究综述. 学科教育, (3), 91-95."
+  ]
+}
