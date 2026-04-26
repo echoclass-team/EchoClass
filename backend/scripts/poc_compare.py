@@ -53,6 +53,11 @@ _BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(_BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(_BACKEND_DIR))
 
+# 加载 backend/.env（与 main.py 一致）
+from dotenv import load_dotenv  # noqa: E402
+
+load_dotenv(_BACKEND_DIR / ".env")
+
 from agents.student import StudentAgent  # noqa: E402
 from llm.client import LLMClient  # noqa: E402
 from schemas.dialog import DialogReplyResult  # noqa: E402
@@ -92,12 +97,27 @@ SCENARIO_TEACHER_UTTERANCE = (
 
 
 _SELF_DEPRECATION_WORDS = [
-    "我太笨", "我笨", "我不会", "我不行", "我做不到", "我搞不懂",
-    "我学不会", "老师叫别人", "我可能学不会", "我学不来",
+    "我太笨",
+    "我笨",
+    "我不会",
+    "我不行",
+    "我做不到",
+    "我搞不懂",
+    "我学不会",
+    "老师叫别人",
+    "我可能学不会",
+    "我学不来",
 ]
 _SCAFFOLDING_REQUEST_WORDS = [
-    "再讲一遍", "再说一遍", "我没听懂", "能不能慢一点", "我跟不上",
-    "讲慢一点", "我没明白", "再说说", "再来一遍",
+    "再讲一遍",
+    "再说一遍",
+    "我没听懂",
+    "能不能慢一点",
+    "我跟不上",
+    "讲慢一点",
+    "我没明白",
+    "再说说",
+    "再来一遍",
 ]
 
 
@@ -147,7 +167,9 @@ async def _run_one(
     return results
 
 
-def _summarize(label: str, rows: list[tuple[DialogReplyResult, dict[str, Any]]]) -> dict[str, Any]:
+def _summarize(
+    label: str, rows: list[tuple[DialogReplyResult, dict[str, Any]]]
+) -> dict[str, Any]:
     """汇总一组 N 次结果的统计。"""
     if not rows:
         return {"label": label, "n": 0}
@@ -158,8 +180,10 @@ def _summarize(label: str, rows: list[tuple[DialogReplyResult, dict[str, Any]]])
         "n": n,
         "avg_len": round(sum(m["len"] for m in metrics) / n, 1),
         "self_resolved_rate": sum(1 for m in metrics if m["self_resolved"]) / n,
-        "self_deprecation_rate": sum(1 for m in metrics if m["has_self_deprecation"]) / n,
-        "scaffold_request_rate": sum(1 for m in metrics if m["has_scaffold_request"]) / n,
+        "self_deprecation_rate": sum(1 for m in metrics if m["has_self_deprecation"])
+        / n,
+        "scaffold_request_rate": sum(1 for m in metrics if m["has_scaffold_request"])
+        / n,
         "avg_hesitation_marks": round(
             sum(m["hesitation_marks"] for m in metrics) / n, 2
         ),
@@ -234,24 +258,26 @@ def _format_markdown(
             lines.append("> (缺)")
         lines.append("")
 
-    lines.extend([
-        "---",
-        "",
-        "## 主观评估指引",
-        "",
-        "请人工 review 时关注：",
-        "",
-        "1. **风格差异是否显著**？With Theory 组是否更符合 Bandura 低自我效能感 + Vygotsky 强支架需求的描述？",
-        "2. **是否过拟合理论**？With Theory 组是否变得套路化、千篇一律？",
-        "3. **是否压制了人设细节**？口头禅、说话风格是否仍体现？",
-        "4. **`[懂了]` 触发是否更克制**？符合 Posner 概念改变模型应不易过早 accommodate。",
-        "",
-        "Go / No-Go 判定建议：",
-        "",
-        "- ✅ **明显更专业** → 推进 L3 全栈实现（feat/edu-kb-foundation）",
-        "- ❌ **区别不明显** → kill explore 分支，复盘 prompt 注入方式",
-        "- ➖ **部分有效** → 缩小 L3 范围（如只做评估侧）",
-    ])
+    lines.extend(
+        [
+            "---",
+            "",
+            "## 主观评估指引",
+            "",
+            "请人工 review 时关注：",
+            "",
+            "1. **风格差异是否显著**？With Theory 组是否更符合 Bandura 低自我效能感 + Vygotsky 强支架需求的描述？",
+            "2. **是否过拟合理论**？With Theory 组是否变得套路化、千篇一律？",
+            "3. **是否压制了人设细节**？口头禅、说话风格是否仍体现？",
+            "4. **`[懂了]` 触发是否更克制**？符合 Posner 概念改变模型应不易过早 accommodate。",
+            "",
+            "Go / No-Go 判定建议：",
+            "",
+            "- ✅ **明显更专业** → 推进 L3 全栈实现（feat/edu-kb-foundation）",
+            "- ❌ **区别不明显** → kill explore 分支，复盘 prompt 注入方式",
+            "- ➖ **部分有效** → 缩小 L3 范围（如只做评估侧）",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -272,7 +298,10 @@ async def main() -> None:
     args = parser.parse_args()
 
     if not os.environ.get("OPENAI_API_KEY"):
-        print("❌ 未设置 OPENAI_API_KEY，无法跑真实 LLM。请配置 backend/.env", file=sys.stderr)
+        print(
+            "❌ 未设置 OPENAI_API_KEY，无法跑真实 LLM。请配置 backend/.env",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     personas = load_personas()
@@ -326,9 +355,7 @@ async def main() -> None:
             baseline_summary,
             with_theory_summary,
         )
-        out_path = (
-            _BACKEND_DIR.parent / "docs" / "edu_kb_poc_results.md"
-        )
+        out_path = _BACKEND_DIR.parent / "docs" / "edu_kb_poc_results.md"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(md, encoding="utf-8")
         print()
