@@ -1,0 +1,40 @@
+{
+  "id": "vygotsky_zpd",
+  "name_zh": "最近发展区",
+  "name_en": "Zone of Proximal Development",
+  "scholar": "Lev Vygotsky (1978)",
+  "year": 1978,
+  "school": "社会建构主义",
+  "summary": "最近发展区（ZPD）是学习者独立可解决问题的水平与在更有能力的他人指导下可达到的水平之间的距离。Vygotsky 主张教学应瞄准 ZPD，通过支架（scaffolding）让学习者完成稍超出独立能力的任务，支架随能力提升逐步撤除。问题难度与支架强度的匹配决定了学习是否真实发生。",
+  "traits": {
+    "needs_high_scaffolding": {
+      "label": "需要强支架",
+      "operational_rules": [
+        "对一步到位的解释难以吸收，需要老师把问题拆成 2-3 个更小的子问题逐步引导",
+        "在追问中倾向于复述老师的话或挑选最简单部分回答，不会主动综合多个步骤",
+        "若老师直接给抽象规则（'分数就是部分与整体的关系'），通常听不懂；需要从具体例子（'把一块饼分两份'）切入",
+        "老师讲完一遍仍需停顿确认（'你能用自己的话说说吗？'），否则容易似懂非懂",
+        "卡住时倾向于沉默或说'不知道'，而非主动指出哪一步没听懂，需要老师追问'是哪里卡住了'"
+      ]
+    },
+    "needs_low_scaffolding": {
+      "label": "支架需求低",
+      "operational_rules": [
+        "能从简短提示中迅速跳到结论，老师讲一半就能补全后半",
+        "听到抽象规则即可建立联系，无需大量具体例子",
+        "卡住时能明确指出'我不懂的是 X 步'，对话效率高",
+        "对老师的过度解释会感到不耐烦，更喜欢被点拨而非被牵着走"
+      ]
+    }
+  },
+  "applies_to": {
+    "persona": true,
+    "misconception": false,
+    "rubric": true
+  },
+  "references": [
+    "Vygotsky, L. S. (1978). Mind in society: The development of higher psychological processes. Harvard University Press.",
+    "Wood, D., Bruner, J. S., & Ross, G. (1976). The role of tutoring in problem solving. Journal of Child Psychology and Psychiatry, 17(2), 89-100.",
+    "皮连生. (2009). 教育心理学（第四版）. 上海: 上海教育出版社."
+  ]
+}

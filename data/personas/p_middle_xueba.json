@@ -27,5 +27,27 @@
   ],
   "family_background": "父母均为大学教师，家中藏书丰富，从小养成阅读习惯。父母鼓励独立思考，经常在家讨论数学趣题。",
   "avatar_seed": "chen-siyuan-xueba",
-  "summary": "三年级数学尖子生，逻辑清晰爱举手，偶尔过度自信"
+  "summary": "三年级数学尖子生，逻辑清晰爱举手，偶尔过度自信",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "积极举手 + '其实很简单'口头禅 = 高效能感的典型表现，但要警惕过度自信导致的方法泛化"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_low_scaffolding",
+      "notes": "逻辑清晰、抢答快，对老师的过度铺垫会感到不耐烦；适合用追问而非分步引导推进"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "intrinsic_motivation",
+      "notes": "课外书自发阅读、家庭支持讨论数学趣题，动机来自学科本身，老师应给拓展空间而非控制节奏"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P3 处于具体运算期，能可逆运算与守恒判断；纯符号代数仍需具体情境锚点，不要过早进入纯抽象推演"
+    }
+  ]
 }

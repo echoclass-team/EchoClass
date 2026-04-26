@@ -3,7 +3,7 @@
   "$id": "https://echoclass.dev/schemas/persona.json",
   "title": "EchoClass Student Persona",
   "description": "虚拟学生人设定义。基于皮亚杰认知发展阶段理论设计，用于驱动 1v1 答疑陪练中 StudentAgent 的角色扮演行为。",
-  "$comment": "v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation），由 stage.piaget_stage 统一约束认知阶段；family_background 降级为可选。",
+  "$comment": "v1.2 (2026-04-27)：新增 theory_anchors 可选字段，用于把人设锚定到 data/edu_theories/ 中的理论 trait（每条由 theory_id + trait 组成）。v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation），由 stage.piaget_stage 统一约束认知阶段；family_background 降级为可选。",
   "type": "object",
   "required": [
     "id",
@@ -144,6 +144,32 @@
       "minLength": 10,
       "maxLength": 100,
       "description": "一句话人设概括，用于 API 列表展示"
+    },
+    "theory_anchors": {
+      "type": "array",
+      "minItems": 0,
+      "description": "教育学理论锚点。每条把当前人设锚到 data/edu_theories/<theory_id>.json 中的某个 trait，供 StudentAgent prompt 注入与评估引擎引用。锚点 ≥ 2 条时建议覆盖 2 个以上不同学派以增加风格多样性。",
+      "items": {
+        "type": "object",
+        "required": ["theory_id", "trait"],
+        "additionalProperties": false,
+        "properties": {
+          "theory_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "理论卡片 id（snake_case），需与 data/edu_theories/<theory_id>.json 的 id 字段一致"
+          },
+          "trait": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "理论卡片下的 trait key（snake_case），需与该理论卡片 traits 对象内的某个键一致"
+          },
+          "notes": {
+            "type": "string",
+            "description": "可选：本人设为何选这个 trait 的简短理由（便于 review）"
+          }
+        }
+      }
     }
   },
   "additionalProperties": false

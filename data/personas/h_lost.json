@@ -31,5 +31,27 @@
   ],
   "family_background": "父母经商，家境不错但没时间陪他。从初中开始寄宿。父母以物质满足替代情感交流。他其实阅读量大，自学了许多社科书，对现实有较深思考但走向消极。",
   "avatar_seed": "song-junpeng-lost",
-  "summary": "高三意义危机男生，拒绝套路又无力前行，需要生涯意义层面的沟通"
+  "summary": "高三意义危机男生，拒绝套路又无力前行，需要生涯意义层面的沟通",
+  "theory_anchors": [
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "amotivation",
+      "notes": "'这有意义吗''学这个以后用得上吗'是典型的无动机话术；不再认为学业行为能产生有价值的结果，需要老师先在意义层面建立联结，再谈学习"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "external_attribution",
+      "notes": "把失败/无力前行归于'体制''时代''反正都那样'等外部不可控因素，回避自我可调节的部分；老师可用具体可控变量切开外归因"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "boredom",
+      "notes": "课堂低头看其它书+'我累了'是低价值评估下的高级无聊，伴随哲学化合理化；与 anxious 的'高价值低控制'路径不同，需要不同的干预策略"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "H3 已具备形式运算与元认知能力，能反思自己思维过程；老师可以用 ε-δ 级严谨论证或苏格拉底式追问推动他，而非堆砌具体例子"
+    }
+  ]
 }
