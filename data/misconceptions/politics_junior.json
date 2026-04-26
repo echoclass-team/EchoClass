@@ -1,7 +1,7 @@
 [
   {
     "id": "politics_rights_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_lower"
     ],
@@ -13,7 +13,7 @@
   },
   {
     "id": "politics_law_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_upper"
     ],
@@ -25,7 +25,7 @@
   },
   {
     "id": "politics_constitution_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_lower"
     ],
@@ -37,7 +37,7 @@
   },
   {
     "id": "politics_fairness_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_upper"
     ],
@@ -49,7 +49,7 @@
   },
   {
     "id": "politics_privacy_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_lower"
     ],
@@ -61,7 +61,7 @@
   },
   {
     "id": "politics_network_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_upper"
     ],
@@ -73,7 +73,7 @@
   },
   {
     "id": "politics_culture_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_lower"
     ],
@@ -85,7 +85,7 @@
   },
   {
     "id": "politics_nation_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_upper"
     ],
@@ -97,7 +97,7 @@
   },
   {
     "id": "politics_democracy_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_lower"
     ],
@@ -109,7 +109,7 @@
   },
   {
     "id": "politics_emotion_01",
-    "subject": "politics",
+    "subject": "政治",
     "stage": [
       "j_upper"
     ],

@@ -35,11 +35,12 @@ def test_match_misconceptions_requires_key_point_when_available() -> None:
 
 
 def test_match_misconceptions_supports_english_subject_aliases() -> None:
+    # 数据已统一为中文 subject；这里用英文别名查询，验证别名归一化仍然有效。
     matches = match_misconceptions(
-        subject="地理",
+        subject="geography",
         stage_id="j_lower",
         key_points=["等高线地形图"],
         topic="地理",
     )
 
-    assert any(item.subject == "geography" for item in matches)
+    assert any(item.subject == "地理" for item in matches)
