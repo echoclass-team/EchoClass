@@ -9,6 +9,8 @@ Role A 追加 router 注册时请与 B 同步。
 - GET /api/stages/{id} — 学段详情
 - GET /api/personas — 人设列表（支持过滤）
 - GET /api/personas/{name_or_id} — 人设详情
+- POST /api/lessons/upload 等 — 教案 CRUD（详见 api/lessons.py）
+- WS /ws/qa-sessions/{session_id} — 1v1 答疑陪练 WebSocket（A 代写, see api/qa_ws.py）
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.lessons import router as lessons_router
 from api.personas import router as personas_router
+from api.qa_ws import router as qa_ws_router
 from api.response import http_exception_handler
 from api.stages import router as stages_router
 
@@ -49,6 +52,7 @@ app.add_middleware(
 app.include_router(lessons_router)
 app.include_router(stages_router)
 app.include_router(personas_router)
+app.include_router(qa_ws_router)
 
 # 全局异常 → ApiResponse envelope，前端统一走一套解析逻辑
 app.add_exception_handler(HTTPException, http_exception_handler)

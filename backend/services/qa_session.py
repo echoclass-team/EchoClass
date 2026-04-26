@@ -29,7 +29,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Iterable
+from typing import AsyncIterator, Iterable
 
 from agents.student import StudentAgent
 from schemas.dialog import (
@@ -37,6 +37,7 @@ from schemas.dialog import (
     DialogReplyResult,
     DialogSession,
     ResolutionSource,
+    StudentStreamEvent,
 )
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
@@ -222,6 +223,70 @@ class QASession:
             )
         )
         return result
+
+    async def stream_teacher_message(
+        self, dialog_id: str, text: str
+    ) -> AsyncIterator[StudentStreamEvent]:
+        """``send_teacher_message`` 的流式版本：转发 ``StudentAgent.stream_in_dialog``
+        的事件，并在流结束时把完整学生回复落入 dialog 历史。
+
+        与 ``send_teacher_message`` 的语义差异：
+
+        - 调用方拿到一个 async generator，按 ``StudentStreamEvent`` 顺序消费：
+          0..N 个 ``delta`` + 1 个 ``final``
+        - ``final.result.content`` 是权威完整文本（已剥离 ``[懂了]`` 标记）
+        - delta 不含 ``[懂了]``（agent 侧 hold-back 缓冲已过滤）
+        - 落库时机：仅在最后一个 ``final`` 事件 yield 之前把 student message 追加到
+          dialog.messages，**保证若中途异常不会留下半截消息**
+
+        Yields
+        ------
+        StudentStreamEvent
+        """
+        if not text.strip():
+            raise QASessionError("teacher message must be non-empty")
+        dialog = self.get_dialog(dialog_id)
+        if dialog.status == "pending":
+            self.start_dialog(dialog_id)
+        if dialog.status != "active":
+            raise QASessionError(
+                f"dialog {dialog_id} not active (status={dialog.status})"
+            )
+
+        agent = self._agents.get(dialog.student_id)
+        if agent is None:
+            raise QASessionError(f"no student agent registered for {dialog.student_id}")
+
+        now = datetime.now(timezone.utc)
+        dialog.messages.append(
+            DialogMessage(role="teacher", content=text, timestamp=now)
+        )
+
+        history_snapshot = dialog.messages[:-1]  # 不含本轮 teacher 消息
+
+        final_event: StudentStreamEvent | None = None
+        async for evt in agent.stream_in_dialog(
+            question=dialog.question,
+            teacher_utterance=text,
+            dialog_history=history_snapshot,
+        ):
+            if evt.type == "final":
+                final_event = evt
+                # 在 yield final 之前把学生回复落库
+                if evt.result is not None:
+                    dialog.messages.append(
+                        DialogMessage(
+                            role="student",
+                            content=evt.result.content,
+                            timestamp=datetime.now(timezone.utc),
+                        )
+                    )
+            yield evt
+
+        if final_event is None:  # pragma: no cover - 防御性
+            raise QASessionError(
+                f"stream_in_dialog finished without final event for {dialog_id}"
+            )
 
     def mark_resolved(
         self,
