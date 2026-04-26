@@ -28,5 +28,22 @@
   ],
   "family_background": "父亲是工程师，母亲是会计师，家庭氛围理性安静。父母尊重他的节奏，不强迫社交。家中有独立书房，课后大量时间用于自主阅读和做题。",
   "avatar_seed": "li-wenbo-introvert",
-  "summary": "八年级内向学霸，不爱说话但思考深入，书面表达远强于口头"
+  "summary": "八年级内向学霸，不爱说话但思考深入，书面表达远强于口头",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "学科水平优秀+书面表达强，对自己的实际能力是有信心的；'不爱说话'更多是社交焦虑而非低效能，老师别误判"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "shame",
+      "notes": "内向 + 措辞谨慎 + '我写在纸上可以吗'透露的不是自我效能问题而是当众错误的羞愧规避，老师应优先用一对一/书面渠道降低暴露感"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "J2 八年级正处于具体运算 → 形式运算过渡期，已能跳步证明但仍需老师确认抽象推理的边界条件"
+    }
+  ]
 }

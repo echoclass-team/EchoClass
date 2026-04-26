@@ -34,11 +34,23 @@
   "theory_anchors": [
     {
       "theory_id": "bandura_self_efficacy",
-      "trait": "low_self_efficacy"
+      "trait": "low_self_efficacy",
+      "notes": "POC 阶段已验证：'我不会''老师别叫我''看同桌求助'等行为完全契合低自我效能感清单（N=5 对比已观察到风格差异）"
     },
     {
       "theory_id": "vygotsky_zpd",
-      "trait": "needs_high_scaffolding"
+      "trait": "needs_high_scaffolding",
+      "notes": "POC 阶段已验证：抽象解释吸收差，需要 2-3 个子问题逐步引导；与基础薄弱+小升初压力叠加放大支架需求"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "anxiety",
+      "notes": "小升初压力 + 课堂被点名说话颤抖 + 眼眶泛红 = 高价值低控制的学业焦虑典型，老师需先安抚情绪再介入认知"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "maladaptive_ability_attribution",
+      "notes": "把失败归于'我不行'而非'我没准备好'，是放大焦虑与低效能的关键归因陷阱；老师应在反馈中明确切开'这次错' vs '能力'"
     }
   ]
 }
