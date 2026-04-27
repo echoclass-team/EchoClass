@@ -39,14 +39,29 @@ from rag.parser import parse_file
 # 样例教案路径
 SAMPLES_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "lesson_samples"
 
-# 6 档学段对应的样例教案（stage_id 用于展示分组）
+# 6 档学段 × 多份样例教案
+# - 数学版：M1 首发，每学段 1 份（保留在前以兼容历史调用）
+# - 跨学科版：M1/M2 增加（#83 + #73），每学段 ≥ 2 学科覆盖
 SAMPLES: list[tuple[str, str]] = [
+    # M1 首发：每学段 1 份数学
     ("p_lower", "math_p2_addition.md"),
     ("p_middle", "math_p3_fraction.md"),
     ("p_upper", "math_p5_area.md"),
     ("j_lower", "physics_j2_force.md"),
     ("j_upper", "math_j3_quadratic.md"),
     ("h", "math_h2_derivative.md"),
+    # #83 跨学科扩展：覆盖 chinese / english / chemistry
+    ("p_middle", "chinese_p3_poetry.md"),
+    ("j_lower", "english_j1_present_tense.md"),
+    ("h", "chemistry_h1_redox.md"),
+    # #73 (本期) 第二学科补足：p_lower / p_upper / j_upper 各加 1 学科
+    # + 总数补到 ≥ 15
+    ("p_lower", "chinese_p1_pinyin.md"),
+    ("p_upper", "chinese_p5_metaphor.md"),
+    ("j_lower", "history_j2_opium_war.md"),
+    ("j_upper", "history_j3_xinhai.md"),
+    ("j_upper", "biology_j3_genetics.md"),
+    ("h", "politics_h1_economy.md"),
 ]
 
 
