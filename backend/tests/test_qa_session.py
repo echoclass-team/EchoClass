@@ -148,7 +148,11 @@ async def test_send_teacher_message_auto_starts_and_records_history() -> None:
         student_id="A",
         name="学生A",
         questions=[{"content": "A1"}],
-        replies=[DialogReplyResult(content="哦，明白了。", self_resolved=False, raw="哦，明白了。")],
+        replies=[
+            DialogReplyResult(
+                content="哦，明白了。", self_resolved=False, raw="哦，明白了。"
+            )
+        ],
     )
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a], questions_per_student=1)
@@ -212,7 +216,9 @@ async def test_mark_resolved_records_source_and_is_idempotent() -> None:
 
     # 再次 mark_resolved 是幂等的
     session.mark_resolved(pending.id, source="teacher_marked")
-    assert session.get_dialog(pending.id).resolution_source == "self_resolve"  # 不被覆盖
+    assert (
+        session.get_dialog(pending.id).resolution_source == "self_resolve"
+    )  # 不被覆盖
 
 
 async def test_mark_resolved_after_abandoned_raises() -> None:
@@ -312,3 +318,36 @@ async def test_get_dialog_unknown_id_raises() -> None:
     session = QASession(lesson_meta=_lesson())
     with pytest.raises(QASessionError):
         session.get_dialog("nonexistent")
+
+
+async def test_iter_students_yields_spawn_order() -> None:
+    """``iter_students`` 应按 spawn 注册顺序遍历 (student_id, agent)。
+
+    这是 REST / WS 投影层的公开访问器，替代直接读 ``_agents`` 私有字段。
+    顺序由 spawn 入参决定，dict 维持插入顺序。
+    """
+    a = FakeStudentAgent(
+        student_id="A",
+        name="学生A",
+        questions=[{"content": "A1"}],
+    )
+    b = FakeStudentAgent(
+        student_id="B",
+        name="学生B",
+        questions=[{"content": "B1"}],
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a, b], questions_per_student=1)
+
+    pairs = list(session.iter_students())
+    assert [sid for sid, _ in pairs] == ["A", "B"]
+    assert pairs[0][1] is a
+    assert pairs[1][1] is b
+    # 暴露的 agent 应当是原对象，可以直接读 .persona
+    assert pairs[0][1].persona.name == "学生A"
+
+
+async def test_iter_students_empty_before_spawn() -> None:
+    """``iter_students`` 在 spawn 之前应当为空。"""
+    session = QASession(lesson_meta=_lesson())
+    assert list(session.iter_students()) == []
