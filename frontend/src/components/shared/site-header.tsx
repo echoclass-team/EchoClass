@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const navItems = [
   { href: "/", label: "首页" },
-  { href: "/setup/stage", label: "开始演练" },
-  { href: "/setup/config", label: "教案配置" },
+  { href: "/setup", label: "开始陪练" },
+  { href: "/lessons/manage", label: "教案管理" },
 ];
 
 export function SiteHeader() {
