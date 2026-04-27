@@ -19,6 +19,10 @@
     /abandon     放弃此问题
     /switch      切换到其他学生（保留当前进度，可后续回来）
     /done        结束整个 session
+
+调试选项：
+    --debug-match  在加载教案后打印 match_misconceptions 召回明细
+                   （补丢 #73 迷思库召回率验收）
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from agents.student import StudentAgent
 from llm.client import LLMClient
+from rag.misconceptions import match_misconceptions
 from schemas.lesson import LessonMeta
 from schemas.stage import load_stage_profile_by_id
 from schemas.student import load_personas
@@ -103,6 +108,50 @@ def _print_question_card(idx: int, dialog) -> None:
         print(f"      关联重点：{q.linked_key_point}")
     if q.linked_misconception_id:
         print(f"      关联迷思：{q.linked_misconception_id}")
+
+
+def _print_misconception_match(
+    lesson: LessonMeta, stage_id: str, *, limit: int = 10
+) -> None:
+    """打印 ``match_misconceptions`` 在当前教案 + 学段上的召回明细。
+
+    用于 #73 验收“每节课召回 ≥ 3 条”这条指标。不调用 LLM，不产生副作用，
+    函数可被 C 端跨学段脚本复用。
+
+    Parameters
+    ----------
+    lesson : LessonMeta
+        当前教案 meta，提供学科 / 主题 / 重点 / 难点。
+    stage_id : str
+        与 ``data/stage_profiles/`` 对齐的学段 id。
+    limit : int
+        最多打印几条（默认 10，足以覆盖验收需要）。
+    """
+    matched = match_misconceptions(
+        subject=lesson.subject,
+        stage_id=stage_id,
+        key_points=lesson.key_points,
+        topic=lesson.topic,
+        difficult_points=lesson.difficult_points,
+        limit=limit,
+    )
+    print("-" * 72)
+    print(
+        f"🔍 --debug-match 迷思库召回：{len(matched)} 条「{lesson.subject} / {stage_id} / {lesson.topic}」"
+    )
+    if not matched:
+        print(
+            "   (未命中迷思。检查 data/misconceptions/ 是否覆盖该学科 × 学段交集，\n"
+            "    以及 subject / stage 字段是否与 persona / stage_profile 对齐)"
+        )
+        print("-" * 72)
+        return
+    for idx, m in enumerate(matched, 1):
+        kp = f" ← {m.linked_key_point}" if getattr(m, "linked_key_point", "") else ""
+        print(f"   [{idx}] {m.id}  {m.name}{kp}")
+        if m.typical_error:
+            print(f"        典型错误：{m.typical_error}")
+    print("-" * 72)
 
 
 def _print_summary(session: QASession) -> None:
@@ -181,6 +230,11 @@ async def main() -> None:
         "--students", type=int, default=2, help="参与陪练的学生数（最少 1）"
     )
     parser.add_argument("--questions", type=int, default=2, help="每个学生生成几个问题")
+    parser.add_argument(
+        "--debug-match",
+        action="store_true",
+        help="加载教案后打印迷思库召回明细（#73 验收项），不影响后续对话流程",
+    )
     args = parser.parse_args()
 
     stage_id = PRESETS[args.lesson]
@@ -196,6 +250,8 @@ async def main() -> None:
     llm = LLMClient()
     print(f"✅ LLMClient (model={llm.model})")
     _print_lesson(lesson)
+    if args.debug_match:
+        _print_misconception_match(lesson, stage_id)
     print(f"👥 参与学生（{len(personas)} 位）：{'、'.join(p.name for p in personas)}")
 
     agents = [StudentAgent(llm=llm, persona=p, stage=stage) for p in personas]
