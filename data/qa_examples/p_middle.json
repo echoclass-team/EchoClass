@@ -47,6 +47,52 @@
           "rationale": "我学会几分之一后想拓展，看分子分母相等的情况。"
         }
       ]
+    },
+    {
+      "persona_tag": "distracted",
+      "topic": "分数的初步认识——认识几分之一",
+      "key_points": ["理解几分之一的含义", "知道分数各部分名称"],
+      "questions": [
+        {
+          "content": "老师我刚才上节课说[懂了]来着，但是这道题我又不会了……题目是把蛋糕分给 4 个小朋友，每人分到几分之几？我看成 4/1 写上去的，不对吗？",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "知道分数各部分名称",
+          "linked_misconception_id": null,
+          "rationale": "我上课走神了一半，记得分子分母但写反了，又一次说了[懂了]但其实没真懂。"
+        },
+        {
+          "content": "老师那个……你刚才讲到哪儿啦？是不是还在说分饼干？我刚才看了一眼窗外……",
+          "category": "off_topic",
+          "difficulty": "easy",
+          "linked_key_point": null,
+          "linked_misconception_id": null,
+          "rationale": "我注意力跑出去了，需要老师把上下文重新拽回来。"
+        }
+      ]
+    },
+    {
+      "persona_tag": "weak",
+      "topic": "万以内数的认识",
+      "key_points": ["数位顺序：个位/十位/百位/千位", "读数与写数"],
+      "questions": [
+        {
+          "content": "老师……三千零五，是不是写成 3005？我老是想写成 305 或者 3500，到底中间几个 0 啊？",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "数位顺序：个位/十位/百位/千位",
+          "linked_misconception_id": null,
+          "rationale": "我对'数位'的理解是糊的，听到'零'就不知道占几位。"
+        },
+        {
+          "content": "老师那 1000 后面再加 1 是不是 1001？再往后是 1002 对吧……那加到几就是 9999 啦？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "读数与写数",
+          "linked_misconception_id": null,
+          "rationale": "我想用'数下去'来巩固自己对万以内数的感觉，但又怕数错。"
+        }
+      ]
     }
   ],
   "chat_examples": [
@@ -74,6 +120,17 @@
         {"role": "student", "content": "哦——像妈妈一样的就是分母！那分子就是孩子？", "self_resolved": false},
         {"role": "teacher", "content": "可以这么记！记住分母告诉你'分几份'，分子告诉你'取几份'。"},
         {"role": "student", "content": "妈妈分几份，孩子拿几份。哈哈我记住了！\n[懂了]", "self_resolved": true}
+      ]
+    },
+    {
+      "persona_tag": "xueba",
+      "scenario": "学霸已经掌握'平均分'，主动追问反例与极端情况，老师不能只确认对错，要继续给挑战让她保持好奇。",
+      "initial_question": "老师，那把绳子折成 3 段，每段不一样长，就不能说 1/3 对吧？",
+      "turns": [
+        {"role": "teacher", "content": "完全正确。1/3 必须是把整体平均分成 3 份，每份才叫 1/3。"},
+        {"role": "student", "content": "那如果是 6 块巧克力分给 3 个人，每人 2 块，是不是也算 1/3？", "self_resolved": false},
+        {"role": "teacher", "content": "好问题！这里 1/3 指的不是块数，而是'三份里的一份'。每个人拿到的 2 块，正好是总数 6 块的 1/3。所以分数也可以表示一组物体的一部分。"},
+        {"role": "student", "content": "哦——那 1/3 既可以分 1 个东西，也可以分一堆东西，只要一共分成 3 份就行！\n[懂了]", "self_resolved": true}
       ]
     }
   ]

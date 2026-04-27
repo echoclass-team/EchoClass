@@ -70,6 +70,29 @@
           "rationale": "我心里其实知道答案，但是想要老师确认一下，自己不敢肯定。"
         }
       ]
+    },
+    {
+      "persona_tag": "curious",
+      "topic": "10 以内的加法",
+      "key_points": ["数的合成", "加号的意义"],
+      "questions": [
+        {
+          "content": "老师我刚才说[懂了]，但是回去做题又卡住了——3+4 我数手指是 7，可是我妈妈说她小时候是背的，那到底是要背还是要数手指呀？",
+          "category": "stuck_misconception",
+          "difficulty": "easy",
+          "linked_key_point": "数的合成",
+          "linked_misconception_id": null,
+          "rationale": "我之前在课堂上说[懂了]，但其实只是当时的题会做，换一道又不行；这次想搞清楚到底掌握没。"
+        },
+        {
+          "content": "老师那加号'+'是怎么发明出来的呀？是不是因为'十'字看起来像把两个东西合起来？",
+          "category": "extend_topic",
+          "difficulty": "medium",
+          "linked_key_point": "加号的意义",
+          "linked_misconception_id": null,
+          "rationale": "我喜欢追问东西的来历，想知道符号背后的故事。"
+        }
+      ]
     }
   ],
   "chat_examples": [

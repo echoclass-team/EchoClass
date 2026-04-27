@@ -70,6 +70,29 @@
           "rationale": "我觉得课本说法太绝对，拿'越除越大'反例试探老师能不能讲清为什么不能。"
         }
       ]
+    },
+    {
+      "persona_tag": "anxious",
+      "topic": "分数乘除混合运算",
+      "key_points": ["先做除法转乘法再统一计算", "约分要约干净"],
+      "questions": [
+        {
+          "content": "老师……那道题我考试做错了，我明明上课的时候说了[懂了]……是不是我根本就没懂啊？2/3 ÷ 4/9 × 3/8，我把除号变乘号倒数完，就糊涂了……",
+          "category": "stuck_misconception",
+          "difficulty": "hard",
+          "linked_key_point": "先做除法转乘法再统一计算",
+          "linked_misconception_id": null,
+          "rationale": "我对'说了[懂了]但又错'特别焦虑，怕老师觉得我没认真听，需要被安抚再讲一次顺序。"
+        },
+        {
+          "content": "老师那约分能不能在还没乘的时候就提前约？我看同学就这么做了，可我不敢，怕约错……",
+          "category": "clarify_concept",
+          "difficulty": "medium",
+          "linked_key_point": "约分要约干净",
+          "linked_misconception_id": null,
+          "rationale": "我对自己计算不自信，看到同学走捷径会怀疑自己'是不是太笨了'，需要鼓励。"
+        }
+      ]
     }
   ],
   "chat_examples": [

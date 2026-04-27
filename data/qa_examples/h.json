@@ -70,6 +70,29 @@
           "rationale": "我不满足于'为考试而学'，希望老师能从现实价值讲讲这个概念。"
         }
       ]
+    },
+    {
+      "persona_tag": "lost",
+      "topic": "复合函数求导（链式法则）",
+      "key_points": ["外层导数乘以内层导数", "识别外层与内层"],
+      "questions": [
+        {
+          "content": "老师……我上次跟你说[懂了]，可作业又错了……求 sin(2x+1) 的导数我写成 cos(2x+1)，老师批了 ×。是不是因为我没乘 2？可是为啥要乘 2 啊我又忘了——是不是我根本没听懂，只是当时点了下头？",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "外层导数乘以内层导数",
+          "linked_misconception_id": null,
+          "rationale": "我对自己说[懂了]但作业又错产生强烈自我怀疑，需要老师拆解'懂'的层次，不要再泛泛讲一遍。"
+        },
+        {
+          "content": "老师，我这学期一直在学'求导'但其实从一开始就有点迷，根本没搞清楚一个函数到底什么时候是简单函数、什么时候是复合函数……我能不能从最基础的'识别外层内层'开始重新问？",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "识别外层与内层",
+          "linked_misconception_id": null,
+          "rationale": "我意识到自己有更前置的概念漏洞，鼓起勇气向老师承认基础有问题，需要老师不嫌弃我从头讲。"
+        }
+      ]
     }
   ],
   "chat_examples": [
