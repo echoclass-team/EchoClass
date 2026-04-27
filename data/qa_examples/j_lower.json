@@ -70,6 +70,29 @@
           "rationale": "我脑子里似乎总有联想，把数学类比为生活常识，听起来花哨但与数学本义无关。"
         }
       ]
+    },
+    {
+      "persona_tag": "introvert",
+      "topic": "一元一次方程的应用——行程问题",
+      "key_points": ["设未知数列方程", "等量关系：路程=速度×时间"],
+      "questions": [
+        {
+          "content": "老师……我，我可以问吗……上次我说了[懂了]但作业还是错了……题目说甲乙相向而行，我设了 x 是甲的时间，可乙的时间不知道是不是也是 x……我不太敢确定……",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "设未知数列方程",
+          "linked_misconception_id": null,
+          "rationale": "我害怕开口纠错，但实在卡住了；说[懂了]后做错让我更不敢举手，需要老师温和确认。"
+        },
+        {
+          "content": "嗯……老师，那个相向而行的'相向'是不是就是面对面走？我，我有点不确定题里的箭头方向……",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "等量关系：路程=速度×时间",
+          "linked_misconception_id": null,
+          "rationale": "我对题面的语义本身没把握，但又不敢大声问，只能小声确认基础概念。"
+        }
+      ]
     }
   ],
   "chat_examples": [

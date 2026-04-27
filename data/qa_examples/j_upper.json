@@ -70,6 +70,29 @@
           "rationale": "我拓展思考二次函数与二次方程的统一、顶点与判别式的关系，期待老师肯定我的深入思路。"
         }
       ]
+    },
+    {
+      "persona_tag": "giveup",
+      "topic": "二次函数图像与平移",
+      "key_points": ["y=a(x-h)²+k 顶点为 (h,k)", "平移规则：左加右减、上加下减"],
+      "questions": [
+        {
+          "content": "算了老师我不问了……反正我上次说[懂了]又考砸……图像左移右移到底加减号怎么搞，我每次写都跟感觉反的，y=(x-3)² 怎么会是右移 3 呢？我已经放弃理解了，你能给我一个死记硬背的口诀吗？",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "平移规则：左加右减、上加下减",
+          "linked_misconception_id": null,
+          "rationale": "我对二次函数已经丧失信心，反复说[懂了]又错让我想躲，但又怕中考完全丢掉这块。希望老师别再讲一次原理，给我一个 fallback。"
+        },
+        {
+          "content": "老师……那我就死记 y=(x-h)²+k 这个形式，h 是横坐标、k 是纵坐标，然后看符号反着来对吧？这样我不理解但起码能蒙对……",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "y=a(x-h)²+k 顶点为 (h,k)",
+          "linked_misconception_id": null,
+          "rationale": "我退而求其次，找最低成本的应试策略，需要老师不要否定这个 fallback、但悄悄帮我建一点理解。"
+        }
+      ]
     }
   ],
   "chat_examples": [
