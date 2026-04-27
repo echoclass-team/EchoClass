@@ -74,6 +74,20 @@ class QASession:
         self._pending_order: list[str] = []
         self._created_at = datetime.now(timezone.utc)
 
+    # ============================================================= 只读访问器
+
+    def iter_students(self) -> Iterable[tuple[str, StudentAgent]]:
+        """按 spawn 注册顺序遍历 ``(student_id, StudentAgent)``。
+
+        给 REST / WS 投影层用，避免下游模块直接访问 ``self._agents`` 私有
+        字段。消费者只应读 ``agent.persona``、``agent.persona.name`` 等公开
+        属性来构造 DTO（如 ``WsStudentInfo``），不应保留 agent 引用做长期
+        持久化。
+
+        顺序与 ``spawn`` 入参一致（dict 维持插入顺序）。
+        """
+        return self._agents.items()
+
     # =================================================================== I/O
 
     async def spawn(

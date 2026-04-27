@@ -134,19 +134,25 @@ async def _send_error(
 
 
 def _build_student_infos(session: QASession) -> list[WsStudentInfo]:
-    """把 ``QASession._agents`` 里的 Persona 抽成轻量 ``WsStudentInfo`` 列表。
+    """把 ``QASession`` 注册的 Persona 抽成轻量 ``WsStudentInfo`` 列表。
 
     顺序按学生在 spawn 时被注册的顺序（dict 维持插入顺序）。
     """
     infos: list[WsStudentInfo] = []
-    for student_id, agent in session._agents.items():  # noqa: SLF001
+    for student_id, agent in session.iter_students():
         persona = agent.persona
+        # 优先 effective_level（Persona property，兜旧 knowledge_level 字段）
+        level = (
+            getattr(persona, "effective_level", None)
+            or getattr(persona, "subject_level", "")
+            or ""
+        )
         infos.append(
             WsStudentInfo(
                 id=student_id,
                 name=getattr(persona, "name", student_id),
                 stage_id=getattr(persona, "stage_id", "") or "",
-                subject_level=getattr(persona, "subject_level", "") or "",
+                subject_level=level,
                 avatar_seed=getattr(persona, "avatar_seed", "") or "",
                 summary=getattr(persona, "summary", "") or "",
             )

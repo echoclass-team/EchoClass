@@ -128,9 +128,7 @@ def _resolve_personas(persona_ids: list[str]) -> list[Persona]:
     return resolved
 
 
-def _build_dialog_summary(
-    dialog_id: str, session: QASession
-) -> DialogStateSummary:
+def _build_dialog_summary(dialog_id: str, session: QASession) -> DialogStateSummary:
     dialog = session.dialogs[dialog_id]
     preview = dialog.question.content[:80]
     return DialogStateSummary(
@@ -145,17 +143,25 @@ def _build_dialog_summary(
 
 
 def _project_session_state(session: QASession) -> QASessionStateData:
-    students = [
-        WsStudentInfo(
-            id=student_id,
-            name=getattr(agent.persona, "name", student_id),
-            stage_id=getattr(agent.persona, "stage_id", "") or "",
-            subject_level=getattr(agent.persona, "subject_level", "") or "",
-            avatar_seed=getattr(agent.persona, "avatar_seed", "") or "",
-            summary=getattr(agent.persona, "summary", "") or "",
+    students: list[WsStudentInfo] = []
+    for student_id, agent in session.iter_students():
+        persona = agent.persona
+        # 与 _build_student_info / WS 首帧保持一致：优先 effective_level
+        level = (
+            getattr(persona, "effective_level", None)
+            or getattr(persona, "subject_level", "")
+            or ""
         )
-        for student_id, agent in session._agents.items()  # noqa: SLF001
-    ]
+        students.append(
+            WsStudentInfo(
+                id=student_id,
+                name=getattr(persona, "name", student_id),
+                stage_id=getattr(persona, "stage_id", "") or "",
+                subject_level=level,
+                avatar_seed=getattr(persona, "avatar_seed", "") or "",
+                summary=getattr(persona, "summary", "") or "",
+            )
+        )
     dialogs = [_build_dialog_summary(d.id, session) for d in session.dialogs.values()]
     counts: dict[str, int] = {
         "pending": 0,
@@ -207,11 +213,7 @@ async def create_qa_session(
 
     agents: list[StudentAgent] = []
     for persona in personas:
-        stage = (
-            load_stage_profile_by_id(persona.stage_id)
-            if persona.stage_id
-            else None
-        )
+        stage = load_stage_profile_by_id(persona.stage_id) if persona.stage_id else None
         try:
             agents.append(agent_factory(persona, stage))
         except Exception as exc:  # noqa: BLE001
@@ -231,9 +233,7 @@ async def create_qa_session(
         )
     except Exception as exc:  # noqa: BLE001
         logger.exception("create_qa_session: spawn failed: %s", exc)
-        raise HTTPException(
-            status_code=500, detail=f"spawn failed: {exc!r}"
-        ) from exc
+        raise HTTPException(status_code=500, detail=f"spawn failed: {exc!r}") from exc
 
     if not questions:
         raise HTTPException(
@@ -279,9 +279,7 @@ async def get_qa_session(
     """
     session = await registry.get(session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404, detail=f"session {session_id!r} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
     return ok_response(_project_session_state(session))
 
 
@@ -300,9 +298,7 @@ async def end_qa_session(
     """
     session = await registry.pop(session_id)
     if session is None:
-        raise HTTPException(
-            status_code=404, detail=f"session {session_id!r} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
     summary = session.summary()
     logger.info("end_qa_session: %s summary=%s", session_id, summary)
     return ok_response(QASessionEndData(session_id=session_id, summary=summary))
