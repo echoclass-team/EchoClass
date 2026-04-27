@@ -33,6 +33,14 @@ router = APIRouter(prefix="/api/lessons", tags=["lessons"])
 _store: dict[str, LessonRecord] = {}
 
 
+def get_lesson_record(lesson_id: str) -> LessonRecord | None:
+    """供其他 API 路由（如 ``api/qa_sessions.py``）查询教案。
+
+    M2 阶段 lesson 仍是进程内字典；M3 切持久化时改这里即可，调用方无感知。
+    """
+    return _store.get(lesson_id)
+
+
 _CHINESE_GRADE_TO_NUMBER = {
     "一": 1,
     "二": 2,

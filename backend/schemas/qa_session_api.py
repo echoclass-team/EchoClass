@@ -1,0 +1,98 @@
+"""``api/qa_sessions.py`` 的请求 / 响应 Pydantic 模型。
+
+这一层是 REST 包装：内部业务对象 ``services.qa_session.QASession`` /
+``schemas.dialog.DialogSession`` 不直接暴露给前端，而是通过这里的轻量
+DTO 投影后返回，便于前端做严格 schema 校验。
+
+WS 协议复用 ``schemas.ws_events`` 那套帧；REST 这里只负责"拉起 session"
+和"问 session 现状"，二者数据形状刻意保持相似（``WsStudentInfo`` 直接复用），
+省去前端两套类型。
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from schemas.dialog import DialogStatus, ResolutionSource
+from schemas.lesson import LessonMeta
+from schemas.question import StudentQuestion
+from schemas.ws_events import WsStudentInfo
+
+
+class CreateQASessionRequest(BaseModel):
+    """``POST /api/qa-sessions`` 请求体。"""
+
+    lesson_id: str = Field(..., description="已上传教案的 id（来自 /api/lessons/upload）")
+    persona_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        description="参与本次答疑的学生人设 id 列表，至少一个",
+    )
+    count_per_student: int = Field(
+        default=3,
+        ge=1,
+        le=8,
+        description="每个学生生成的问题数量，1-8。默认 3",
+    )
+
+
+class CreateQASessionData(BaseModel):
+    """``POST /api/qa-sessions`` 响应数据。
+
+    返回前端继续 setup 所需的全部信息：
+    - ``session_id`` / ``ws_url``：用于建立 WebSocket
+    - ``lesson`` / ``students`` / ``questions``：与 WS 首帧 ``session_init``
+      内容对齐，前端可在跳转 1v1 页面前先渲染骨架
+    """
+
+    session_id: str = Field(..., description="新建 session 的唯一 id")
+    ws_url: str = Field(..., description="对应的 WebSocket 路径，例 /ws/qa-sessions/{id}")
+    lesson: LessonMeta = Field(..., description="教案元数据（与上传时一致）")
+    students: list[WsStudentInfo] = Field(..., description="参与本次答疑的学生概要")
+    questions: list[StudentQuestion] = Field(
+        ..., description="所有学生 spawn 出的初始问题，与 WS 首帧 questions 顺序一致"
+    )
+
+
+class DialogStateSummary(BaseModel):
+    """单个 dialog 的轻量摘要（不含完整对话历史）。"""
+
+    id: str = Field(..., description="dialog id == question id")
+    student_id: str = Field(..., description="提问学生 id")
+    student_name: str = Field(..., description="提问学生姓名")
+    status: DialogStatus = Field(..., description="当前状态")
+    question_preview: str = Field(
+        ..., description="问题正文前 80 字符预览（节省 payload）"
+    )
+    turn_count: int = Field(default=0, description="已发生的对话轮数（一来一回算一轮）")
+    resolution_source: ResolutionSource | None = Field(
+        default=None,
+        description="结束方式（仅 status=resolved/abandoned 时填）",
+    )
+
+
+class QASessionStateData(BaseModel):
+    """``GET /api/qa-sessions/{id}`` 响应数据。
+
+    用于"刷新陪练页"或"summary 页查询"等被动场景；主动状态推送走 WS。
+    """
+
+    session_id: str
+    lesson: LessonMeta
+    students: list[WsStudentInfo]
+    dialogs: list[DialogStateSummary]
+    pending: int = Field(..., description="status=pending 数量")
+    active: int = Field(..., description="status=active 数量")
+    resolved: int = Field(..., description="status=resolved 数量")
+    abandoned: int = Field(..., description="status=abandoned 数量")
+
+
+class QASessionEndData(BaseModel):
+    """``POST /api/qa-sessions/{id}/end`` 响应数据。"""
+
+    session_id: str
+    summary: dict[str, Any] = Field(
+        ..., description="``QASession.summary()`` 直接返回的统计字典"
+    )

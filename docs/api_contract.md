@@ -236,6 +236,113 @@ interface Suggestion {
 }
 ```
 
+### 2.5 答疑陪练 QA Sessions（1v1 pivot 后实际实现）
+
+> **状态**：v1（M2） · 关联 Issue #72 / #B1
+> **后端实现**：`backend/api/qa_sessions.py`（B 端） · 模型：`backend/schemas/qa_session_api.py`
+> **关系**：M1 答疑陪练 pivot (#74) 后，§2.1-2.4 多学生课堂接口暂搁置；本节是
+> **真正在跑** 的 REST 接口。WebSocket 部分见 §3。
+
+#### 2.5.1 创建答疑 session
+
+**`POST /api/qa-sessions`**
+
+```ts
+interface CreateQASessionReq {
+  lesson_id: string;             // 取自 POST /api/lessons/upload 的返回
+  persona_ids: string[];         // 至少 1 个；可重复传同一 id（自动去重）
+  count_per_student?: number;    // 1-8，默认 3。决定每个学生 spawn 多少个问题
+}
+
+interface CreateQASessionResp {
+  session_id: string;
+  ws_url: string;                // "/ws/qa-sessions/{session_id}"
+  lesson: LessonMeta;            // 与教案上传时一致
+  students: WsStudentInfo[];     // 与 §3.4 同形
+  questions: StudentQuestion[];  // spawn 出的问题队列；与 WS 首帧 questions 一致
+}
+```
+
+**错误**：
+
+- `404` `lesson_id` 不存在
+- `400` `persona_ids` 中任一 id 不存在
+- `422` body schema 错误（`persona_ids` 空 / `count_per_student` 越界）
+- `500` 学生 agent 构造或 spawn 失败 / 未生成任何问题
+
+**语义**：
+
+- 服务端会按 `persona_ids` 构造 `StudentAgent`，并行让每个学生
+  `generate_questions(lesson_meta, count=count_per_student)`，结果按"轮询交叉"
+  策略入队（学生间穿插，相邻问题倾向不同学生）
+- 创建成功即注册到进程级 `QASessionRegistry`；前端拿到 `ws_url` 后即可建 WS
+
+#### 2.5.2 查询 session 现状
+
+**`GET /api/qa-sessions/{session_id}`**
+
+```ts
+interface QASessionStateResp {
+  session_id: string;
+  lesson: LessonMeta;
+  students: WsStudentInfo[];
+  dialogs: DialogStateSummary[];
+  pending: number;
+  active: number;
+  resolved: number;
+  abandoned: number;
+}
+
+interface DialogStateSummary {
+  id: string;                                     // == question.id
+  student_id: string;
+  student_name: string;
+  status: "pending" | "active" | "resolved" | "abandoned";
+  question_preview: string;                       // 问题正文前 80 字符
+  turn_count: number;                             // 一来一回算一轮
+  resolution_source?:
+    | "self_resolve"
+    | "teacher_marked"
+    | "auto_evaluator"
+    | "abandoned";
+}
+```
+
+**错误**：`404` session 不存在。
+
+**语义**：刷新陪练页 / summary 页查询用；主动事件推送仍走 WS（§3）。
+M2 进程内 registry，进程重启即丢；M3 持久化后会从 SQLite 兜底。
+
+#### 2.5.3 显式结束 session
+
+**`POST /api/qa-sessions/{session_id}/end`**
+
+```ts
+interface QASessionEndResp {
+  session_id: string;
+  summary: {
+    session_id: string;
+    lesson_topic: string;
+    total_questions: number;
+    resolved: number;
+    abandoned: number;
+    pending: number;
+    active: number;
+    covered_key_points: string[];
+    broken_misconception_ids: string[];
+    resolution_sources: { [source: string]: number };
+  };
+}
+```
+
+**错误**：`404` session 不存在（包含已结束过一次的场景，幂等保护）。
+
+**语义**：
+
+- 从 registry 移除 session，返回 `QASession.summary()` 快照
+- **不主动关闭已建立的 WebSocket**；前端在收到 200 后应自行 `client.close()`
+- 二次调用同 session_id 必然 404，前端应据此判定"是否已经结束过"
+
 ---
 
 ## 3. WebSocket `/ws/qa-sessions/{session_id}` — 1v1 答疑陪练
@@ -545,3 +652,4 @@ interface StageListItem {
 |---|---|---|---|
 | v0-draft | 2026-04-22 | 初稿 | Cascade |
 | v1 (#71) | 2026-04-25 | §3 替换为 1v1 答疑陪练 WebSocket 协议（`/ws/qa-sessions/{session_id}`），废弃多学生课堂模型；新增 `backend/schemas/ws_events.py` Pydantic 模型作为权威 schema | A-Agent |
+| v1 (#72) | 2026-04-28 | 新增 §2.5 — `/api/qa-sessions` 创建/查询/结束 REST 接口，对应 `backend/api/qa_sessions.py` 实现 | B-Full |
