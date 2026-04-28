@@ -139,6 +139,7 @@ def _build_dialog_summary(dialog_id: str, session: QASession) -> DialogStateSumm
         question_preview=preview,
         turn_count=dialog.turn_count(),
         resolution_source=dialog.resolution_source,
+        history=list(dialog.messages),
     )
 
 

@@ -194,6 +194,10 @@ async def test_send_teacher_message_propagates_self_resolved_flag() -> None:
     assert result.self_resolved is True
     # 但 dialog 不会自动 resolved，等待师范生确认
     assert session.get_dialog(pending.id).status == "active"
+    # issue #102: self_resolved 也要落到 dialog.messages，便于 GET 复原
+    student_msg = session.get_dialog(pending.id).messages[-1]
+    assert student_msg.role == "student"
+    assert student_msg.self_resolved is True
 
 
 async def test_mark_resolved_records_source_and_is_idempotent() -> None:

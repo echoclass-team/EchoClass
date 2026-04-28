@@ -15,7 +15,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from schemas.dialog import DialogStatus, ResolutionSource
+from schemas.dialog import DialogMessage, DialogStatus, ResolutionSource
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
 from schemas.ws_events import WsStudentInfo
@@ -24,7 +24,9 @@ from schemas.ws_events import WsStudentInfo
 class CreateQASessionRequest(BaseModel):
     """``POST /api/qa-sessions`` 请求体。"""
 
-    lesson_id: str = Field(..., description="已上传教案的 id（来自 /api/lessons/upload）")
+    lesson_id: str = Field(
+        ..., description="已上传教案的 id（来自 /api/lessons/upload）"
+    )
     persona_ids: list[str] = Field(
         ...,
         min_length=1,
@@ -48,7 +50,9 @@ class CreateQASessionData(BaseModel):
     """
 
     session_id: str = Field(..., description="新建 session 的唯一 id")
-    ws_url: str = Field(..., description="对应的 WebSocket 路径，例 /ws/qa-sessions/{id}")
+    ws_url: str = Field(
+        ..., description="对应的 WebSocket 路径，例 /ws/qa-sessions/{id}"
+    )
     lesson: LessonMeta = Field(..., description="教案元数据（与上传时一致）")
     students: list[WsStudentInfo] = Field(..., description="参与本次答疑的学生概要")
     questions: list[StudentQuestion] = Field(
@@ -57,7 +61,12 @@ class CreateQASessionData(BaseModel):
 
 
 class DialogStateSummary(BaseModel):
-    """单个 dialog 的轻量摘要（不含完整对话历史）。"""
+    """单个 dialog 的轻量摘要 + 完整对话历史。
+
+    ``history`` 用于支持页面级导航（组件卸载 / 浏览器后退 / 新 tab）后
+    复原对话进度（issue #102）。前端在 `useQASession` 挂载时调一次
+    GET `/api/qa-sessions/{id}` 即可 seed reducer，再正常走 WS 增量。
+    """
 
     id: str = Field(..., description="dialog id == question id")
     student_id: str = Field(..., description="提问学生 id")
@@ -70,6 +79,14 @@ class DialogStateSummary(BaseModel):
     resolution_source: ResolutionSource | None = Field(
         default=None,
         description="结束方式（仅 status=resolved/abandoned 时填）",
+    )
+    history: list[DialogMessage] = Field(
+        default_factory=list,
+        description=(
+            "完整对话历史，按时间顺序排列：[teacher, student, teacher, student, ...]。"
+            "student 回合的 self_resolved 字段记录该轮 LLM 是否输出 [懂了]。"
+            "未发生过对话的 dialog 为空数组。"
+        ),
     )
 
 
