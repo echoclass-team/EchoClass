@@ -3,6 +3,7 @@
 POST /api/lessons/upload — 上传教案文件（PDF/MD/TXT），返回 lesson_id + 抽取结果。
 GET  /api/lessons/{lesson_id} — 获取教案元数据。
 """
+
 from __future__ import annotations
 
 import logging
@@ -107,7 +108,9 @@ def infer_stage_id_from_grade(grade: str) -> str | None:
         number = int(digit_match.group(1))
     else:
         chinese_match = re.search(r"([一二三四五六七八九])年级", normalized)
-        number = _CHINESE_GRADE_TO_NUMBER[chinese_match.group(1)] if chinese_match else 0
+        number = (
+            _CHINESE_GRADE_TO_NUMBER[chinese_match.group(1)] if chinese_match else 0
+        )
 
     if number in (1, 2):
         return "p_lower"
@@ -145,7 +148,13 @@ async def upload_lesson(file: UploadFile = File(...)) -> ApiResponse[LessonUploa
     try:
         text = parse_bytes(content, file.filename)
     except ValueError as e:
+        # 不支持的扩展名等业务校验错误
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        # 解析器内部异常（如 PDF 损坏 / pymupdf 报错）— 翻成 422，避免
+        # 裸 500 让前端看到不可读错误。issue #101 附带要求。
+        logger.exception("parse_bytes failed for %s", file.filename)
+        raise HTTPException(status_code=422, detail=f"解析失败：{e}") from e
 
     llm = LLMClient()
     meta = await extract_lesson_meta(llm, text)
