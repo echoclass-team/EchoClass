@@ -316,6 +316,78 @@ def test_get_session_state(
     assert d0["status"] == "pending"
     assert d0["turn_count"] == 0
     assert d0["question_preview"]
+    # issue #102: history 字段始终存在，未发生对话时为空数组
+    assert d0["history"] == []
+    assert all(d["history"] == [] for d in data["dialogs"])
+
+
+@pytest.mark.asyncio
+async def test_get_session_state_returns_dialog_history(
+    client: TestClient,
+    lesson_store: dict[str, LessonRecord],
+    isolated_registry: QASessionRegistry,
+    real_persona_ids: list[str],
+) -> None:
+    """issue #102 — GET 应返回每个 dialog 的完整 history。
+
+    构造一个发生过 2 来回 + 1 学生 self_resolved 的 dialog，断言 GET 拿到
+    完整 4 条消息（teacher / student / teacher / student），且 student
+    的 self_resolved 标志能被准确投影。
+    """
+    from datetime import datetime, timezone
+
+    from schemas.dialog import DialogMessage
+
+    _seed_lesson(lesson_store, "lesson-1")
+    create = client.post(
+        "/api/qa-sessions",
+        json={
+            "lesson_id": "lesson-1",
+            "persona_ids": real_persona_ids[:1],
+            "count_per_student": 1,
+        },
+    )
+    session_id = create.json()["data"]["session_id"]
+
+    session = await isolated_registry.get(session_id)
+    assert session is not None
+    dialog_id = next(iter(session.dialogs))
+    dialog = session.dialogs[dialog_id]
+
+    # 直接注入消息（不走 LLM），模拟已发生 2 来回，最后一轮学生 self_resolved
+    now = datetime.now(timezone.utc)
+    dialog.messages.extend(
+        [
+            DialogMessage(role="teacher", content="先看分母", timestamp=now),
+            DialogMessage(
+                role="student",
+                content="嗯……分母在下面",
+                timestamp=now,
+                self_resolved=False,
+            ),
+            DialogMessage(role="teacher", content="对，再看分子", timestamp=now),
+            DialogMessage(
+                role="student",
+                content="哦明白了！",
+                timestamp=now,
+                self_resolved=True,
+            ),
+        ]
+    )
+
+    resp = client.get(f"/api/qa-sessions/{session_id}")
+    assert resp.status_code == 200
+    target = next(d for d in resp.json()["data"]["dialogs"] if d["id"] == dialog_id)
+
+    history = target["history"]
+    assert len(history) == 4
+    assert [m["role"] for m in history] == ["teacher", "student", "teacher", "student"]
+    assert history[0]["content"] == "先看分母"
+    assert history[3]["content"] == "哦明白了！"
+    assert history[1]["self_resolved"] is False
+    assert history[3]["self_resolved"] is True
+    # teacher 回合的 self_resolved 应始终 False（即使将来有 bug 改写也保护住）
+    assert all(m["self_resolved"] is False for m in history if m["role"] == "teacher")
 
 
 @pytest.mark.asyncio

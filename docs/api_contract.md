@@ -305,6 +305,14 @@ interface DialogStateSummary {
     | "teacher_marked"
     | "auto_evaluator"
     | "abandoned";
+  history: DialogMessage[];                       // 完整对话历史（issue #102）
+}
+
+interface DialogMessage {
+  role: "teacher" | "student";
+  content: string;
+  timestamp: string;                              // ISO-8601
+  self_resolved: boolean;                         // 仅 student 回合可能 true
 }
 ```
 
@@ -312,6 +320,10 @@ interface DialogStateSummary {
 
 **语义**：刷新陪练页 / summary 页查询用；主动事件推送仍走 WS（§3）。
 M2 进程内 registry，进程重启即丢；M3 持久化后会从 SQLite 兜底。
+
+`history` 字段（issue #102）支持页面级导航后复原对话进度：前端在
+`useQASession` 挂载时 GET 一次即可 seed 整个 reducer，再正常走 WS 增量。
+未发生过对话的 dialog 为空数组。
 
 #### 2.5.3 显式结束 session
 

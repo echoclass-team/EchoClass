@@ -41,6 +41,13 @@ class DialogMessage(BaseModel):
     role: Literal["teacher", "student"] = Field(..., description="说话者角色")
     content: str = Field(..., description="消息内容")
     timestamp: datetime = Field(..., description="发生时间")
+    self_resolved: bool = Field(
+        default=False,
+        description=(
+            "仅 role='student' 时可能为 True：LLM 在本轮回复末尾输出了 [懂了] 标记。"
+            "前端复原历史时据此渲染绿色提示条等 UI；teacher 回合永远 False。"
+        ),
+    )
 
 
 class DialogSession(BaseModel):

@@ -234,6 +234,7 @@ class QASession:
                 role="student",
                 content=result.content,
                 timestamp=datetime.now(timezone.utc),
+                self_resolved=result.self_resolved,
             )
         )
         return result
@@ -293,6 +294,7 @@ class QASession:
                             role="student",
                             content=evt.result.content,
                             timestamp=datetime.now(timezone.utc),
+                            self_resolved=evt.result.self_resolved,
                         )
                     )
             yield evt
