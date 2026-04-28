@@ -13,19 +13,20 @@ export default function Home() {
             EchoClass / 演练入口
           </p>
           <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-            先开始演练，再补全课堂。
+            上传一份教案，让虚拟学生向你提问。
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            从学段开始，进入教案与学生配置，再带着真实的本地草稿进入课堂演示页。
+            上传教案 → 选学生 → 微信式 1v1 答疑 → 拿到反思总结。
+            适合师范生在备课阶段练习「应对突发提问」。
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
           <Link
-            href="/setup/stage"
+            href="/setup"
             className="inline-flex items-center justify-center rounded-full bg-slate-950 px-7 py-3 text-base font-medium text-white shadow-lg shadow-slate-950/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
           >
-            开始演练
+            开始陪练
           </Link>
           <Link
             href="/lessons/manage"
