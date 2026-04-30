@@ -1,12 +1,31 @@
 """DialogSession 模型 — 1v1 答疑陪练的对话会话。
 
-每个 ``DialogSession`` 对应一个 ``StudentQuestion``：师范生与某个学生 Agent 在
-多轮对话中尝试"解决"该问题。会话有明确的状态流转：
+会话有明确的状态流转::
 
     pending → active → resolved | abandoned
 
-resolution_source 记录"是怎么解决的"，便于事后区分"师范生真破除"和
+``resolution_source`` 记录"是怎么解决的"，便于事后区分"师范生真破除"和
 "学生自我宣称懂了"。
+
+形态演进
+--------
+
+**M2 闯关模式（v1，已上线）**
+    每个 ``DialogSession`` 1:1 对应一个 ``StudentQuestion``：一个学生可能持有
+    N 个 dialog（每题一个），师范生从队列里挑题进入 1v1。
+    ``messages`` 内全部消息都属于 ``dialog.question`` 这一道题。
+
+**M3 连续答疑模式（v2，规划中，issue #111）**
+    每个 ``DialogSession`` 1:1 对应一个**学生**（``student_id``）：一个学生只
+    有一个 dialog，``dialog.question`` 退化为"学生抛出的第一个问题"，后续
+    问题由 ``StudentAgent.decide_followup`` 自主决定何时发出，以
+    ``DialogMessage(role="student", is_new_question=True, question_id=...)``
+    形式插入 ``messages``。``mark_resolved`` 语义升级为"结束整段辅导"。
+
+两种形态在字段层完全兼容：
+- v1 的 ``DialogMessage`` 永远 ``is_new_question=False`` / ``question_id=None``
+- v2 引入新字段 + 新 WS 帧 ``student_new_question``（见 ``ws_events``）
+- ``DialogSession`` 字段不变，编排层（``services/qa_session.py``）切换语义
 """
 
 from __future__ import annotations
@@ -36,7 +55,13 @@ ResolutionSource = Literal[
 
 
 class DialogMessage(BaseModel):
-    """单条对话消息。"""
+    """单条对话消息。
+
+    M3 连续答疑模式下，一个 dialog 内可能跨越多个 ``StudentQuestion``：
+    学生主动追问的回合用 ``is_new_question=True`` 标识，``question_id`` 关联到
+    新 question 的 id；老师与该 question 无关的过渡消息（如鼓励、点评）则
+    保持默认值。
+    """
 
     role: Literal["teacher", "student"] = Field(..., description="说话者角色")
     content: str = Field(..., description="消息内容")
@@ -46,6 +71,21 @@ class DialogMessage(BaseModel):
         description=(
             "仅 role='student' 时可能为 True：LLM 在本轮回复末尾输出了 [懂了] 标记。"
             "前端复原历史时据此渲染绿色提示条等 UI；teacher 回合永远 False。"
+        ),
+    )
+    is_new_question: bool = Field(
+        default=False,
+        description=(
+            "M3 连续答疑模式下，仅 role='student' 时可能为 True：本条消息是学生"
+            "主动抛出的新问题（不是对老师上一句的回应）。前端据此渲染'新问题'气泡。"
+            "M2 闯关模式下永远 False。"
+        ),
+    )
+    question_id: str | None = Field(
+        default=None,
+        description=(
+            "M3 连续答疑模式下，本条消息所属 question 的 id；用于评估时按问题分段。"
+            "M2 闯关模式下永远 None（dialog 与 question 一一对应，无需冗余记录）。"
         ),
     )
 

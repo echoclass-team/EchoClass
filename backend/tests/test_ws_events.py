@@ -32,6 +32,7 @@ from schemas.ws_events import (
     WsServerEvent,
     WsSessionInit,
     WsStudentInfo,
+    WsStudentNewQuestion,
     WsSummary,
     WsTeacherMessage,
 )
@@ -76,7 +77,9 @@ def test_select_dialog_roundtrip() -> None:
 
 
 def test_teacher_message_requires_text() -> None:
-    raw = json.dumps({"type": "teacher_message", "dialog_id": "q-1", "text": "你说说看"})
+    raw = json.dumps(
+        {"type": "teacher_message", "dialog_id": "q-1", "text": "你说说看"}
+    )
     evt = _client_adapter.validate_json(raw)
     assert isinstance(evt, WsTeacherMessage)
     assert evt.text == "你说说看"
@@ -96,9 +99,7 @@ def test_resolve_default_source() -> None:
 
 
 def test_resolve_self_resolve_source() -> None:
-    raw = json.dumps(
-        {"type": "resolve", "dialog_id": "q-1", "source": "self_resolve"}
-    )
+    raw = json.dumps({"type": "resolve", "dialog_id": "q-1", "source": "self_resolve"})
     evt = _client_adapter.validate_json(raw)
     assert isinstance(evt, WsResolve)
     assert evt.source == "self_resolve"
@@ -186,7 +187,9 @@ def test_dialog_active_resolved_abandoned() -> None:
         ),
     ):
         decoded = _server_adapter.validate_json(json.dumps(payload))
-        assert isinstance(decoded, evt_cls), f"expected {evt_cls.__name__}, got {type(decoded)}"
+        assert isinstance(decoded, evt_cls), (
+            f"expected {evt_cls.__name__}, got {type(decoded)}"
+        )
 
 
 def test_summary_event_carries_dict() -> None:
@@ -244,3 +247,61 @@ def test_server_unknown_type_rejected() -> None:
         _server_adapter.validate_json(
             json.dumps({"type": "made_up", "seq": 0, "foo": "bar"})
         )
+
+
+# ============================================== M3 student_new_question (#111)
+
+
+def test_student_new_question_roundtrip() -> None:
+    """学生主动追问帧 JSON 往返：question 嵌入对象、字段完整保留。"""
+    evt = WsStudentNewQuestion(
+        seq=42,
+        dialog_id="stu_a",
+        question=_question(),
+        after_reply_chunk_seq=3,
+    )
+    decoded = _server_adapter.validate_json(evt.model_dump_json())
+    assert isinstance(decoded, WsStudentNewQuestion)
+    assert decoded.dialog_id == "stu_a"
+    assert decoded.question.id == "q-1"
+    assert decoded.question.category == "clarify_concept"
+    assert decoded.after_reply_chunk_seq == 3
+    assert decoded.seq == 42
+
+
+def test_student_new_question_after_reply_chunk_seq_optional() -> None:
+    """after_reply_chunk_seq 缺省 -> None；首问场景使用。"""
+    evt = WsStudentNewQuestion(
+        seq=0,
+        dialog_id="stu_a",
+        question=_question(),
+    )
+    assert evt.after_reply_chunk_seq is None
+    decoded = _server_adapter.validate_json(evt.model_dump_json())
+    assert isinstance(decoded, WsStudentNewQuestion)
+    assert decoded.after_reply_chunk_seq is None
+
+
+def test_student_new_question_negative_chunk_seq_rejected() -> None:
+    """after_reply_chunk_seq 必须非负（与 reply_chunk.chunk_seq 对齐）。"""
+    with pytest.raises(ValidationError):
+        WsStudentNewQuestion(
+            seq=0,
+            dialog_id="stu_a",
+            question=_question(),
+            after_reply_chunk_seq=-1,
+        )
+
+
+def test_student_new_question_in_server_union_dispatches_correctly() -> None:
+    """通过 type 字段从服务端 union 正确分发到 WsStudentNewQuestion。"""
+    payload = {
+        "type": "student_new_question",
+        "seq": 7,
+        "dialog_id": "stu_b",
+        "question": _question().model_dump(mode="json"),
+    }
+    decoded = _server_adapter.validate_json(json.dumps(payload))
+    assert isinstance(decoded, WsStudentNewQuestion)
+    # 不会被误匹配到 WsReplyEnd 等其他帧
+    assert decoded.type == "student_new_question"

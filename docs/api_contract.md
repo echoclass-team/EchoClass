@@ -294,11 +294,11 @@ interface QASessionStateResp {
 }
 
 interface DialogStateSummary {
-  id: string;                                     // == question.id
+  id: string;                                     // M2 = question.id；M3 = student_id
   student_id: string;
   student_name: string;
   status: "pending" | "active" | "resolved" | "abandoned";
-  question_preview: string;                       // 问题正文前 80 字符
+  question_preview: string;                       // 问题正文前 80 字符（M3 = 首问预览）
   turn_count: number;                             // 一来一回算一轮
   resolution_source?:
     | "self_resolve"
@@ -313,8 +313,17 @@ interface DialogMessage {
   content: string;
   timestamp: string;                              // ISO-8601
   self_resolved: boolean;                         // 仅 student 回合可能 true
+  is_new_question: boolean;                       // M3：学生主动追问的回合为 true；M2 永远 false
+  question_id?: string | null;                    // M3：本条所属 question id；M2 永远 null
 }
 ```
+
+> ⚠️ **形态说明**（issue #111）：
+>
+> - **M2 闯关模式**（v1，已上线）：一题一 dialog，``id == question.id``，``history`` 全部属于同一道题
+> - **M3 连续答疑模式**（v2，规划中）：一学生一 dialog，``id == student_id``，``history`` 可能跨越多个 question（追问回合 ``is_new_question=true``）
+>
+> 两种形态在字段层兼容：``is_new_question`` / ``question_id`` 为M3 新增字段，M2 永远默认值。
 
 **错误**：`404` session 不存在。
 
@@ -434,6 +443,7 @@ type ServerMessage =
   | DialogActive
   | ReplyChunk
   | ReplyEnd
+  | StudentNewQuestion        // 仅 M3 连续答疑模式出现
   | DialogResolved
   | DialogAbandoned
   | Summary
@@ -483,6 +493,17 @@ interface ReplyEnd {
   self_resolved: boolean;           // LLM 是否在末尾打了 [懂了]
 }
 
+// 仅 M3 连续答疑模式（issue #111）出现；M2 服务端不发出。
+// 老前端遇到未知类型应静默丢弃不报错。
+interface StudentNewQuestion {
+  type: "student_new_question";
+  seq: number;
+  timestamp: ISO8601;
+  dialog_id: string;                // M3 下 == student_id
+  question: StudentQuestion;        // 复用 §1 StudentQuestion
+  after_reply_chunk_seq?: number | null;  // 可选：在哪轮末产生；前端可忽略
+}
+
 interface DialogResolved {
   type: "dialog_resolved";
   seq: number;
@@ -526,6 +547,8 @@ type WsErrorCode =
 
 ### 3.5 典型消息序列
 
+#### 3.5.1 M2 闯关模式（v1，一题一 dialog）
+
 ```
 Server → Client: {"type":"session_init","seq":0,"session_id":"sess-1","lesson":{...},"students":[...],"questions":[...]}
 Client → Server: {"type":"select_dialog","dialog_id":"q-1"}
@@ -541,6 +564,34 @@ Server → Client: {"type":"reply_end","seq":7,"dialog_id":"q-1","full_content":
 Client → Server: {"type":"resolve","dialog_id":"q-1","source":"self_resolve"}
 Server → Client: {"type":"dialog_resolved","seq":8,"dialog_id":"q-1","source":"self_resolve"}
 ```
+
+#### 3.5.2 M3 连续答疑模式（v2，一学生一 dialog，issue #111）
+
+引入 ``student_new_question`` 帧后的泛型序列（``stu_a`` = 某学生 thread id）：
+
+```
+Server → Client: {"type":"session_init","seq":0,...,"questions":[Q1_for_a, Q1_for_b]}  // 每人首问
+Client → Server: {"type":"select_dialog","dialog_id":"stu_a"}
+Server → Client: {"type":"dialog_active","seq":1,"dialog_id":"stu_a"}
+Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"说说看"}
+Server → Client: {"type":"reply_chunk","seq":2,...,"chunk_seq":0}
+Server → Client: {"type":"reply_end","seq":3,"dialog_id":"stu_a","full_content":"...","self_resolved":false}
+Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"还有什么不明白的吗？"}
+Server → Client: {"type":"student_new_question","seq":4,"dialog_id":"stu_a","question":Q2,"after_reply_chunk_seq":0}
+Server → Client: {"type":"reply_chunk","seq":5,...}                             // 针对 Q2 的说明
+Server → Client: {"type":"reply_end","seq":6,"dialog_id":"stu_a","full_content":"...","self_resolved":false}
+Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"你试试看。"}
+... 多轮互动 ...
+Client → Server: {"type":"resolve","dialog_id":"stu_a","source":"teacher_marked"}  // 结束整段辅导
+Server → Client: {"type":"dialog_resolved","seq":N,"dialog_id":"stu_a","source":"teacher_marked"}
+```
+
+**差异要点**：
+
+- ``session_init.questions`` 的语义从“所有题”变为“每学生首问”（同原型，数量变少）
+- 新增 ``student_new_question`` 帧：学生主动追问时服务端推送，前端追加“新问题”气泡
+- ``resolve.source="teacher_marked"`` 语义从“该题已解”升级为“结束整段辅导”（字段不变）
+- 老前端运行 v2 服务端：遇到 ``student_new_question`` 未知类型静默丢弃，reply / resolve 流程仍可运行
 
 ### 3.6 关键不变式
 
@@ -565,6 +616,7 @@ Server → Client: {"type":"dialog_resolved","seq":8,"dialog_id":"q-1","source":
 | `DialogActive` | `WsDialogActive` |
 | `ReplyChunk` | `WsReplyChunk` |
 | `ReplyEnd` | `WsReplyEnd` |
+| `StudentNewQuestion` | `WsStudentNewQuestion` |
 | `DialogResolved` | `WsDialogResolved` |
 | `DialogAbandoned` | `WsDialogAbandoned` |
 | `Summary` | `WsSummary` |
@@ -665,3 +717,4 @@ interface StageListItem {
 | v0-draft | 2026-04-22 | 初稿 | Cascade |
 | v1 (#71) | 2026-04-25 | §3 替换为 1v1 答疑陪练 WebSocket 协议（`/ws/qa-sessions/{session_id}`），废弃多学生课堂模型；新增 `backend/schemas/ws_events.py` Pydantic 模型作为权威 schema | A-Agent |
 | v1 (#72) | 2026-04-28 | 新增 §2.5 — `/api/qa-sessions` 创建/查询/结束 REST 接口，对应 `backend/api/qa_sessions.py` 实现 | B-Full |
+| v2-schema (#111) | 2026-04-28 | M3 连续答疑模式 schema 演进：`DialogMessage` 新增 `is_new_question` / `question_id`；WS 新增 `student_new_question` 帧；`DialogStateSummary.id` 语义扩展为 `student_id`。严格向后兼容，M2 行为不变。编排实现在后续 PR 切换 | A-Agent |

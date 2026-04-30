@@ -12,7 +12,10 @@
 - 嵌入对象（``LessonMeta`` / ``StudentQuestion``）直接复用业务 schema，避免
   双份维护；客户端自行根据需要取用字段
 
-事件序列示例（一次完整 1v1 对话）::
+事件序列示例
+----------
+
+**M2 闯关模式（v1，一题一 dialog）**::
 
     S→C: session_init                          # 连上后立刻推
     C→S: select_dialog(dialog_id=q1)
@@ -29,6 +32,24 @@
     ...
     C→S: <connection close>
     S→C: summary(data={...})                    # 关闭前推，可选
+
+**M3 连续答疑模式（v2，一学生一 dialog，issue #111）**::
+
+    S→C: session_init                          # questions 只含每人首问
+    C→S: select_dialog(dialog_id=stu_a)
+    S→C: dialog_active(dialog_id=stu_a)
+    C→S: teacher_message(dialog_id=stu_a, text="…")
+    S→C: reply_chunk / reply_end                # 针对首问的回复
+    C→S: teacher_message(dialog_id=stu_a, text="还有什么不明白的吗？")
+    S→C: student_new_question(dialog_id=stu_a, question=Q2)  # 学生主动追问
+    S→C: reply_chunk / reply_end                # 追问后本轮不一定有 reply
+    C→S: teacher_message(dialog_id=stu_a, text="…")  # 针对 Q2 的讨论
+    ...
+    C→S: resolve(dialog_id=stu_a, source="teacher_marked")  # 结束整段辅导
+    S→C: dialog_resolved(dialog_id=stu_a, source="teacher_marked")
+
+两种模式在帧层兼容：``student_new_question`` 是新增帧，只在 v2 出现，
+老前端遇到未知帧应由上层路由忽略不会报错（参 §3.6 不变式）。
 
 约束：
 
@@ -80,7 +101,7 @@ WsErrorCode = Literal[
     "llm_failed",  # LLM 上游错误
     "internal_error",  # 其他后端异常
 ]
-"""WS error.code 枚举。"""
+"""WS error.code 枚举。“unknown_frame” 不在这里：未知帧由路由层静默丢弃。"""
 
 
 # ------------------------------------------------------------ 客户端 → 服务端
@@ -166,9 +187,7 @@ class _ServerBase(BaseModel):
     """服务端帧公共基类，包含单调递增的 ``seq``。"""
 
     seq: int = Field(..., ge=0, description="服务端单调递增帧序号（连接内唯一）")
-    timestamp: datetime = Field(
-        default_factory=_now, description="服务端生成时间"
-    )
+    timestamp: datetime = Field(default_factory=_now, description="服务端生成时间")
 
 
 class WsSessionInit(_ServerBase):
@@ -210,9 +229,7 @@ class WsReplyChunk(_ServerBase):
     type: Literal["reply_chunk"] = "reply_chunk"
     dialog_id: str = Field(..., description="本 chunk 所属 dialog id")
     delta: str = Field(..., description="增量文本片段")
-    chunk_seq: int = Field(
-        ..., ge=0, description="同 dialog 内 chunk 序号，从 0 递增"
-    )
+    chunk_seq: int = Field(..., ge=0, description="同 dialog 内 chunk 序号，从 0 递增")
 
 
 class WsReplyEnd(_ServerBase):
@@ -231,8 +248,40 @@ class WsReplyEnd(_ServerBase):
     )
 
 
+class WsStudentNewQuestion(_ServerBase):
+    """学生在连续答疑中主动抛出的新问题帧（M3 / issue #111）。
+
+    仅在**连续答疑模式**（v2）出现：``StudentAgent.decide_followup`` 判断学生
+    应该主动追问时，由服务端在合适时机推送（通常在 ``reply_end`` 之后）。
+
+    前端处理：追加一个“新问题”气泡到对话区域（区别于普通 reply），可推送
+    提示师范生“学生提出了新问题”；question 字段复用 ``StudentQuestion``，可以
+    提取 category / linked_key_point 等信息呈现。
+
+    向后兼容：M2 闯关模式下服务端不会发出本帧；老前端遇到未知类型静默丢弃即可。
+    """
+
+    type: Literal["student_new_question"] = "student_new_question"
+    dialog_id: str = Field(..., description="本问题所在 dialog id（v2 = student id）")
+    question: StudentQuestion = Field(
+        ..., description="学生主动抛出的新问题，复用 StudentQuestion 结构"
+    )
+    after_reply_chunk_seq: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "可选：本新问题是在哪一轮回复之后产生的（取那轮末 chunk_seq）。"
+            "None 表示不可追溯（如首问）。仅供调试 / 评估使用，前端可忽略。"
+        ),
+    )
+
+
 class WsDialogResolved(_ServerBase):
-    """``resolve`` 的响应：dialog 转为 resolved。"""
+    """``resolve`` 的响应：dialog 转为 resolved。
+
+    M3 连续答疑模式下，``source="teacher_marked"`` 的语义从“该题已解”升级为
+    “结束整段辅导”；字段名 / 枚举不变。
+    """
 
     type: Literal["dialog_resolved"] = "dialog_resolved"
     dialog_id: str = Field(..., description="已解决的 dialog id")
@@ -254,9 +303,7 @@ class WsSummary(_ServerBase):
     """
 
     type: Literal["summary"] = "summary"
-    data: dict[str, Any] = Field(
-        ..., description="QASession.summary() 返回的 dict"
-    )
+    data: dict[str, Any] = Field(..., description="QASession.summary() 返回的 dict")
 
 
 class WsError(_ServerBase):
@@ -269,9 +316,7 @@ class WsError(_ServerBase):
     type: Literal["error"] = "error"
     code: WsErrorCode = Field(..., description="错误码（受控枚举）")
     message: str = Field(..., description="人类可读的错误描述")
-    dialog_id: str | None = Field(
-        default=None, description="关联的 dialog id（若有）"
-    )
+    dialog_id: str | None = Field(default=None, description="关联的 dialog id（若有）")
 
 
 WsServerEvent = Annotated[
@@ -280,6 +325,7 @@ WsServerEvent = Annotated[
         WsDialogActive,
         WsReplyChunk,
         WsReplyEnd,
+        WsStudentNewQuestion,
         WsDialogResolved,
         WsDialogAbandoned,
         WsSummary,
@@ -301,6 +347,7 @@ __all__ = [
     "WsDialogActive",
     "WsReplyChunk",
     "WsReplyEnd",
+    "WsStudentNewQuestion",
     "WsDialogResolved",
     "WsDialogAbandoned",
     "WsSummary",
