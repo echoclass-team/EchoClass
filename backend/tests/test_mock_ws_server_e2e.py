@@ -88,10 +88,10 @@ def test_mock_session_init_frame_matches_protocol(mock_client: TestClient) -> No
     assert parsed.type == "session_init"
     assert parsed.session_id == SESSION_ID
     assert parsed.seq == 0
-    # mock 预置: 1 个教案 + 2 个学生 + 4 个 dialog（每生 2 题）
+    # mock 预置: 1 个教案 + 2 个学生 + 2 个连续答疑 thread（每生 1 个）
     assert parsed.lesson.subject == "数学"
     assert {s.name for s in parsed.students} == {"小明", "小红"}
-    assert len(parsed.questions) == 4
+    assert len(parsed.questions) == 2
 
 
 def test_mock_full_dialog_loop(mock_client: TestClient) -> None:

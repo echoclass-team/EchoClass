@@ -39,6 +39,7 @@ from schemas.dialog import (
     ResolutionSource,
     StudentStreamEvent,
 )
+from schemas.followup import FollowupDecision
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
 
@@ -94,51 +95,64 @@ class QASession:
         self,
         student_agents: Iterable[StudentAgent],
         *,
-        questions_per_student: int = 3,
+        questions_per_student: int = 1,
     ) -> list[StudentQuestion]:
-        """让每个学生 agent 基于 ``self.lesson_meta`` 生成问题，并入队。
+        """为每个学生 spawn 一个 thread dialog（M3 / #111）。
 
-        生成是并行的（``asyncio.gather``），任一学生失败不影响其他。返回**按学生
-        提交顺序拼接**的问题列表（学生间穿插由 next_pending 的轮询策略处理）。
+        每个学生调 ``generate_questions(count=1)`` 产出首问，在本 session 里创建
+        **一个** ``DialogSession``（``id == student_id``）。后续追问不在这里生成，
+        由 ``send/stream_teacher_message`` 内部调 ``decide_followup`` 产生并以
+        ``DialogMessage(is_new_question=True)`` 形式入 ``messages`` + 追加到
+        ``dialog.asked_questions``。
+
+        生成并行（``asyncio.gather``），任一学生失败不影响其他。返回按学生提交
+        顺序的首问列表。
+
+        Parameters
+        ----------
+        questions_per_student : int
+            **已废弃、仅兼容 M2 调用方**。M3 下每学生只有 1 个 dialog；传 >1 不报错
+            但仅取首题。后续 PR 清理 M2 测试后会移除。
         """
         agents = list(student_agents)
         if not agents:
             return []
 
-        results = await asyncio.gather(
-            *(self._generate_safe(a, questions_per_student) for a in agents),
+        # M3: 仅需首问，overhead·overshoot·self_check 仅一次。
+        # 各学生并行入入口，索引位置与 agents 一致以保证顺序。
+        results: list[list[StudentQuestion]] = await asyncio.gather(
+            *(self._generate_safe(a, count=1) for a in agents),
             return_exceptions=False,
         )
 
         all_questions: list[StudentQuestion] = []
-        # 轮询交叉：先取每个学生的第 1 题、再第 2 题……让前几个被推送的问题来自不同学生
-        max_len = max((len(qs) for qs in results), default=0)
-        for round_idx in range(max_len):
-            for agent, qs in zip(agents, results):
-                if round_idx >= len(qs):
-                    continue
-                question = qs[round_idx]
-                self._agents[question.speaker_id] = agent
-                dialog = DialogSession(
-                    id=question.id,
-                    student_id=question.speaker_id,
-                    question=question,
-                    status="pending",
-                )
-                self.dialogs[dialog.id] = dialog
-                self._pending_order.append(dialog.id)
-                all_questions.append(question)
+        for agent, qs in zip(agents, results):
+            if not qs:
+                # generate 完全失败跳过该学生（已在 _generate_safe 里 log 过）
+                continue
+            student_id = qs[0].speaker_id
+            first_question = qs[0].model_copy(update={"id": student_id})
+            self._agents[student_id] = agent
+            dialog = DialogSession(
+                id=student_id,
+                student_id=student_id,
+                question=first_question,
+                status="pending",
+                asked_questions=[first_question],
+            )
+            self.dialogs[dialog.id] = dialog
+            self._pending_order.append(dialog.id)
+            all_questions.append(first_question)
 
         logger.info(
-            "QASession[%s] spawned %d questions from %d students",
+            "QASession[%s] spawned %d student threads",
             self.id,
             len(all_questions),
-            len(agents),
         )
         return all_questions
 
     async def _generate_safe(
-        self, agent: StudentAgent, count: int
+        self, agent: StudentAgent, *, count: int
     ) -> list[StudentQuestion]:
         try:
             return await agent.generate_questions(self.lesson_meta, count=count)
@@ -224,8 +238,9 @@ class QASession:
             DialogMessage(role="teacher", content=text, timestamp=now)
         )
 
+        current_question = self._current_question(dialog)
         result = await agent.respond_in_dialog(
-            question=dialog.question,
+            question=current_question,
             teacher_utterance=text,
             dialog_history=dialog.messages[:-1],  # 不含本轮 teacher 消息
         )
@@ -237,6 +252,7 @@ class QASession:
                 self_resolved=result.self_resolved,
             )
         )
+        await self._decide_and_record_followup(agent=agent, dialog=dialog)
         return result
 
     async def stream_teacher_message(
@@ -277,11 +293,12 @@ class QASession:
             DialogMessage(role="teacher", content=text, timestamp=now)
         )
 
+        current_question = self._current_question(dialog)
         history_snapshot = dialog.messages[:-1]  # 不含本轮 teacher 消息
 
         final_event: StudentStreamEvent | None = None
         async for evt in agent.stream_in_dialog(
-            question=dialog.question,
+            question=current_question,
             teacher_utterance=text,
             dialog_history=history_snapshot,
         ):
@@ -303,6 +320,45 @@ class QASession:
             raise QASessionError(
                 f"stream_in_dialog finished without final event for {dialog_id}"
             )
+        if final_event.result is not None:
+            decision = await self._decide_and_record_followup(
+                agent=agent, dialog=dialog
+            )
+            if decision.should_followup and decision.new_question is not None:
+                yield StudentStreamEvent(
+                    type="followup", new_question=decision.new_question
+                )
+
+    @staticmethod
+    def _current_question(dialog: DialogSession) -> StudentQuestion:
+        return dialog.asked_questions[-1] if dialog.asked_questions else dialog.question
+
+    async def _decide_and_record_followup(
+        self, *, agent: StudentAgent, dialog: DialogSession
+    ) -> FollowupDecision:
+        decide_followup = getattr(agent, "decide_followup", None)
+        if decide_followup is None:
+            return FollowupDecision.no_followup(reason="decide_followup unavailable")
+
+        decision = await decide_followup(
+            current_question=self._current_question(dialog),
+            dialog_history=dialog.messages,
+            lesson_meta=self.lesson_meta,
+            asked_questions=dialog.asked_questions or [dialog.question],
+        )
+        if decision.should_followup and decision.new_question is not None:
+            question = decision.new_question
+            dialog.asked_questions.append(question)
+            dialog.messages.append(
+                DialogMessage(
+                    role="student",
+                    content=question.content,
+                    timestamp=datetime.now(timezone.utc),
+                    is_new_question=True,
+                    question_id=question.id,
+                )
+            )
+        return decision
 
     def mark_resolved(
         self,

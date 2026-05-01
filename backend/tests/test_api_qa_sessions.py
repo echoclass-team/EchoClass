@@ -170,8 +170,8 @@ def test_create_session_success(
     assert data["ws_url"] == f"/ws/qa-sessions/{data['session_id']}"
     assert data["lesson"]["topic"] == "分数的初步认识"
     assert len(data["students"]) == 2
-    # 2 个学生 × 2 个问题 = 4
-    assert len(data["questions"]) == 4
+    # M3：每个学生一个连续答疑 thread
+    assert len(data["questions"]) == 2
     # 学生顺序 == 入参 persona_ids 顺序
     assert [s["id"] for s in data["students"]] == real_persona_ids
 
@@ -275,7 +275,7 @@ def test_create_session_dedup_persona_ids(
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert len(data["students"]) == 1
-    assert len(data["questions"]) == 2
+    assert len(data["questions"]) == 1
 
 
 # ============================================================ get
@@ -305,9 +305,9 @@ def test_get_session_state(
     assert data["session_id"] == session_id
     assert data["lesson"]["topic"] == "分数的初步认识"
     assert len(data["students"]) == 2
-    assert len(data["dialogs"]) == 4
+    assert len(data["dialogs"]) == 2
     # 全部刚 spawn，未启动
-    assert data["pending"] == 4
+    assert data["pending"] == 2
     assert data["active"] == 0
     assert data["resolved"] == 0
     assert data["abandoned"] == 0
@@ -402,7 +402,7 @@ async def test_get_session_state_reflects_transitions(
         "/api/qa-sessions",
         json={
             "lesson_id": "lesson-1",
-            "persona_ids": real_persona_ids[:1],
+            "persona_ids": real_persona_ids,
             "count_per_student": 2,
         },
     )
@@ -463,7 +463,7 @@ async def test_end_session_success(
     summary = data["summary"]
     assert summary["session_id"] == session_id
     assert summary["resolved"] == 1
-    assert summary["total_questions"] == 2
+    assert summary["total_questions"] == 1
 
     # 已从 registry 移除
     assert await isolated_registry.get(session_id) is None

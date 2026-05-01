@@ -276,7 +276,7 @@ async def _handle_message(
                         ),
                     )
                     chunk_seq += 1
-            else:  # final
+            elif stream_evt.type == "final":
                 if stream_evt.result is None:  # pragma: no cover - 防御
                     continue
                 await _send(
@@ -288,6 +288,8 @@ async def _handle_message(
                         self_resolved=stream_evt.result.self_resolved,
                     ),
                 )
+            else:
+                continue
     except QASessionError as exc:
         await _send_error(
             ws,

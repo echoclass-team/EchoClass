@@ -1,6 +1,6 @@
-"""StudentAgent — 单学生虚拟角色（1v1 答疑陪练专用）。
+"""StudentAgent — 单学生虚拟角色（1v1 / M3 连续答疑陪练专用）。
 
-该 agent 提供两个能力：
+该 agent 提供四个能力：
 
 1. ``generate_questions(lesson_meta)``
    根据人设 + 教案 + 学段迷思库，主动提出学生会问老师的问题。输出为
@@ -8,13 +8,18 @@
    linked_misconception_id 等结构化元数据。
 
 2. ``respond_in_dialog(question, teacher_utterance, history)``
-   在 1v1 对话中根据老师发言多轮回应。输出为 ``DialogReplyResult``（
+   在1v1 对话中根据老师发言多轮回应。输出为 ``DialogReplyResult``（
    含是否出现 ``[懂了]`` 标记的 ``self_resolved`` 字段）。
 
 3. ``stream_in_dialog(...)``
    ``respond_in_dialog`` 的流式版本，逐 token 推送 ``StudentStreamEvent``：
    先若干 ``delta`` 事件（已剥离末尾 ``[懂了]`` 标记），最后一个 ``final``
    事件携带完整 ``DialogReplyResult``。供 WebSocket 端点直接转发。
+
+4. ``decide_followup(...)``【M3 / #111】
+   每轮老师消息 → 学生回复后，LLM 决策学生是否主动追问。输出为
+   ``FollowupDecision``（含 ``should_followup`` / ``new_question`` / ``reason``）。
+   解析失败会优雅降级为 ``no_followup``，不抛出异常。
 
 人设支持：
 - 简易模式（name / personality / knowledge_level / behavior_traits）
@@ -51,6 +56,7 @@ from rag.qa_examples import (
     select_chat_examples,
 )
 from schemas.dialog import DialogMessage, DialogReplyResult, StudentStreamEvent
+from schemas.followup import FollowupDecision
 from schemas.lesson import LessonMeta
 from schemas.misconception import Misconception
 from schemas.question import StudentQuestion
@@ -113,6 +119,7 @@ class StudentAgent:
         self._ask_template = _jinja_env.get_template("student_ask.j2")
         self._chat_template = _jinja_env.get_template("student_chat.j2")
         self._check_template = _jinja_env.get_template("student_check.j2")
+        self._followup_template = _jinja_env.get_template("student_followup.j2")
 
     # =========================================================== public
 
@@ -319,6 +326,144 @@ class StudentAgent:
                 yield StudentStreamEvent(type="delta", delta=tail)
 
         yield StudentStreamEvent(type="final", result=final)
+
+    async def decide_followup(
+        self,
+        *,
+        current_question: StudentQuestion,
+        dialog_history: list[DialogMessage],
+        lesson_meta: LessonMeta,
+        asked_questions: list[StudentQuestion] | None = None,
+    ) -> FollowupDecision:
+        """每轮老师消息 → 学生回复后，决策学生是否主动追问（M3 / #111）。
+
+        Parameters
+        ----------
+        current_question : StudentQuestion
+            当前正在讨论的问题（最近一次抛出的，可能是首问或之前的追问）。
+        dialog_history : list[DialogMessage]
+            到本轮为止的完整对话历史（含本轮 student 回复）。
+        lesson_meta : LessonMeta
+            教案上下文，用于约束追问内容不跑题。
+        asked_questions : list[StudentQuestion] | None
+            本 dialog 中已经问过的所有问题（含 current_question）；用于在
+            prompt 中提示"禁止重复"，并在结果上做一次 content 文本重复过滤。
+            缺省时按 ``[current_question]`` 处理。
+
+        Returns
+        -------
+        FollowupDecision
+            ``should_followup=False`` 时不追问；True 时附带新生成的
+            ``StudentQuestion``（含 id / speaker_* 等完整字段）。
+
+        Notes
+        -----
+        解析失败 / Schema 不合法 / LLM 上游异常都会**优雅降级**为
+        ``FollowupDecision.no_followup(reason=...)``，**不向上抛出**。
+        这样上层编排（``QASession``）即便单次 LLM 抖动也不会被卡死，
+        仅本轮没有追问，下轮仍会再次询问 LLM。
+        """
+        asked = asked_questions if asked_questions is not None else [current_question]
+
+        prompt = self._followup_template.render(
+            persona=self.persona,
+            stage=self.stage,
+            lesson=lesson_meta,
+            current_question=current_question,
+            dialog_history=dialog_history or [],
+            asked_questions=asked,
+        )
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": "请输出决策 JSON。"},
+        ]
+        try:
+            # 决策类任务，温度低些减少抖动
+            resp = await self.llm.chat(
+                messages, temperature=max(0.3, self.temperature - 0.3)
+            )
+        except Exception as exc:  # noqa: BLE001 - 上游抖动应降级而非阻塞编排
+            logger.warning("StudentAgent.decide_followup LLM call failed: %s", exc)
+            return FollowupDecision.no_followup(reason=f"llm_error: {exc}")
+
+        raw = resp.choices[0].message.content or ""
+        logger.debug("StudentAgent.decide_followup raw: %s", raw)
+
+        return self._parse_followup_decision(
+            raw,
+            valid_key_points=set(lesson_meta.key_points)
+            | set(lesson_meta.difficult_points),
+            asked_question_contents={q.content.strip() for q in asked},
+        )
+
+    def _parse_followup_decision(
+        self,
+        raw: str,
+        *,
+        valid_key_points: set[str],
+        asked_question_contents: set[str],
+    ) -> FollowupDecision:
+        """从 LLM 输出解析 FollowupDecision；任何错误均降级为 no_followup。"""
+        obj = self._extract_json_object(raw)
+        if obj is None:
+            return FollowupDecision.no_followup(reason="parse_error: no JSON object")
+
+        should = bool(obj.get("should_followup", False))
+        reason = str(obj.get("reason", "")).strip()
+
+        if not should:
+            return FollowupDecision.no_followup(reason=reason or "decided not to ask")
+
+        new_q_data = obj.get("new_question")
+        if not isinstance(new_q_data, dict):
+            return FollowupDecision.no_followup(
+                reason="parse_error: should_followup=true but new_question missing"
+            )
+
+        try:
+            new_question = self._build_question(
+                new_q_data,
+                valid_key_points=valid_key_points,
+                # 追问场景不强约束 misconception 关联（LLM 给了也会被忽略）
+                valid_misconception_ids=set(),
+            )
+        except Exception as exc:  # noqa: BLE001
+            return FollowupDecision.no_followup(
+                reason=f"parse_error: invalid new_question ({exc})"
+            )
+
+        # 文本级重复检测：若新问题与任一已问过的内容文本一致，降级
+        if new_question.content.strip() in asked_question_contents:
+            return FollowupDecision.no_followup(
+                reason="duplicate: new_question matches an asked question"
+            )
+
+        return FollowupDecision(
+            should_followup=True,
+            new_question=new_question,
+            reason=reason or "follow-up generated",
+        )
+
+    @staticmethod
+    def _extract_json_object(raw: str) -> dict[str, Any] | None:
+        """从 LLM 输出抽取 JSON 对象；兼容 ``` 包裹与裸 ``{...}``。"""
+        match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
+        candidate = match.group(1) if match else None
+        if candidate is None:
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            candidate = match.group(0) if match else None
+        if candidate is None:
+            return None
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "StudentAgent JSON object parse failed (%s): %s",
+                exc,
+                candidate[:200],
+            )
+            return None
+        return data if isinstance(data, dict) else None
 
     # 流式 hold-back 长度：[懂了] / [ 懂了 ] / 末尾换行最长 ~ 12 字符，留 16 安全冗余
     _STREAM_HOLDBACK_CHARS: int = 16

@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 
 from schemas.dialog import DialogMessage, DialogReplyResult, StudentStreamEvent
+from schemas.followup import FollowupDecision
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
 from services.qa_session import QASession, QASessionError
@@ -35,11 +36,14 @@ class _StreamingFakeAgent:
         name: str,
         questions: list[dict[str, Any]],
         scripted_streams: list[list[StudentStreamEvent]] | None = None,
+        followups: list[FollowupDecision] | None = None,
     ) -> None:
         self.persona = _FakePersona(name)
         self._student_id = student_id
         self._questions_template = questions
         self._streams = list(scripted_streams or [])
+        self._followups = list(followups or [])
+        self.stream_questions: list[str] = []
 
     async def generate_questions(self, lesson_meta: LessonMeta, *, count: int = 3):
         out: list[StudentQuestion] = []
@@ -65,6 +69,7 @@ class _StreamingFakeAgent:
         teacher_utterance: str,
         dialog_history: list[DialogMessage] | None = None,
     ):
+        self.stream_questions.append(question.content)
         if not self._streams:
             yield StudentStreamEvent(type="delta", delta="嗯")
             yield StudentStreamEvent(
@@ -76,6 +81,18 @@ class _StreamingFakeAgent:
         for evt in events:
             yield evt
 
+    async def decide_followup(
+        self,
+        *,
+        current_question: StudentQuestion,
+        dialog_history: list[DialogMessage],
+        lesson_meta: LessonMeta,
+        asked_questions: list[StudentQuestion] | None = None,
+    ) -> FollowupDecision:
+        if not self._followups:
+            return FollowupDecision.no_followup(reason="test default")
+        return self._followups.pop(0)
+
 
 def _lesson() -> LessonMeta:
     return LessonMeta(
@@ -85,6 +102,19 @@ def _lesson() -> LessonMeta:
         objectives=[],
         key_points=["理解几分之一"],
         difficult_points=[],
+    )
+
+
+def _followup_question() -> StudentQuestion:
+    return StudentQuestion(
+        id="S-f1",
+        speaker_id="S",
+        speaker_name="小明",
+        content="那分子是什么意思？",
+        category="clarify_concept",
+        difficulty="easy",
+        linked_key_point="理解几分之一",
+        rationale="学生对分子产生了好奇。",
     )
 
 
@@ -142,9 +172,7 @@ async def test_stream_teacher_message_auto_starts_pending_dialog() -> None:
     assert pending is not None
     assert pending.status == "pending"
 
-    events = [
-        evt async for evt in session.stream_teacher_message(pending.id, "你好")
-    ]
+    events = [evt async for evt in session.stream_teacher_message(pending.id, "你好")]
     assert events[-1].type == "final"
     assert session.get_dialog(pending.id).status == "active"
 
@@ -223,3 +251,88 @@ async def test_stream_teacher_message_multi_turn_accumulates_history() -> None:
     msgs = session.get_dialog(pending.id).messages
     assert [m.role for m in msgs] == ["teacher", "student", "teacher", "student"]
     assert [m.content for m in msgs] == ["T1", "第一轮", "T2", "第二轮"]
+
+
+async def test_stream_teacher_message_yields_followup_after_final() -> None:
+    followup = _followup_question()
+    a = _StreamingFakeAgent(
+        student_id="S",
+        name="小明",
+        questions=[{"content": "Q1"}],
+        scripted_streams=[
+            [
+                StudentStreamEvent(type="delta", delta="懂一点了"),
+                StudentStreamEvent(
+                    type="final",
+                    result=DialogReplyResult(
+                        content="懂一点了", self_resolved=False, raw="懂一点了"
+                    ),
+                ),
+            ],
+        ],
+        followups=[
+            FollowupDecision(
+                should_followup=True,
+                new_question=followup,
+                reason="学生还有追问",
+            )
+        ],
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a], questions_per_student=1)
+    pending = session.next_pending()
+    assert pending is not None
+
+    events = [evt async for evt in session.stream_teacher_message(pending.id, "T1")]
+
+    assert [e.type for e in events] == ["delta", "final", "followup"]
+    assert events[-1].new_question == followup
+    dialog = session.get_dialog(pending.id)
+    assert [q.content for q in dialog.asked_questions] == ["Q1", "那分子是什么意思？"]
+    assert [m.role for m in dialog.messages] == ["teacher", "student", "student"]
+    assert dialog.messages[-1].is_new_question is True
+    assert dialog.messages[-1].question_id == followup.id
+
+
+async def test_stream_teacher_message_uses_latest_followup_as_current_question() -> (
+    None
+):
+    followup = _followup_question()
+    a = _StreamingFakeAgent(
+        student_id="S",
+        name="小明",
+        questions=[{"content": "Q1"}],
+        scripted_streams=[
+            [
+                StudentStreamEvent(
+                    type="final",
+                    result=DialogReplyResult(content="第一轮", self_resolved=False),
+                ),
+            ],
+            [
+                StudentStreamEvent(
+                    type="final",
+                    result=DialogReplyResult(content="第二轮", self_resolved=False),
+                ),
+            ],
+        ],
+        followups=[
+            FollowupDecision(
+                should_followup=True,
+                new_question=followup,
+                reason="学生还有追问",
+            ),
+            FollowupDecision.no_followup(reason="停止追问"),
+        ],
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a], questions_per_student=1)
+    pending = session.next_pending()
+    assert pending is not None
+
+    async for _ in session.stream_teacher_message(pending.id, "T1"):
+        pass
+    async for _ in session.stream_teacher_message(pending.id, "T2"):
+        pass
+
+    assert a.stream_questions == ["Q1", "那分子是什么意思？"]
