@@ -52,7 +52,10 @@ RETRYABLE_EXCEPTIONS: tuple[type[Exception], ...] = (
     RateLimitError,
 )
 
-DEFAULT_TIMEOUT_SECONDS = 30.0
+# ChatECNU ecnu-max 处理整篇教案 / 多 student 并发 spawn 时
+# 单次响应可达 60s+，30s 超时下并发 spawn 必触发 APITimeoutError，
+# 故默认提升至 120s，给 retry 留出余量。
+DEFAULT_TIMEOUT_SECONDS = 120.0
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_MIN_WAIT = 1.0
 DEFAULT_RETRY_MAX_WAIT = 10.0
