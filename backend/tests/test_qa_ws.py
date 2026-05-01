@@ -140,15 +140,23 @@ async def _build_session(
     registry: QASessionRegistry,
     *,
     scripted_streams: list[list[StudentStreamEvent]] | None = None,
+    student_count: int = 1,
 ) -> QASession:
-    agent = _StreamingFakeAgent(
-        student_id="S1",
-        name="小明",
-        questions=[{"content": "Q1"}, {"content": "Q2"}],
-        scripted_streams=scripted_streams,
-    )
+    agents: list[_StreamingFakeAgent] = []
+    for i in range(student_count):
+        agent_streams = scripted_streams
+        if student_count > 1 and scripted_streams is not None:
+            agent_streams = [scripted_streams[i]] if i < len(scripted_streams) else None
+        agents.append(
+            _StreamingFakeAgent(
+                student_id=f"S{i + 1}",
+                name="小明" if i == 0 else f"学生{i + 1}",
+                questions=[{"content": f"Q{i + 1}"}],
+                scripted_streams=agent_streams,
+            )
+        )
     session = QASession(lesson_meta=_lesson(), session_id="sess-test")
-    await session.spawn([agent], questions_per_student=2)
+    await session.spawn(agents, questions_per_student=2)
     await registry.register(session)
     return session
 
@@ -178,7 +186,7 @@ async def test_session_init_emitted_on_connect(
         assert msg["lesson"]["topic"] == "分数"
         assert len(msg["students"]) == 1
         assert msg["students"][0]["name"] == "小明"
-        assert len(msg["questions"]) == 2
+        assert len(msg["questions"]) == 1
 
 
 async def test_select_dialog_emits_dialog_active(
@@ -218,7 +226,9 @@ async def test_teacher_message_streams_chunks_then_end(
         _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
         _recv(ws)  # dialog_active
 
-        _send(ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "你说说看"})
+        _send(
+            ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "你说说看"}
+        )
 
         c1 = _recv(ws)
         c2 = _recv(ws)
@@ -387,6 +397,7 @@ async def test_chunk_seq_resets_per_dialog(
                 ),
             ],
         ],
+        student_count=2,
     )
     d1, d2 = list(session.dialogs.keys())
     with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
