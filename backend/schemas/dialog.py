@@ -25,7 +25,8 @@
 两种形态在字段层完全兼容：
 - v1 的 ``DialogMessage`` 永远 ``is_new_question=False`` / ``question_id=None``
 - v2 引入新字段 + 新 WS 帧 ``student_new_question``（见 ``ws_events``）
-- ``DialogSession`` 字段不变，编排层（``services/qa_session.py``）切换语义
+- v2 给 ``DialogSession`` 加了 ``asked_questions`` 字段追踪首问 + 追问列表，
+  M2 模式下仅含首问一项，向后兼容
 """
 
 from __future__ import annotations
@@ -111,6 +112,14 @@ class DialogSession(BaseModel):
         default=None,
         description="结束方式；status=resolved/abandoned 时必填",
     )
+    asked_questions: list[StudentQuestion] = Field(
+        default_factory=list,
+        description=(
+            "M3 连续答疑模式下，学生在本 dialog 中抛出的所有问题：首问（==``question``）为第"
+            "一项，后续由 ``StudentAgent.decide_followup`` 生成的追问依次追加。供决策层查重 / "
+            "评估层按问题分段。M2 闯关模式下仅含首问一项。spawn 时赋初值=[question]。"
+        ),
+    )
 
     def turn_count(self) -> int:
         """对话轮数（一来一回算一轮，向上取整）。"""
@@ -132,31 +141,43 @@ class DialogReplyResult(BaseModel):
     raw: str = Field(default="", description="LLM 原始输出（含可能的标记），便于排错")
 
 
-StudentStreamEventType = Literal["delta", "final"]
-"""StudentAgent 流式事件的两种类型：
+StudentStreamEventType = Literal["delta", "final", "followup"]
+"""StudentAgent / QASession 流式事件的三种类型：
 
-- ``delta``：增量文本片段，UI 应追加到当前学生气泡里
-- ``final``：流结束，``result`` 是结构化的最终结果（含 self_resolved）
+- ``delta``：增量文本片段，UI 应追加到当前学生气泡里。由 ``StudentAgent
+  .stream_in_dialog`` 产生。
+- ``final``：本轮学生回复结束，``result`` 是结构化的最终结果（含
+  self_resolved）。由 ``StudentAgent.stream_in_dialog`` 产生。
+- ``followup``（M3 / #111）：本轮回复后学生主动抛出的新问题。``new_question``
+  非空。由 ``QASession.stream_teacher_message`` 在 ``final`` 之后可选追加（
+  ``StudentAgent.decide_followup`` 决策 should_followup=True 时）。仅出现一次。
 """
 
 
 class StudentStreamEvent(BaseModel):
-    """``StudentAgent.stream_in_dialog`` 产生的流式事件。
+    """学生流式事件（agent 层 + service 层共用类型）。
 
-    使用方式::
+    序列中的位置与语义::
 
-        async for evt in agent.stream_in_dialog(...):
+        delta * N → final → [followup]?
+
+    使用方式（UI / WS endpoint）::
+
+        async for evt in session.stream_teacher_message(...):
             if evt.type == "delta":
                 ui.append(evt.delta)
-            else:  # final
+            elif evt.type == "final":
                 ui.replace(evt.result.content)
                 if evt.result.self_resolved:
                     propose_resolve()
+            elif evt.type == "followup":
+                ui.append_new_question_bubble(evt.new_question)
 
     设计要点：
     - delta 不会包含末尾的 ``[懂了]`` 标记（agent 内部用 hold-back 缓冲过滤）
     - final.content 是权威最终文本，UI 收到 final 时建议覆盖一次以处理边界差异
     - delta 可能为空字符串（流未产出新可见文本时不发，但调用方应宽松对待）
+    - followup 仅 M3 连续答疑模式产生，未启用或 LLM 决策不追问时不出现
     """
 
     type: StudentStreamEventType = Field(..., description="事件类型")
@@ -164,4 +185,8 @@ class StudentStreamEvent(BaseModel):
     result: DialogReplyResult | None = Field(
         default=None,
         description="最终结构化结果（仅 type=final 时非空）",
+    )
+    new_question: StudentQuestion | None = Field(
+        default=None,
+        description="M3 学生主动抛出的新问题（仅 type=followup 时非空）",
     )
