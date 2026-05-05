@@ -416,3 +416,99 @@ async def test_chunk_seq_resets_per_dialog(
 
     assert chunk1["chunk_seq"] == 0
     assert chunk2["chunk_seq"] == 0
+
+
+async def test_followup_emits_student_new_question(
+    client: TestClient, isolated_registry: QASessionRegistry
+) -> None:
+    """service 层产生 followup 事件时，WS 应推送 student_new_question 帧。"""
+    followup_q = StudentQuestion(
+        id="S1-q-followup",
+        speaker_id="S1",
+        speaker_name="小明",
+        content="那分子是什么意思？",
+        category="clarify_concept",
+        difficulty="easy",
+        rationale="",
+    )
+    session = await _build_session(
+        isolated_registry,
+        scripted_streams=[
+            [
+                StudentStreamEvent(type="delta", delta="嗯…"),
+                StudentStreamEvent(
+                    type="final",
+                    result=DialogReplyResult(
+                        content="嗯…", self_resolved=False, raw="嗯…"
+                    ),
+                ),
+                StudentStreamEvent(type="followup", new_question=followup_q),
+            ]
+        ],
+    )
+    dialog_id = next(iter(session.dialogs.keys()))
+
+    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+        _recv(ws)  # session_init (seq=0)
+        _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
+        _recv(ws)  # dialog_active (seq=1)
+
+        _send(
+            ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "你说说看"}
+        )
+
+        chunk = _recv(ws)   # reply_chunk (seq=2)
+        end = _recv(ws)     # reply_end   (seq=3)
+        nq = _recv(ws)      # student_new_question (seq=4)
+
+    assert chunk["type"] == "reply_chunk"
+    assert end["type"] == "reply_end"
+
+    assert nq["type"] == "student_new_question"
+    assert nq["dialog_id"] == dialog_id
+    assert nq["question"]["id"] == "S1-q-followup"
+    assert nq["question"]["content"] == "那分子是什么意思？"
+    assert nq["seq"] == 4
+
+
+async def test_followup_without_question_is_silently_ignored(
+    client: TestClient, isolated_registry: QASessionRegistry
+) -> None:
+    """followup 事件 new_question=None 时不应发帧，连接正常继续。"""
+    session = await _build_session(
+        isolated_registry,
+        scripted_streams=[
+            [
+                StudentStreamEvent(type="delta", delta="好"),
+                StudentStreamEvent(
+                    type="final",
+                    result=DialogReplyResult(
+                        content="好", self_resolved=False, raw="好"
+                    ),
+                ),
+                # followup with None — should be silently skipped
+                StudentStreamEvent(type="followup", new_question=None),
+            ]
+        ],
+    )
+    dialog_id = next(iter(session.dialogs.keys()))
+
+    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+        _recv(ws)  # session_init
+        _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
+        _recv(ws)  # dialog_active
+
+        _send(
+            ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "说说看"}
+        )
+
+        chunk = _recv(ws)   # reply_chunk
+        end = _recv(ws)     # reply_end
+
+        # 不应再有帧（followup 被跳过了）；发 abandon 验证连接仍在
+        _send(ws, {"type": "abandon", "dialog_id": dialog_id})
+        abandon_msg = _recv(ws)
+
+    assert chunk["type"] == "reply_chunk"
+    assert end["type"] == "reply_end"
+    assert abandon_msg["type"] == "dialog_abandoned"
