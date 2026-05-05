@@ -28,8 +28,10 @@ from api.qa_sessions import router as qa_sessions_router
 from api.qa_ws import router as qa_ws_router
 from api.response import http_exception_handler
 from api.stages import router as stages_router
+from utils.logging import configure_logging
 
 load_dotenv()
+configure_logging()
 
 app = FastAPI(
     title="EchoClass Backend",

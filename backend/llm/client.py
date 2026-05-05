@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -130,13 +131,15 @@ class LLMClient:
         model = kwargs.pop("model", self.model)
         async for attempt in self._retrying():
             with attempt:
+                t0 = time.perf_counter()
                 resp: ChatCompletion = await self._client.chat.completions.create(
                     model=model,
                     messages=messages,
                     stream=False,
                     **kwargs,
                 )
-                self._log_usage("chat", model, resp.usage)
+                latency_ms = int((time.perf_counter() - t0) * 1000)
+                self._log_usage("chat", model, resp.usage, latency_ms=latency_ms)
                 return resp
         # AsyncRetrying(reraise=True) 下不会到这里；保险起见抛出
         raise RuntimeError("LLMClient.chat: unreachable")  # pragma: no cover
@@ -157,6 +160,7 @@ class LLMClient:
         # 让服务端在最后一个 chunk 里带 usage（OpenAI 兼容扩展）
         stream_options = kwargs.pop("stream_options", {"include_usage": True})
 
+        t0 = time.perf_counter()
         stream = await self._open_stream(
             model=model,
             messages=messages,
@@ -173,7 +177,10 @@ class LLMClient:
                     completion_tokens = chunk.usage.completion_tokens
                 yield chunk
         finally:
-            self._log_usage_raw("stream", model, prompt_tokens, completion_tokens)
+            latency_ms = int((time.perf_counter() - t0) * 1000)
+            self._log_usage_raw(
+                "stream", model, prompt_tokens, completion_tokens, latency_ms=latency_ms
+            )
 
     async def _open_stream(
         self,
@@ -210,10 +217,12 @@ class LLMClient:
         )
 
     @staticmethod
-    def _log_usage(call: str, model: str, usage: Any) -> None:
+    def _log_usage(
+        call: str, model: str, usage: Any, *, latency_ms: int | None = None
+    ) -> None:
         prompt = getattr(usage, "prompt_tokens", None) if usage else None
         completion = getattr(usage, "completion_tokens", None) if usage else None
-        LLMClient._log_usage_raw(call, model, prompt, completion)
+        LLMClient._log_usage_raw(call, model, prompt, completion, latency_ms=latency_ms)
 
     @staticmethod
     def _log_usage_raw(
@@ -221,11 +230,22 @@ class LLMClient:
         model: str,
         prompt_tokens: int | None,
         completion_tokens: int | None,
+        *,
+        latency_ms: int | None = None,
     ) -> None:
         logger.info(
-            "llm.%s model=%s prompt_tokens=%s completion_tokens=%s",
+            "llm.%s model=%s prompt_tokens=%s completion_tokens=%s latency_ms=%s",
             call,
             model,
             prompt_tokens,
             completion_tokens,
+            latency_ms,
+            extra={
+                "event": "llm_call",
+                "call": call,
+                "model": model,
+                "token_in": prompt_tokens,
+                "token_out": completion_tokens,
+                "latency_ms": latency_ms,
+            },
         )
