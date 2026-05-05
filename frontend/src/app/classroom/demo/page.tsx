@@ -103,10 +103,10 @@ export default function ClassroomDemoPage() {
               </p>
               <div className="mt-6 grid gap-3">
                 <Link
-                  href="/setup/config"
+                  href="/setup/personas"
                   className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
                 >
-                  返回配置
+                  返回选学生
                 </Link>
                 <Link
                   href="/setup/stage"
