@@ -7,7 +7,7 @@
 1. 连接建立后立即推送 ``session_init`` 帧（教案 + 学生列表 + 问题队列）
 2. 解析客户端帧（discriminated union），分发到 ``QASession`` 对应方法
 3. 把 ``QASession.stream_teacher_message`` 的流式事件 1:1 翻译为 ``reply_chunk`` /
-   ``reply_end`` 服务端帧
+   ``reply_end`` / ``student_new_question``（M3 followup）服务端帧
 4. 业务异常 → ``WsError`` 帧；同 session 新连接挤掉旧连接（``replaced``）
 
 设计要点：
@@ -44,6 +44,7 @@ from schemas.ws_events import (
     WsSelectDialog,
     WsSessionInit,
     WsStudentInfo,
+    WsStudentNewQuestion,
     WsTeacherMessage,
 )
 from services.qa_session import QASession, QASessionError
@@ -286,6 +287,17 @@ async def _handle_message(
                         dialog_id=event.dialog_id,
                         full_content=stream_evt.result.content,
                         self_resolved=stream_evt.result.self_resolved,
+                    ),
+                )
+            elif stream_evt.type == "followup":
+                if stream_evt.new_question is None:
+                    continue
+                await _send(
+                    ws,
+                    WsStudentNewQuestion(
+                        seq=seq.next(),
+                        dialog_id=event.dialog_id,
+                        question=stream_evt.new_question,
                     ),
                 )
             else:
