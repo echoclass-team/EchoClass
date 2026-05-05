@@ -512,6 +512,7 @@ function DialogHistory({ dialog }: { dialog: DialogState }) {
             name={turn.role === "teacher" ? "你" : dialog.question.speaker_name}
             content={turn.content}
             selfResolved={turn.selfResolved}
+            isNewQuestion={turn.isNewQuestion}
           />
         ))}
 
@@ -538,12 +539,14 @@ function Bubble({
   content,
   selfResolved,
   streaming,
+  isNewQuestion,
 }: {
   role: "teacher" | "student";
   name: string;
   content: string;
   selfResolved?: boolean;
   streaming?: boolean;
+  isNewQuestion?: boolean;
 }) {
   const isTeacher = role === "teacher";
   return (
@@ -556,12 +559,21 @@ function Bubble({
         {name.charAt(0)}
       </div>
       <div className={`flex max-w-[80%] flex-col ${isTeacher ? "items-end" : "items-start"}`}>
-        <p className="mb-1 text-xs font-medium text-slate-500">{name}</p>
+        <p className="mb-1 text-xs font-medium text-slate-500">
+          {name}
+          {isNewQuestion && (
+            <span className="ml-1.5 inline-flex items-center rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
+              追问
+            </span>
+          )}
+        </p>
         <div
           className={`whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
             isTeacher
               ? "bg-slate-900 text-white"
-              : "border border-slate-200 bg-white text-slate-800"
+              : isNewQuestion
+                ? "border border-violet-200 bg-violet-50 text-slate-800"
+                : "border border-slate-200 bg-white text-slate-800"
           } ${streaming ? "animate-pulse-soft" : ""}`}
         >
           {content}

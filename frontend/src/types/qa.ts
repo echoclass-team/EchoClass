@@ -51,6 +51,18 @@ export interface CreateQASessionData {
 
 export type DialogStatus = "pending" | "active" | "resolved" | "abandoned";
 
+/** 对话历史中的单条消息 DTO（对应后端 `schemas.dialog.DialogMessage`）。 */
+export interface DialogMessageDTO {
+  role: "teacher" | "student";
+  content: string;
+  timestamp: string;
+  self_resolved: boolean;
+  /** M3 连续答疑：此消息是学生主动追问（而非对老师的回应）。 */
+  is_new_question: boolean;
+  /** M3 连续答疑：此消息所属 question 的 id。 */
+  question_id?: string | null;
+}
+
 /** GET /api/qa-sessions/{id} 中的 dialogs[i] 元素 */
 export interface DialogStateSummary {
   id: string;
@@ -60,6 +72,8 @@ export interface DialogStateSummary {
   question_preview: string;
   turn_count: number;
   resolution_source?: ResolutionSource;
+  /** 完整对话历史（issue #102 / #110 新增）。 */
+  history: DialogMessageDTO[];
 }
 
 /** GET /api/qa-sessions/{id} 响应 data */

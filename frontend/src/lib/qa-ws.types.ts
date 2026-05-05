@@ -151,6 +151,16 @@ export interface WsReplyEnd extends _ServerBase {
   self_resolved: boolean;
 }
 
+/** M3 连续答疑：学生在同一 dialog 内主动抛出新问题（追问）。 */
+export interface WsStudentNewQuestion extends _ServerBase {
+  type: "student_new_question";
+  dialog_id: string;
+  /** 学生主动抛出的新问题，复用 StudentQuestion 结构。 */
+  question: StudentQuestion;
+  /** 可选：本新问题是在哪一轮回复之后产生的；前端可忽略。 */
+  after_reply_chunk_seq?: number | null;
+}
+
 export interface WsDialogResolved extends _ServerBase {
   type: "dialog_resolved";
   dialog_id: string;
@@ -180,6 +190,7 @@ export type ServerMessage =
   | WsDialogActive
   | WsReplyChunk
   | WsReplyEnd
+  | WsStudentNewQuestion
   | WsDialogResolved
   | WsDialogAbandoned
   | WsSummary
