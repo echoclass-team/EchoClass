@@ -1,0 +1,122 @@
+{
+  "id": "echoclass_rubric_v0",
+  "version": "v0",
+  "name_zh": "答疑陪练评估 Rubric v0",
+  "name_en": "EchoClass QA-Coaching Evaluation Rubric v0",
+  "summary": "评估师范生在 1v1 答疑陪练中的表现。5 个维度独立打 0-4 分（不汇总单一总分），每个维度提供基于教育学理论的行为锚点描述。每条评分必须由 EvaluatorAgent 同时输出 evidence（指向具体 dialog 与对话片段）。本 rubric 仅评操作者（师范生），不评虚拟学生像不像。",
+  "evidence_field_template": {
+    "dialog_id": null,
+    "chunk_seq": null,
+    "excerpt": ""
+  },
+  "dimensions": [
+    {
+      "id": "MR",
+      "name_zh": "迷思破除",
+      "name_en": "Misconception Resolution",
+      "summary": "师范生是否识别学生的错误前概念，并通过认知冲突 + 反例 + 类比的组合让学生真正放弃迷思。",
+      "core_question": "本节课该破的迷思被有效破除了吗？",
+      "theory_anchors": [
+        "posner_conceptual_change",
+        "chi_misconception_categories"
+      ],
+      "data_layers": ["L1", "L2", "L3"],
+      "levels": {
+        "0": "整节课从未识别学生的错误前提。学生表达迷思时，老师只判对错（'不对，再算一次'）或直接给正确答案，不指出学生原有想法错在哪里。课后 broken_misconception_ids 为空或低于候选迷思的 20%。",
+        "1": "偶尔识别到学生说错了，但表达模糊（'好像不太对哦'），未明说错误前提是什么。学生听完仍困惑或转用记忆而非理解。20-40% 候选迷思被破除。",
+        "2": "在部分 stuck_misconception 类对话中能精准说出错误前提（'你把力和速度混了'），但仅停留在指出，未给反例或类比让学生自己看到矛盾。40-60% 候选迷思被破除。",
+        "3": "多数 stuck_misconception 对话都精准识别错误前提，并提供反例或类比之一。学生能在反例下退一步说'哦原来不是这样'，但未必主动复述新概念。60-80% 候选迷思被破除。",
+        "4": "每次卡迷思都做齐'识别 + 反例 + 类比'三件套，并要求学生用新概念复述或解释一个变式题，确保学生跳出 Posner 模型的 pre-accommodation 状态。≥80% 候选迷思被破除，且学生在后续对话不再回退到旧概念。"
+      }
+    },
+    {
+      "id": "KC",
+      "name_zh": "重点覆盖",
+      "name_en": "Key-points Coverage",
+      "summary": "本节课的教学目标（lesson.key_points / difficult_points）通过对话被多大程度地覆盖到，以及是否对不同学段的认知水平做了适配。",
+      "core_question": "教学目标被讲到位了吗？语言是否适配学段？",
+      "theory_anchors": [
+        "vygotsky_zpd",
+        "piaget_cognitive_stages"
+      ],
+      "data_layers": ["L1", "L2", "L3"],
+      "levels": {
+        "0": "重点覆盖率 < 25%，难点完全未触及；或对话语言明显跨学段（小学讲'洛必达'、高中只用'差不多就行'），违反 Piaget 学段认知边界。",
+        "1": "覆盖部分边角重点（25-50%），核心难点仍漂浮。语言部分适配学段，但偶有越界术语未及时改述。",
+        "2": "重点覆盖 50-75%，至少 1 个难点被以学段适配的语言（小学用切蛋糕 / 高中用极限符号）讲到。学生听得懂但缺少多角度切入。",
+        "3": "重点覆盖 75-90%，难点覆盖 ≥ 50%。能在学生卡顿时把抽象概念退到具体例子（符合 Vygotsky 的 ZPD scaffolding 准则），多角度切入。",
+        "4": "≥ 90% 重点 + 100% 难点都被对话覆盖，且每个难点都有学段适配的脚手架（具体例子 → 半抽象表征 → 形式表达）。学生在对话中能用自己的话复述难点。"
+      }
+    },
+    {
+      "id": "RR",
+      "name_zh": "解决率",
+      "name_en": "Resolution Rate",
+      "summary": "学生提出的问题最终被有效解决的比例。重点关注 self_resolve / teacher_marked / abandoned 三类来源的健康分布——'真懂'还是'虚假懂了'。",
+      "core_question": "问题最终被有效解决的比例如何？是真懂还是虚假懂了？",
+      "theory_anchors": [
+        "bandura_self_efficacy",
+        "weiner_attribution"
+      ],
+      "data_layers": ["L1", "L2"],
+      "levels": {
+        "0": "总解决率 < 30% 或放弃率 ≥ 40%；或 self_resolve > 90%（学生过早 [懂了]，老师未确认就放过——典型的 Bandura 低自我效能或 Weiner 不当归因被放任的征象）；或 self_resolve < 20%（老师全靠 teacher_marked 强制结束）。",
+        "1": "总解决率 30-50% 或放弃率 30-40%；self_resolve 占比偏离健康甜区较多。",
+        "2": "总解决率 50-70%，放弃率 20-30%；self_resolve 比例 20-40% 或 70-90%（次健康区）。",
+        "3": "总解决率 70-85%，放弃率 10-20%；self_resolve 落入 40-70% 甜区，且至少 1 次老师主动用 teacher_marked 复核学生 [懂了] 是否真懂。",
+        "4": "总解决率 ≥ 85%，放弃率 < 10%；self_resolve 落入 40-70% 甜区。学生在 resolved 对话中表现出 Bandura 高自我效能信号（主动尝试新题）+ Weiner 适应性归因（'这次我用了切蛋糕的方法所以做对'，归因到策略而非天赋）。"
+      }
+    },
+    {
+      "id": "TQ",
+      "name_zh": "师范生提问质量",
+      "name_en": "Teacher Question Quality",
+      "summary": "师范生在对话中作为操作者表现的教学语言能力：追问深度、解释分级、维果茨基脚手架、错题诊断。",
+      "core_question": "师范生的提问与解释是否体现了'问回去而非答下去'的脚手架能力？",
+      "theory_anchors": [
+        "vygotsky_zpd"
+      ],
+      "data_layers": ["L3"],
+      "levels": {
+        "0": "听到学生说错只重复学生原话或直接给答案；对所有学生说同一段标准答案；从不要求学生复述或自举反例；只评对错不诊断根因。明显违反 Vygotsky 'scaffolding 应随能力调整' 原则。",
+        "1": "偶有追问但停留在表面（'真的吗'/'确定吗'），未追问到错误前提；解释分层意识弱；学生 [懂了] 即放过；偶有简单根因诊断。",
+        "2": "在 ≥ 1 个对话中能精准追问到错误前提；对部分 persona 调整解释深度（薄弱生用具体例子、优秀生跳步）；偶尔要求学生复述。",
+        "3": "多数对话表现良好的脚手架行为：能从学生回答中识别其 ZPD 上沿，分 2-3 步引导；解释明显分级；要求学生举例或复述；能说出错的根因类别（迷思 / 跳步 / 知识漏 / 计算粗心）。",
+        "4": "每次提问都体现'问回去'：先追问到错误前提再讲新概念；对 needs_high_scaffolding 学生分子问题、needs_low_scaffolding 学生跳步点拨；学生 [懂了] 之前必有一次复述或反例自举；每次错题都给出根因类别 + 改进路径。"
+      }
+    },
+    {
+      "id": "SS",
+      "name_zh": "学生满意度",
+      "name_en": "Student Satisfaction",
+      "summary": "从虚拟学生视角看：是否被讲懂、是否被尊重、情绪是否被接住、动机是否被激发。",
+      "core_question": "学生在对话结束时表现出真消化 + 平稳情绪 + 主动延伸的倾向了吗？",
+      "theory_anchors": [
+        "pekrun_academic_emotions",
+        "deci_ryan_sdt"
+      ],
+      "data_layers": ["L1", "L2", "L3"],
+      "levels": {
+        "0": "末轮情绪以 Pekrun frustrated / hopelessness 为主；学生从无主动追问；只'嗯''[懂了]' 走流程；老师用控制语气压制学生（'你听我说就行'），违反 Deci-Ryan 自主性需求。self_resolve 占比落入 < 20% 或 > 90% 异常区。",
+        "1": "末轮情绪 neutral 偏多但有少量 frustrated；主动追问 < 1 次/对话；接受度偶有复述但多数仅 [懂了]。",
+        "2": "末轮情绪 neutral 主导；主动追问 ≥ 1 次/对话；半数对话学生有简单复述。",
+        "3": "末轮情绪以 Pekrun calm/enjoyment 为主；主动追问 ≥ 1 次/对话且有 ≥ 1 次属于 challenge_example/extend_topic 类（说明胜任感与自主性被激发）；多数对话学生主动复述或举类似例子。",
+        "4": "每条 resolved 对话末轮均为 calm + 主动总结（'我之前以为是 X，原来是 Y'）；主动追问质量高（多次延伸或挑战例子边界）；老师全程使用 Deci-Ryan 自主性支持语言（'你想试试用切蛋糕还是切披萨？'）；学生消化完后 self_resolve 比例落入 40-70% 甜区。"
+      }
+    }
+  ],
+  "scoring": {
+    "aggregation": "per_dimension",
+    "note": "v0 不做加权汇总。每维独立呈现，避免在师范生培养场景下被滥用为 KPI。维度内若 EvaluatorAgent 同时输出多个子指标分数，UI 端取算术平均，保留 1 位小数。"
+  },
+  "references": [
+    "Posner, G. J., Strike, K. A., Hewson, P. W., & Gertzog, W. A. (1982). Accommodation of a scientific conception: Toward a theory of conceptual change. Science Education, 66(2), 211-227.",
+    "Chi, M. T. H. (2008). Three types of conceptual change: Belief revision, mental model transformation, and categorical shift.",
+    "Vygotsky, L. S. (1978). Mind in society. Harvard University Press.",
+    "Piaget, J. (1952). The Origins of Intelligence in Children. International Universities Press.",
+    "Bandura, A. (1977). Self-efficacy: Toward a unifying theory of behavioral change. Psychological Review, 84(2), 191-215.",
+    "Weiner, B. (1985). An attributional theory of achievement motivation and emotion. Psychological Review, 92(4), 548-573.",
+    "Pekrun, R. (2006). The control-value theory of achievement emotions. Educational Psychology Review, 18(4), 315-341.",
+    "Deci, E. L., & Ryan, R. M. (1985). Intrinsic motivation and self-determination in human behavior. Plenum."
+  ]
+}
