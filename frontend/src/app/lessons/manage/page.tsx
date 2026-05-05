@@ -116,7 +116,7 @@ export default function LessonManagePage() {
         </div>
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl bg-slate-950 px-4 py-3 text-sm text-white">
           <p>当前选中：{selectedLesson?.title ?? selectedLesson?.topic ?? selectedLesson?.lessonId ?? "未选择"}</p>
-          <Link href="/setup/config" className="text-sky-300 transition hover:text-sky-200">去配置页</Link>
+          <Link href={selectedLessonId ? `/setup/personas?lesson_id=${encodeURIComponent(selectedLessonId)}` : "/setup/personas"} className="text-sky-300 transition hover:text-sky-200">去模拟课堂</Link>
         </div>
       </section>
     </main>

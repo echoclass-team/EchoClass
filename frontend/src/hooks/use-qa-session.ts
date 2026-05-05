@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import { createQAWs, type QAWsClient, type QAWsStatus } from "@/lib/qa-ws";
+import { fetchQASessionState } from "@/lib/api/qa";
 import type {
   LessonMeta,
   ResolutionSource,
@@ -32,6 +33,7 @@ import type {
   WsError,
   WsStudentInfo,
 } from "@/lib/qa-ws.types";
+import type { DialogMessageDTO, DialogStateSummary } from "@/types/qa";
 
 // ============================================================ State 模型
 
@@ -41,6 +43,8 @@ export interface DialogTurn {
   content: string;
   /** 仅 student 回合：LLM 是否在末尾标了 [懂了]。 */
   selfResolved?: boolean;
+  /** M3 连续答疑：此消息是学生主动追问（而非对老师的回应）。 */
+  isNewQuestion?: boolean;
   /** 浏览器本地时间戳（ms）。 */
   timestamp: number;
 }
@@ -110,13 +114,19 @@ type Action =
       selfResolved: boolean;
     }
   | {
+      type: "STUDENT_NEW_QUESTION";
+      dialogId: string;
+      question: StudentQuestion;
+    }
+  | {
       type: "DIALOG_RESOLVED";
       dialogId: string;
       source: "teacher_marked" | "self_resolve";
     }
   | { type: "DIALOG_ABANDONED"; dialogId: string }
   | { type: "SUMMARY"; data: Record<string, unknown> }
-  | { type: "ERROR"; error: WsError };
+  | { type: "ERROR"; error: WsError }
+  | { type: "HYDRATE_DIALOGS"; dialogs: DialogStateSummary[] };
 
 function reducer(state: QASessionState, action: Action): QASessionState {
   switch (action.type) {
@@ -227,6 +237,57 @@ function reducer(state: QASessionState, action: Action): QASessionState {
         ...state,
         dialogs: { ...state.dialogs, [action.dialogId]: next },
       };
+    }
+
+    case "STUDENT_NEW_QUESTION": {
+      const dialog = state.dialogs[action.dialogId];
+      if (!dialog) return state;
+      const next: DialogState = {
+        ...dialog,
+        history: [
+          ...dialog.history,
+          {
+            role: "student",
+            content: action.question.content,
+            isNewQuestion: true,
+            timestamp: Date.now(),
+          },
+        ],
+        // 追问后老师可以继续回复，不是 streaming
+        isStreaming: false,
+        lastSelfResolved: false,
+      };
+      return {
+        ...state,
+        dialogs: { ...state.dialogs, [action.dialogId]: next },
+      };
+    }
+
+    case "HYDRATE_DIALOGS": {
+      // REST 拉取的完整 dialog state，用于页面刷新后恢复历史
+      const nextDialogs = { ...state.dialogs };
+      for (const dto of action.dialogs) {
+        const existing = nextDialogs[dto.id];
+        if (!existing) continue;
+        // 仅当本地 history 为空时才 seed（避免覆盖 WS 增量）
+        if (existing.history.length > 0) continue;
+        const hydratedHistory: DialogTurn[] = dto.history.map(
+          (m: DialogMessageDTO) => ({
+            role: m.role,
+            content: m.content,
+            selfResolved: m.self_resolved,
+            isNewQuestion: m.is_new_question,
+            timestamp: new Date(m.timestamp).getTime(),
+          }),
+        );
+        nextDialogs[dto.id] = {
+          ...existing,
+          status: dto.status,
+          history: hydratedHistory,
+          resolution_source: dto.resolution_source ?? undefined,
+        } as DialogState;
+      }
+      return { ...state, dialogs: nextDialogs };
     }
 
     case "DIALOG_RESOLVED": {
@@ -379,6 +440,14 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
         students: e.students,
         questions: e.questions,
       });
+      // REST rehydration：异步拉取完整 dialog history 用于页面刷新后恢复
+      fetchQASessionState(e.session_id)
+        .then((data) => {
+          dispatch({ type: "HYDRATE_DIALOGS", dialogs: data.dialogs });
+        })
+        .catch((err) => {
+          console.warn("[useQASession] REST rehydration failed, history may be empty:", err);
+        });
     });
     const offActive = client.on("dialog_active", (e) => {
       dispatch({ type: "DIALOG_ACTIVE", dialogId: e.dialog_id });
@@ -407,6 +476,13 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
     const offSummary = client.on("summary", (e) => {
       dispatch({ type: "SUMMARY", data: e.data });
     });
+    const offNewQuestion = client.on("student_new_question", (e) => {
+      dispatch({
+        type: "STUDENT_NEW_QUESTION",
+        dialogId: e.dialog_id,
+        question: e.question,
+      });
+    });
     const offError = client.on("error", (e) => {
       dispatch({ type: "ERROR", error: e });
     });
@@ -421,6 +497,7 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
       offActive();
       offChunk();
       offEnd();
+      offNewQuestion();
       offResolved();
       offAbandoned();
       offSummary();

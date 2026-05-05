@@ -152,10 +152,10 @@ export default function StageSetupPage() {
 
             <div className="mt-6 flex justify-end">
               <Link
-                href="/setup/config"
+                href="/setup/personas"
                 className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
               >
-                下一步：进入配置
+                下一步：选择学生
               </Link>
             </div>
           </section>
