@@ -148,6 +148,11 @@ class QASession:
             "QASession[%s] spawned %d student threads",
             self.id,
             len(all_questions),
+            extra={
+                "event": "session_spawn",
+                "session_id": self.id,
+                "student_count": len(all_questions),
+            },
         )
         return all_questions
 
@@ -162,6 +167,11 @@ class QASession:
                 self.id,
                 agent.persona.name,
                 exc,
+                extra={
+                    "event": "generate_questions_failed",
+                    "session_id": self.id,
+                    "student": agent.persona.name,
+                },
             )
             return []
 
@@ -293,6 +303,18 @@ class QASession:
             DialogMessage(role="teacher", content=text, timestamp=now)
         )
 
+        logger.info(
+            "QASession[%s] teacher_message on %s",
+            self.id,
+            dialog_id,
+            extra={
+                "event": "teacher_message",
+                "session_id": self.id,
+                "dialog_id": dialog_id,
+                "text_len": len(text),
+            },
+        )
+
         current_question = self._current_question(dialog)
         history_snapshot = dialog.messages[:-1]  # 不含本轮 teacher 消息
 
@@ -378,7 +400,16 @@ class QASession:
         if dialog_id in self._pending_order:
             self._pending_order.remove(dialog_id)
         logger.info(
-            "QASession[%s] resolved dialog %s via %s", self.id, dialog_id, source
+            "QASession[%s] resolved dialog %s via %s",
+            self.id,
+            dialog_id,
+            source,
+            extra={
+                "event": "dialog_resolved",
+                "session_id": self.id,
+                "dialog_id": dialog_id,
+                "source": source,
+            },
         )
         return dialog
 
