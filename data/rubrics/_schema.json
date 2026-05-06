@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://echoclass.dev/schemas/rubric.json",
+  "title": "EchoClass Evaluation Rubric",
+  "description": "答疑陪练评估 Rubric。M3 EvaluatorAgent 的硬依赖：JSON 直接喂入 prompt 作为评分规则。每个 rubric 文件描述一个版本（v0/v1/...），含 4-6 个评估维度，每个维度提供 0-4 级行为锚点描述与教育学理论引用。运行时由 EvaluatorAgent 输出对每个维度的 `score` + `evidence`（指向具体 dialog 与对话片段）。",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "name_zh",
+    "summary",
+    "evidence_field_template",
+    "dimensions"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Rubric 全局唯一 id（snake_case）。当前规范：echoclass_rubric_v0 / v1 / ..."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+(\\.[0-9]+)?$",
+      "description": "版本号，与 id 后缀对齐。新版本另开新文件，不就地覆盖。"
+    },
+    "name_zh": {
+      "type": "string",
+      "minLength": 4,
+      "description": "Rubric 中文名称，出现在反馈页与 LLM-Judge prompt 顶部。"
+    },
+    "name_en": {
+      "type": "string",
+      "description": "Rubric 英文名称（可选）"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 20,
+      "description": "1-3 句总览：本 rubric 在评什么、不评什么。"
+    },
+    "evidence_field_template": {
+      "type": "object",
+      "description": "占位结构。EvaluatorAgent 输出每个维度评分时必须按此结构填 `evidence` 字段，便于 UI / 审计回溯到具体对话片段。",
+      "required": ["dialog_id", "chunk_seq", "excerpt"],
+      "properties": {
+        "dialog_id": {
+          "type": ["string", "null"],
+          "description": "对应的 DialogSession.id；维度若无证据可填 null"
+        },
+        "chunk_seq": {
+          "type": ["integer", "null"],
+          "description": "对话内消息序号（0-indexed）；若证据是整段对话，可填 null"
+        },
+        "excerpt": {
+          "type": "string",
+          "description": "1-2 句对话原文片段，作为评分锚点"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 6,
+      "description": "评估维度数组，4-6 个。M3 v0 取 5 维（MR/KC/RR/TQ/SS）。",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name_zh",
+          "summary",
+          "theory_anchors",
+          "levels"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]{2,4}$",
+            "description": "维度短码（大写），将出现在 LLM-Judge 输出 JSON 的顶层 key。例：MR / KC / RR / TQ / SS。也是 kb_theory_anchor.target_id 中 target_type='rubric_dim' 时的引用键。"
+          },
+          "name_zh": {
+            "type": "string",
+            "minLength": 2,
+            "description": "维度中文名"
+          },
+          "name_en": {
+            "type": "string",
+            "description": "维度英文名"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 15,
+            "description": "1 句话回答'这个维度在评什么'"
+          },
+          "core_question": {
+            "type": "string",
+            "description": "维度核心评估问题（教研员可读版）"
+          },
+          "theory_anchors": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "description": "引用 data/edu_theories/<id>.json 中 applies_to.rubric=true 的理论卡片 id。给 LLM-Judge 提供操作化依据。"
+          },
+          "data_layers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["L1", "L2", "L3"]
+            },
+            "description": "本维度评分依赖的取数层级：L1=QASession.summary 直接读；L2=dialog.history 派生计算；L3=LLM-Judge。多层可叠加。"
+          },
+          "levels": {
+            "type": "object",
+            "description": "0-4 级行为锚点。key 必须严格为 '0'/'1'/'2'/'3'/'4' 字符串。",
+            "required": ["0", "1", "2", "3", "4"],
+            "additionalProperties": false,
+            "properties": {
+              "0": { "type": "string", "minLength": 10 },
+              "1": { "type": "string", "minLength": 10 },
+              "2": { "type": "string", "minLength": 10 },
+              "3": { "type": "string", "minLength": 10 },
+              "4": { "type": "string", "minLength": 10 }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "description": "可选：评分聚合策略说明（v0 不强制单一总分，每维独立呈现）",
+      "properties": {
+        "aggregation": {
+          "type": "string",
+          "enum": ["per_dimension", "weighted_sum"],
+          "default": "per_dimension"
+        },
+        "weights": {
+          "type": "object",
+          "description": "若 aggregation=weighted_sum，则每个维度 id → 权重。所有权重和需为 1.0。"
+        },
+        "note": {
+          "type": "string",
+          "description": "聚合策略的人类可读注解"
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "本 rubric 设计参考文献（APA / GB-T 7714），与各维度 theory_anchors 互补。"
+    }
+  },
+  "additionalProperties": false
+}
