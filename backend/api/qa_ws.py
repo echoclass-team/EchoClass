@@ -27,7 +27,9 @@ import asyncio
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+
+from api.auth_utils import decode_access_token
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from schemas.ws_events import (
@@ -390,6 +392,7 @@ async def _handle_abandon(
 async def qa_ws_endpoint(
     websocket: WebSocket,
     session_id: str,
+    token: str = Query(""),  # noqa: B008
     registry: QASessionRegistry = Depends(get_registry),  # noqa: B008
 ) -> None:
     """1v1 答疑陪练 WebSocket endpoint。
@@ -398,7 +401,19 @@ async def qa_ws_endpoint(
 
     依赖 ``get_registry`` 注入 ``QASessionRegistry``，测试可通过
     ``app.dependency_overrides[get_registry] = lambda: my_registry`` 替换。
+
+    鉴权（M3 §0.5.4）：query string ``?token=<jwt>``，失败以 close code 4401 关闭。
     """
+    # WS 鉴权
+    if not token:
+        await websocket.close(code=4401)
+        return
+    try:
+        decode_access_token(token)
+    except Exception:  # noqa: BLE001
+        await websocket.close(code=4401)
+        return
+
     await websocket.accept()
 
     session = await registry.get(session_id)

@@ -1,3 +1,4 @@
+import { getToken } from "@/lib/auth";
 import { getApiBase } from "@/lib/env";
 import type { ApiResponse } from "./types";
 
@@ -36,6 +37,12 @@ export async function apiFetch<T>(
 
   if (hasBody && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+
+  // M3 #B1: 自动注入 Bearer token
+  const token = getToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(url, {

@@ -22,12 +22,15 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.auth import router as auth_router
 from api.lessons import router as lessons_router
 from api.personas import router as personas_router
 from api.qa_sessions import router as qa_sessions_router
 from api.qa_ws import router as qa_ws_router
 from api.response import http_exception_handler
 from api.stages import router as stages_router
+from db.engine import engine
+from db.models import Base
 from utils.logging import configure_logging
 
 load_dotenv()
@@ -53,6 +56,10 @@ app.add_middleware(
 )
 
 
+# M3 #B1: 启动时自动建表（生产应用 Alembic migration）
+Base.metadata.create_all(bind=engine)
+
+app.include_router(auth_router)
 app.include_router(lessons_router)
 app.include_router(stages_router)
 app.include_router(personas_router)

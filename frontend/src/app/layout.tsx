@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SiteHeader } from "@/components/shared/site-header";
+import { AuthGate } from "@/components/auth-gate";
 
 export const metadata: Metadata = {
   title: "EchoClass",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="bg-slate-50 text-slate-900 antialiased">
-        <SiteHeader />
-        {children}
+        <AuthGate>
+          <SiteHeader />
+          {children}
+        </AuthGate>
       </body>
     </html>
   );

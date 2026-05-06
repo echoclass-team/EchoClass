@@ -29,6 +29,8 @@ from typing import Callable, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from api.deps import CurrentUser, get_current_user
+
 from agents.student import StudentAgent
 from api.lessons import get_lesson_record
 from api.response import ok_response
@@ -190,6 +192,7 @@ def _project_session_state(session: QASession) -> QASessionStateData:
 @router.post("", response_model=ApiResponse[CreateQASessionData])
 async def create_qa_session(
     body: CreateQASessionRequest,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
     registry: QASessionRegistry = Depends(get_registry),  # noqa: B008
     lesson_lookup: LessonLookup = Depends(get_lesson_lookup),  # noqa: B008
     agent_factory: AgentFactory = Depends(get_agent_factory),  # noqa: B008
@@ -272,6 +275,7 @@ async def create_qa_session(
 @router.get("/{session_id}", response_model=ApiResponse[QASessionStateData])
 async def get_qa_session(
     session_id: str,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
     registry: QASessionRegistry = Depends(get_registry),  # noqa: B008
 ) -> ApiResponse[QASessionStateData]:
     """查询 session 现状。WS 已断开 / 页面刷新场景使用。
@@ -287,6 +291,7 @@ async def get_qa_session(
 @router.post("/{session_id}/end", response_model=ApiResponse[QASessionEndData])
 async def end_qa_session(
     session_id: str,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
     registry: QASessionRegistry = Depends(get_registry),  # noqa: B008
 ) -> ApiResponse[QASessionEndData]:
     """显式结束 session，返回 ``QASession.summary()``。

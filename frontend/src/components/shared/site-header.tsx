@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogoutButton } from "./logout-button";
 
 const navItems = [
   { href: "/", label: "首页" },
@@ -20,6 +21,7 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <LogoutButton />
         </nav>
       </div>
     </header>
