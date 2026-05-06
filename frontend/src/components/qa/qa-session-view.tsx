@@ -281,90 +281,59 @@ function StudentSection({
   }).length;
   const allDone = dialogIds.length > 0 && unresolved === 0;
   const initial = student.name.charAt(0);
+  const isActive = dialogIds.some((id) => id === activeDialogId);
+  const firstDialog = dialogIds.length > 0 ? dialogs[dialogIds[0]] : null;
+  const preview = firstDialog?.question.content ?? "";
+
+  const handleClick = () => {
+    if (dialogIds.length > 0) onSelectDialog(dialogIds[0]);
+  };
 
   return (
     <li>
-      <div className="flex items-center gap-2 rounded-xl px-3 py-2">
+      <button
+        type="button"
+        onClick={handleClick}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+          isActive
+            ? "bg-slate-900 text-white"
+            : "text-slate-900 hover:bg-slate-100"
+        }`}
+      >
         <div
-          className={`flex size-8 items-center justify-center rounded-full text-sm font-semibold ${
-            allDone ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700"
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+            isActive
+              ? "bg-white/20 text-white"
+              : allDone
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-sky-100 text-sky-700"
           }`}
         >
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-900">{student.name}</p>
-          <p className="truncate text-xs text-slate-500">{student.subject_level}</p>
+          <p className={`truncate text-sm font-semibold ${isActive ? "text-white" : "text-slate-900"}`}>
+            {student.name}
+          </p>
+          {preview && (
+            <p className={`mt-0.5 truncate text-xs ${isActive ? "text-slate-300" : "text-slate-500"}`}>
+              {preview}
+            </p>
+          )}
         </div>
         {unresolved > 0 ? (
-          <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-semibold text-white">
+          <span className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-semibold ${
+            isActive ? "bg-rose-400 text-white" : "bg-rose-500 text-white"
+          }`}>
             {unresolved}
           </span>
         ) : allDone ? (
-          <span className="text-emerald-600" aria-label="全部已解答">
+          <span className={isActive ? "text-emerald-300" : "text-emerald-600"} aria-label="全部已解答">
             ✓
           </span>
         ) : null}
-      </div>
-
-      <ul className="ml-9 mr-1 space-y-0.5 border-l border-slate-100 pl-3">
-        {dialogIds.map((did) => {
-          const dialog = dialogs[did];
-          if (!dialog) return null;
-          return (
-            <li key={did}>
-              <button
-                type="button"
-                onClick={() => onSelectDialog(did)}
-                className={`group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition ${
-                  activeDialogId === did
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                <DialogStatusIcon status={dialog.status} active={activeDialogId === did} />
-                <span className="truncate">{dialog.question.content}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      </button>
     </li>
-  );
-}
-
-function DialogStatusIcon({
-  status,
-  active,
-}: {
-  status: DialogState["status"];
-  active: boolean;
-}) {
-  if (status === "resolved") {
-    return (
-      <span className={active ? "text-emerald-300" : "text-emerald-600"} aria-label="已解答">
-        ✓
-      </span>
-    );
-  }
-  if (status === "abandoned") {
-    return (
-      <span className={active ? "text-slate-400" : "text-slate-400"} aria-label="已放弃">
-        ✗
-      </span>
-    );
-  }
-  return (
-    <span
-      className={`size-1.5 shrink-0 rounded-full ${
-        status === "active"
-          ? active
-            ? "bg-white"
-            : "bg-sky-500"
-          : "bg-rose-400"
-      }`}
-      aria-hidden
-    />
   );
 }
 
