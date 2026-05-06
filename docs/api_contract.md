@@ -49,6 +49,45 @@ type Grade = "P1"|"P2"|"P3"|"P4"|"P5"|"P6"|"J1"|"J2"|"J3"|"H1"|"H2"|"H3";
 type Subject = "math" | "chinese" | "english" | "physics" | "chemistry" | "biology";
 ```
 
+### 0.5 鉴权（M3 起生效）
+
+> **状态**：v2 / M3 协议冻结 · 关联 Epic #121
+> **后端实现**：`backend/api/auth.py`（B 端） · 依赖注入：`get_current_user`
+> **影响范围**：`/api/lessons/*`、`/api/qa-sessions/*`、`/ws/qa-sessions/*` 全部需要鉴权
+
+#### 0.5.1 登录与 Token
+
+- **`POST /api/auth/register`**：body `{username, password}` → `ApiResponse<{user_id}>`
+- **`POST /api/auth/login`**：body `{username, password}` → `ApiResponse<{access_token, token_type:"Bearer"}>`
+- **Token 形式**：JWT（HS256），claims 至少含 `sub`(user_id) / `username` / `iat` / `exp`
+- **M3 最小化**：**只发 access token**，不发 refresh token；过期即重新登录。比赛后再扩展
+
+#### 0.5.2 REST 请求携带 Token
+
+- **Header**：`Authorization: Bearer <jwt>`
+- 所有受保护端点未携带或 token 无效 → HTTP `401`，错误码 `40101`
+- 已登录但无权限访问他人资源 → HTTP `403`，错误码 `40301`
+
+#### 0.5.3 `owner_id` 语义
+
+- **任何 REST body 都不接受 `owner_id` 字段**；后端从 JWT claim 取
+- 例如 `POST /api/qa-sessions` 的请求体**不变**，但 session 创建后自动绑定当前用户
+- `GET /api/qa-sessions` 默认只返回当前用户的 session
+
+#### 0.5.4 WebSocket 鉴权
+
+- WS 不支持自定义 header；token 走 query string：
+  `ws://host:port/ws/qa-sessions/{session_id}?token=<jwt>`
+- 握手阶段校验；失败以 close code `4401` 关闭，不发 `error` 帧
+- **安全提醒**：生产部署务必用 `wss://`，避免 token 明文泄露
+
+#### 0.5.5 错误码补充
+
+| code | 含义 | HTTP |
+|---|---|---|
+| `40101` | 未登录 / token 无效或过期 | 401 |
+| `40301` | 已登录但无权访问该资源 | 403 |
+
 ---
 
 ## 1. 教案 Lessons
@@ -364,6 +403,83 @@ interface QASessionEndResp {
 - **不主动关闭已建立的 WebSocket**；前端在收到 200 后应自行 `client.close()`
 - 二次调用同 session_id 必然 404，前端应据此判定"是否已经结束过"
 
+### 2.6 评估报告 Evaluation（M3 起生效）
+
+> **状态**：v2 / M3 协议冻结 · 关联 Epic #121 · 依赖 Rubric v0 #M3-0-Rubric
+> **后端产出**：EvaluatorAgent（#M3-A3）+ FeedbackAgent（#M3-A4）
+> **API 实现**：B 端 #M3-B3
+> **持久化**：`evaluations` + `feedbacks` 表（#M3-B2）
+
+session 结束后（`POST /api/qa-sessions/{id}/end` 或 WS `summary`），后端**异步**触发
+EvaluatorAgent + FeedbackAgent。前端通过 REST 轮询获取结果，**不走 WebSocket**（避免
+把异步任务复杂度塞进 WS）。
+
+#### 2.6.1 查询评估结果
+
+**`GET /api/qa-sessions/{session_id}/evaluation`**
+
+鉴权：Bearer JWT（§0.5.2）。仅 session owner 可访问，否则 `403 / 40301`。
+
+**响应状态机**：
+
+| HTTP | 场景 | `data` |
+|---|---|---|
+| 200 | 评估完成 | `{evaluation: EvaluationReport, feedback: TeacherFeedback}` |
+| 202 | 评估进行中（session 刚结束，Agent 还没跑完） | `{status: "pending"}` |
+| 404 | session 不存在 / session 未结束 / 评估生成失败且无降级结果 | — |
+| 401 | 未登录 | — |
+| 403 | 登录了但非 owner | — |
+
+**前端约定**：session 结束后以 **2 秒间隔轮询**；最长 **60 秒超时**，超时后展示"评估暂不可用"+ 重试按钮。
+
+#### 2.6.2 EvaluationReport
+
+```ts
+interface Evidence {
+  dialog_id: string;           // == student_id
+  chunk_seq?: number | null;   // 可选：证据出现在第几轮 reply
+  excerpt: string;             // 原文摘录，≤ 120 字
+}
+
+interface RubricScore {
+  dimension: string;           // e.g. "questioning_guidance" / "concept_accuracy"
+  score: number;               // 0–4 整数，与 Rubric v0 对齐
+  rationale: string;           // 打分理由（≤ 200 字）
+  evidence: Evidence[];        // 支撑片段，可空
+}
+
+interface EvaluationReport {
+  session_id: UUID;
+  rubric_version: string;      // e.g. "v0"；与 data/rubrics/{version}.json 对应
+  scores: RubricScore[];       // 每个维度一条
+  overall: number | "unavailable";  // 汇总分（0–4 浮点）；LLM 失败时降级为 "unavailable"
+  generated_at: ISO8601;
+}
+```
+
+#### 2.6.3 TeacherFeedback
+
+```ts
+interface TeacherFeedback {
+  strengths: string[];         // 做得好的地方，≥ 1 条
+  improvements: string[];      // 具体可改进点，≥ 1 条
+  next_steps: string[];        // 下一步练习建议，≥ 1 条
+  tone: "encouraging" | "neutral" | "critical";
+  generated_at: ISO8601;
+}
+```
+
+#### 2.6.4 不变式
+
+- **每个 session 最多一份 `EvaluationReport`**：DB 层 `evaluations.session_id UNIQUE`
+- **降级策略**：LLM 失败时 `overall="unavailable"`，`scores` 保留已成功的维度（允许空）；`TeacherFeedback` 可为占位文案但字段不为 null
+- **Rubric 演进**：`rubric_version` 与 `data/rubrics/{v}.json` 绑定；未来 v1 上线后不追溯重算已有 session
+- **前端反解析**：遇到未知 `dimension` 或 `tone` 应静默忽略不报错（向前兼容）
+
+#### 2.6.5 Pydantic 模型对照
+
+权威来源：`backend/schemas/evaluation.py`（#M3-A1） / `backend/schemas/feedback.py`（#M3-A2）
+
 ---
 
 ## 3. WebSocket `/ws/qa-sessions/{session_id}` — 1v1 答疑陪练
@@ -385,6 +501,7 @@ interface QASessionEndResp {
   - `1000` 正常关闭（含被新连接挤掉）
   - `4004` `session_id` 不存在
   - `4009` session 已结束（已发过 `summary` 后再连）
+  - `4401` 鉴权失败：`?token=` 缺失 / 无效 / 过期（M3 起生效，详见 §0.5.4）
 
 ### 3.2 通用约定
 
@@ -718,3 +835,4 @@ interface StageListItem {
 | v1 (#71) | 2026-04-25 | §3 替换为 1v1 答疑陪练 WebSocket 协议（`/ws/qa-sessions/{session_id}`），废弃多学生课堂模型；新增 `backend/schemas/ws_events.py` Pydantic 模型作为权威 schema | A-Agent |
 | v1 (#72) | 2026-04-28 | 新增 §2.5 — `/api/qa-sessions` 创建/查询/结束 REST 接口，对应 `backend/api/qa_sessions.py` 实现 | B-Full |
 | v2-schema (#111) | 2026-04-28 | M3 连续答疑模式 schema 演进：`DialogMessage` 新增 `is_new_question` / `question_id`；WS 新增 `student_new_question` 帧；`DialogStateSummary.id` 语义扩展为 `student_id`。严格向后兼容，M2 行为不变。编排实现在后续 PR 切换 | A-Agent |
+| v2-freeze (#121) | 2026-05-05 | **M3 协议冻结**：新增 §0.5 鉴权（Bearer JWT + WS `?token=` + close 4401 + 错误码 40101/40301）；新增 §2.6 评估报告（`GET /api/qa-sessions/{id}/evaluation` 三态机、`EvaluationReport`、`TeacherFeedback`）。`owner_id` 不进 REST body，从 JWT claim 取。schema 占位文件 `backend/schemas/evaluation.py` / `feedback.py`，真实实现见 #M3-A1 ~ #M3-B3 | A+B+C |
