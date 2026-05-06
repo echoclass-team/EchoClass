@@ -110,14 +110,26 @@ class LLMClient:
         if client is not None:
             self._client = client
         else:
-            if not self.api_key:
-                raise ValueError(
-                    "OPENAI_API_KEY is required (pass api_key= or set env OPENAI_API_KEY)"
-                )
+            # 允许无 key 构造：很多调用方（FastAPI 路由、测试 fixture）会先构造
+            # ``LLMClient()`` 再决定是否走 mock；构造期就抛会让 mock 也跑不起来
+            # （bug #144：CI 因此整组挂掉）。改为只在真的发请求时校验。
+            # 构造 ``AsyncOpenAI`` 时若 key 缺失填占位串，让 SDK 接受；任何真实
+            # 调用都会先经过 ``_require_api_key()`` 抛出明确错误，行为对生产无变化。
             self._client = AsyncOpenAI(
-                api_key=self.api_key,
+                api_key=self.api_key or "missing-api-key",
                 base_url=self.base_url,
                 timeout=timeout,
+            )
+
+    def _require_api_key(self) -> None:
+        """在真实发起请求前校验 API key；缺失则抛 ``ValueError``。
+
+        延迟到调用现场才检查，使 ``LLMClient()`` 构造在 CI / 测试 mock 场景下
+        总能成功；任何真实 ``chat()`` / ``stream()`` 路径仍会立刻 fail-fast。
+        """
+        if not self.api_key:
+            raise ValueError(
+                "OPENAI_API_KEY is required (pass api_key= or set env OPENAI_API_KEY)"
             )
 
     # ---------------------------------------------------------------- chat
@@ -128,6 +140,7 @@ class LLMClient:
         **kwargs: Any,
     ) -> ChatCompletion:
         """非流式 chat completion；含重试 + token 日志。"""
+        self._require_api_key()
         model = kwargs.pop("model", self.model)
         async for attempt in self._retrying():
             with attempt:
@@ -156,6 +169,7 @@ class LLMClient:
         连接阶段遇到可重试异常会重试；iteration 开始后若底层断开不重试
         （避免给上层吐重复内容）。
         """
+        self._require_api_key()
         model = kwargs.pop("model", self.model)
         # 让服务端在最后一个 chunk 里带 usage（OpenAI 兼容扩展）
         stream_options = kwargs.pop("stream_options", {"include_usage": True})

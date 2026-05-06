@@ -2,6 +2,7 @@
 
 全程 mock `AsyncOpenAI`，不发真实网络请求。
 """
+
 from __future__ import annotations
 
 import logging
@@ -92,7 +93,9 @@ def _make_mock_openai() -> MagicMock:
 
 def _timeout_error() -> APITimeoutError:
     # openai>=1.x 的 APITimeoutError 要求一个 request 参数
-    return APITimeoutError(request=httpx.Request("POST", "https://x/v1/chat/completions"))
+    return APITimeoutError(
+        request=httpx.Request("POST", "https://x/v1/chat/completions")
+    )
 
 
 # --------------------------------------------------------------------- chat
@@ -239,10 +242,28 @@ async def test_stream_retries_connection_then_succeeds():
 # --------------------------------------------------------------- constructor
 
 
-def test_constructor_requires_api_key(monkeypatch):
+def test_constructor_allows_missing_api_key(monkeypatch):
+    """构造期不再校验 key（#144）：允许 mock 测试 / DI 容器先实例化。"""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    c = LLMClient()  # 不应抛
+    assert c.api_key is None
+
+
+async def test_chat_requires_api_key_at_call_time(monkeypatch):
+    """真实请求路径仍然 fail-fast：``chat()`` 缺 key 立即抛 ValueError。"""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    c = LLMClient()
     with pytest.raises(ValueError, match="OPENAI_API_KEY"):
-        LLMClient()
+        await c.chat([{"role": "user", "content": "x"}])
+
+
+async def test_stream_requires_api_key_at_call_time(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    c = LLMClient()
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        # stream 是 async generator，需要 anext 才会执行 body
+        gen = c.stream([{"role": "user", "content": "x"}])
+        await gen.__anext__()
 
 
 def test_constructor_reads_env(monkeypatch):
