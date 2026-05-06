@@ -10,8 +10,9 @@ import logging
 import re
 import uuid
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
+from api.deps import CurrentUser, get_current_user
 from api.response import ok_response
 from llm.client import LLMClient
 from rag.extractor import extract_lesson_meta
@@ -140,7 +141,10 @@ def _to_persona_summary(persona) -> PersonaSummary:
 
 
 @router.post("/upload", response_model=ApiResponse[LessonUploadData])
-async def upload_lesson(file: UploadFile = File(...)) -> ApiResponse[LessonUploadData]:
+async def upload_lesson(
+    file: UploadFile = File(...),
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+) -> ApiResponse[LessonUploadData]:
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
@@ -193,7 +197,10 @@ async def upload_lesson(file: UploadFile = File(...)) -> ApiResponse[LessonUploa
 
 
 @router.get("/{lesson_id}", response_model=ApiResponse[LessonRecord])
-async def get_lesson(lesson_id: str) -> ApiResponse[LessonRecord]:
+async def get_lesson(
+    lesson_id: str,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+) -> ApiResponse[LessonRecord]:
     record = _store.get(lesson_id)
     if not record:
         raise HTTPException(status_code=404, detail="Lesson not found")
@@ -207,6 +214,7 @@ async def get_lesson(lesson_id: str) -> ApiResponse[LessonRecord]:
 async def recommend_personas_for_lesson(
     lesson_id: str,
     count: int = Query(4, ge=1, le=8, description="推荐学生数量，1-8"),
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
 ) -> ApiResponse[RecommendedPersonasData]:
     record = _store.get(lesson_id)
     if not record:

@@ -24,6 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
+import { getToken } from "@/lib/auth";
 import { createQAWs, type QAWsClient, type QAWsStatus } from "@/lib/qa-ws";
 import { fetchQASessionState } from "@/lib/api/qa";
 import type {
@@ -407,7 +408,9 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
   const url = useMemo(() => {
     if (!sessionId) return null;
     const base = (wsBase ?? deriveDefaultWsBase()).replace(/\/+$/, "");
-    return `${base}/ws/qa-sessions/${encodeURIComponent(sessionId)}`;
+    const token = getToken();
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    return `${base}/ws/qa-sessions/${encodeURIComponent(sessionId)}${qs}`;
   }, [sessionId, wsBase]);
 
   useEffect(() => {
