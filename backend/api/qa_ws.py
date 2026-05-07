@@ -30,6 +30,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 
 from api.auth_utils import decode_access_token
+from db.crud import get_next_seq, save_dialog_message
+from db.engine import SessionLocal
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from schemas.ws_events import (
@@ -263,6 +265,23 @@ async def _handle_message(
         return
 
     chunk_seq = chunk_seq_state.get(event.dialog_id, 0)
+
+    # 落盘教师消息
+    try:
+        db = SessionLocal()
+        msg_seq = get_next_seq(db, session.id)
+        save_dialog_message(
+            db,
+            session_id=session.id,
+            dialog_id=event.dialog_id,
+            seq=msg_seq,
+            role="teacher",
+            content=event.text,
+        )
+        db.close()
+    except Exception:  # noqa: BLE001
+        logger.warning("persist teacher msg failed", exc_info=True)
+
     try:
         async for stream_evt in session.stream_teacher_message(
             event.dialog_id, event.text
@@ -291,6 +310,22 @@ async def _handle_message(
                         self_resolved=stream_evt.result.self_resolved,
                     ),
                 )
+                # 落盘学生回复
+                try:
+                    db = SessionLocal()
+                    s_seq = get_next_seq(db, session.id)
+                    save_dialog_message(
+                        db,
+                        session_id=session.id,
+                        dialog_id=event.dialog_id,
+                        seq=s_seq,
+                        role="student",
+                        content=stream_evt.result.content,
+                        self_resolved=stream_evt.result.self_resolved,
+                    )
+                    db.close()
+                except Exception:  # noqa: BLE001
+                    logger.warning("persist student reply failed", exc_info=True)
             elif stream_evt.type == "followup":
                 if stream_evt.new_question is None:
                     continue
@@ -302,6 +337,23 @@ async def _handle_message(
                         question=stream_evt.new_question,
                     ),
                 )
+                # 落盘学生追问
+                try:
+                    db = SessionLocal()
+                    f_seq = get_next_seq(db, session.id)
+                    save_dialog_message(
+                        db,
+                        session_id=session.id,
+                        dialog_id=event.dialog_id,
+                        seq=f_seq,
+                        role="student",
+                        content=stream_evt.new_question.content,
+                        is_new_question=True,
+                        question_id=stream_evt.new_question.id,
+                    )
+                    db.close()
+                except Exception:  # noqa: BLE001
+                    logger.warning("persist followup msg failed", exc_info=True)
             else:
                 continue
     except QASessionError as exc:

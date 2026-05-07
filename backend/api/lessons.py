@@ -6,6 +6,8 @@ GET  /api/lessons/{lesson_id} — 获取教案元数据。
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import re
 import uuid
@@ -14,6 +16,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from api.deps import CurrentUser, get_current_user
 from api.response import ok_response
+from db.crud import get_lesson_by_id, save_lesson
 from llm.client import LLMClient
 from rag.extractor import extract_lesson_meta
 from rag.indexer import index_lesson
@@ -38,9 +41,29 @@ _store: dict[str, LessonRecord] = {}
 def get_lesson_record(lesson_id: str) -> LessonRecord | None:
     """供其他 API 路由（如 ``api/qa_sessions.py``）查询教案。
 
-    M2 阶段 lesson 仍是进程内字典；M3 切持久化时改这里即可，调用方无感知。
+    优先内存缓存，miss 时查 DB 并回填缓存。
     """
-    return _store.get(lesson_id)
+    if lesson_id in _store:
+        return _store[lesson_id]
+    # DB fallback
+    from db.engine import SessionLocal
+    db = SessionLocal()
+    try:
+        row = get_lesson_by_id(db, lesson_id)
+        if row is None:
+            return None
+        meta = LessonMeta(**json.loads(row.meta_json))
+        record = LessonRecord(
+            lesson_id=row.id,
+            filename=row.filename,
+            meta=meta,
+            text_length=row.text_length,
+            chunk_count=row.chunk_count,
+        )
+        _store[lesson_id] = record
+        return record
+    finally:
+        db.close()
 
 
 _CHINESE_GRADE_TO_NUMBER = {
@@ -174,6 +197,25 @@ async def upload_lesson(
         chunk_count=chunk_count,
     )
     _store[lesson_id] = record
+
+    # DB 持久化
+    content_hash = hashlib.sha256(content).hexdigest()[:16]
+    from db.engine import SessionLocal
+    db = SessionLocal()
+    try:
+        save_lesson(
+            db,
+            lesson_id=lesson_id,
+            owner_id=_user.id,
+            content_hash=content_hash,
+            filename=file.filename,
+            title=meta.topic,
+            meta_json=meta.model_dump_json(),
+            text_length=len(text),
+            chunk_count=chunk_count,
+        )
+    finally:
+        db.close()
 
     logger.info(
         "Uploaded lesson %s (%s): %d chars, %d chunks",

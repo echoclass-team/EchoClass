@@ -24,19 +24,29 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Callable, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from api.deps import CurrentUser, get_current_user
 
 from agents.student import StudentAgent
 from api.lessons import get_lesson_record
 from api.response import ok_response
+from db.crud import (
+    close_qa_session,
+    get_dialog_messages,
+    get_qa_session_record,
+    list_qa_sessions_by_owner,
+    save_qa_session,
+)
+from db.engine import SessionLocal
 from llm.client import LLMClient
 from schemas.api import ApiResponse
-from schemas.lesson import LessonRecord
+from schemas.lesson import LessonMeta, LessonRecord
 from schemas.qa_session_api import (
     CreateQASessionData,
     CreateQASessionRequest,
@@ -251,6 +261,19 @@ async def create_qa_session(
         # session_id 撞车（理论上几乎不可能：QASession 默认 uuid4）；500 即可
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    # DB 持久化
+    db = SessionLocal()
+    try:
+        save_qa_session(
+            db,
+            session_id=session.id,
+            lesson_id=body.lesson_id,
+            owner_id=_user.id,
+            persona_ids=body.persona_ids,
+        )
+    finally:
+        db.close()
+
     students = [_build_student_info(p) for p in personas]
 
     logger.info(
@@ -280,12 +303,71 @@ async def get_qa_session(
 ) -> ApiResponse[QASessionStateData]:
     """查询 session 现状。WS 已断开 / 页面刷新场景使用。
 
-    注：M2 进程内 registry，session 进程重启即丢；M3 持久化后会从 SQLite 兜底。
+    优先内存 registry；miss 时从 DB 重建只读视图。
     """
     session = await registry.get(session_id)
-    if session is None:
-        raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
-    return ok_response(_project_session_state(session))
+    if session is not None:
+        return ok_response(_project_session_state(session))
+
+    # DB fallback: 构建只读状态视图
+    db = SessionLocal()
+    try:
+        record = get_qa_session_record(db, session_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
+
+        from schemas.dialog import DialogMessage as DMsg
+
+        messages = get_dialog_messages(db, session_id)
+        # 按 dialog_id 分组
+        dialog_map: dict[str, list[DMsg]] = {}
+        for m in messages:
+            dialog_map.setdefault(m.dialog_id, []).append(
+                DMsg(
+                    role=m.role,
+                    content=m.content,
+                    timestamp=m.timestamp,
+                    self_resolved=m.self_resolved,
+                    is_new_question=m.is_new_question,
+                    question_id=m.question_id,
+                )
+            )
+
+        lesson_record = get_lesson_record(record.lesson_id)
+        lesson_meta = lesson_record.meta if lesson_record else LessonMeta(
+            subject="", grade="", topic="unknown"
+        )
+
+        dialogs: list[DialogStateSummary] = []
+        for dialog_id, msgs in dialog_map.items():
+            preview = msgs[0].content[:80] if msgs else ""
+            dialogs.append(
+                DialogStateSummary(
+                    id=dialog_id,
+                    student_id=dialog_id,
+                    student_name=dialog_id,
+                    status="closed",
+                    question_preview=preview,
+                    turn_count=(len(msgs) + 1) // 2,
+                    resolution_source=None,
+                    history=msgs,
+                )
+            )
+
+        return ok_response(
+            QASessionStateData(
+                session_id=session_id,
+                lesson=lesson_meta,
+                students=[],
+                dialogs=dialogs,
+                pending=0,
+                active=0,
+                resolved=len(dialogs),
+                abandoned=0,
+            )
+        )
+    finally:
+        db.close()
 
 
 @router.post("/{session_id}/end", response_model=ApiResponse[QASessionEndData])
@@ -307,4 +389,51 @@ async def end_qa_session(
         raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
     summary = session.summary()
     logger.info("end_qa_session: %s summary=%s", session_id, summary)
+
+    # DB: 标记关闭
+    db = SessionLocal()
+    try:
+        close_qa_session(db, session_id)
+    finally:
+        db.close()
+
     return ok_response(QASessionEndData(session_id=session_id, summary=summary))
+
+
+# ============================================================ 历史列表
+
+
+class QASessionListItem(BaseModel):
+    """GET /api/qa-sessions 历史列表单项。"""
+
+    session_id: str
+    lesson_id: str
+    status: str
+    persona_ids: list[str] = Field(default_factory=list)
+    created_at: str
+    closed_at: Optional[str] = None
+
+
+@router.get("", response_model=ApiResponse[list[QASessionListItem]])
+async def list_qa_sessions(
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+) -> ApiResponse[list[QASessionListItem]]:
+    """GET /api/qa-sessions —— 返回当前用户的历史会话列表。"""
+    db = SessionLocal()
+    try:
+        rows = list_qa_sessions_by_owner(db, _user.id)
+    finally:
+        db.close()
+
+    items = [
+        QASessionListItem(
+            session_id=r.id,
+            lesson_id=r.lesson_id,
+            status=r.status,
+            persona_ids=json.loads(r.persona_ids_json) if r.persona_ids_json else [],
+            created_at=r.created_at.isoformat() if r.created_at else "",
+            closed_at=r.closed_at.isoformat() if r.closed_at else None,
+        )
+        for r in rows
+    ]
+    return ok_response(items)

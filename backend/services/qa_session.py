@@ -128,7 +128,11 @@ class QASession:
         all_questions: list[StudentQuestion] = []
         for agent, qs in zip(agents, results):
             if not qs:
-                # generate 完全失败跳过该学生（已在 _generate_safe 里 log 过）
+                logger.warning(
+                    "QASession[%s] student %s skipped: generate_questions returned empty",
+                    self.id,
+                    agent.persona.name,
+                )
                 continue
             student_id = qs[0].speaker_id
             first_question = qs[0].model_copy(update={"id": student_id})
