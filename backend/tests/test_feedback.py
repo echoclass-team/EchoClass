@@ -172,6 +172,27 @@ async def test_real_generate_defaults_invalid_tone_to_neutral() -> None:
     assert fb.tone == "neutral"
 
 
+async def test_real_generate_short_circuits_on_unavailable_evaluation() -> None:
+    """评估已降级（overall=unavailable）时，不应再调 LLM，直接 fallback。"""
+    fake_llm = MagicMock()
+    fake_llm.chat = AsyncMock()  # 不应被调用
+    agent = FeedbackAgent(llm=fake_llm)
+    unavailable_eval = EvaluationReport(
+        session_id="sess-test",
+        rubric_version="v0",
+        scores=[],
+        overall="unavailable",
+        generated_at=datetime.now().astimezone(),
+    )
+
+    fb = await agent.generate(_fake_session(), unavailable_eval)
+
+    fake_llm.chat.assert_not_awaited()
+    assert fb.tone == "neutral"
+    all_lines = fb.strengths + fb.improvements + fb.next_steps
+    assert all("[fallback]" in line for line in all_lines)
+
+
 async def test_real_generate_falls_back_when_llm_fails() -> None:
     fake_llm = MagicMock()
     fake_llm.chat = AsyncMock(side_effect=RuntimeError("boom"))

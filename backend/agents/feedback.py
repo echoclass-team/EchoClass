@@ -140,7 +140,17 @@ class FeedbackAgent:
         session: QASession,
         evaluation: EvaluationReport | None,
     ) -> TeacherFeedback:
-        """真实 LLM 反馈：渲染 prompt → 调 LLM → 解析 JSON → 失败降级。"""
+        """真实 LLM 反馈：渲染 prompt → 调 LLM → 解析 JSON → 失败降级。
+
+        短路：若 ``evaluation.overall == "unavailable"``（评估本身已降级），
+        则跳过 LLM 直接返回占位反馈，避免在已知证据不足时继续烧 token。
+        """
+        if evaluation is not None and evaluation.overall == "unavailable":
+            logger.info(
+                "FeedbackAgent skipped LLM for %s: evaluation overall=unavailable",
+                session.id,
+            )
+            return self._fallback_feedback()
         template = _jinja_env.get_template("feedback.j2")
         prompt = template.render(
             lesson=session.lesson_meta,
