@@ -18,12 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 
-import { uploadLesson } from "@/lib/api/setup";
-import {
-  getLessonLibrary,
-  selectLessonInLibrary,
-  upsertLessonLibraryItem,
-} from "@/lib/setup-storage";
+import { fetchLessons, type LessonListItem, uploadLesson } from "@/lib/api/setup";
 import type { LessonLibraryItem, LessonLibraryState } from "@/types/setup";
 
 const ACCEPTED = ".pdf,.md,.markdown,.txt";
@@ -43,9 +38,33 @@ export default function SetupStep1Page() {
   const [uploadState, setUploadState] = useState<UploadState>({ kind: "idle" });
   const [dragOver, setDragOver] = useState(false);
 
-  // hydrate library from localStorage（StrictMode 双挂载安全：纯读）
+  // 从数据库加载当前用户教案（取代 localStorage）
   useEffect(() => {
-    setLibrary(getLessonLibrary());
+    let active = true;
+    void (async () => {
+      try {
+        const rows = await fetchLessons();
+        if (!active) return;
+        const items: LessonLibraryItem[] = rows.map((r: LessonListItem) => ({
+          lessonId: r.lesson_id,
+          title: r.title || r.topic,
+          subtitle: `${r.subject} · ${r.grade}`,
+          subject: r.subject,
+          grade: r.grade,
+          topic: r.topic,
+          source: "local" as const,
+          status: "ready" as const,
+          createdAt: r.created_at,
+          objectives: r.objectives,
+          key_points: r.key_points,
+          difficult_points: r.difficult_points,
+        }));
+        setLibrary((prev) => ({ items, selectedLessonId: prev.selectedLessonId }));
+      } catch {
+        // 未登录 / 网络失败时静默
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
   const selectedLesson = useMemo<LessonLibraryItem | null>(() => {
@@ -77,9 +96,10 @@ export default function SetupStep1Page() {
         key_points: data.key_points,
         difficult_points: data.difficult_points,
       };
-      const next = upsertLessonLibraryItem(item);
-      const withSelection = selectLessonInLibrary(item.lessonId);
-      setLibrary({ ...next, selectedLessonId: withSelection.selectedLessonId });
+      setLibrary((prev) => ({
+        items: [item, ...prev.items.filter((i) => i.lessonId !== item.lessonId)],
+        selectedLessonId: item.lessonId,
+      }));
       setUploadState({ kind: "idle" });
     } catch (err) {
       setUploadState({
@@ -90,8 +110,7 @@ export default function SetupStep1Page() {
   };
 
   const handleSelectExisting = (lessonId: string) => {
-    const next = selectLessonInLibrary(lessonId);
-    setLibrary(next);
+    setLibrary((prev) => ({ ...prev, selectedLessonId: lessonId }));
   };
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -233,7 +252,7 @@ export default function SetupStep1Page() {
               历史教案
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              最近上传的教案缓存在浏览器本地，可直接复用 lesson_id 跳过重新解析。
+              已上传的教案可直接复用，无需重新解析。
             </p>
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {library.items.map((item) => {
