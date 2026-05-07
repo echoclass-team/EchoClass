@@ -38,7 +38,6 @@ def test_persona_required_fields(personas: list[Persona]) -> None:
     """每个人设必须有核心字段。"""
     for p in personas:
         assert p.name
-        assert p.personality
         assert p.effective_level in {"优秀", "中等", "薄弱"}
         assert isinstance(p.behavior_traits, (str, list))
         assert p.behavior_traits_text  # 非空
@@ -53,17 +52,15 @@ def test_persona_rich_fields(personas: list[Persona]) -> None:
         assert 6 <= p.age <= 18
         assert p.stage_id in VALID_STAGE_IDS
         assert p.speech_style
-        assert len(p.catchphrases) >= 3
         assert len(p.misconception_tendencies) >= 1
         assert p.attention_span in {"short", "medium", "long"}
         assert p.summary
 
 
 def test_backward_compatible_simple_persona() -> None:
-    """简易模式（4 字段）仍然可用。"""
+    """简易模式（3 字段）仍然可用。"""
     p = Persona(
         name="测试",
-        personality="活泼",
         knowledge_level="中等水平",
         behavior_traits="积极举手",
     )
@@ -76,7 +73,6 @@ def test_subject_level_takes_precedence() -> None:
     """subject_level 优先于 knowledge_level。"""
     p = Persona(
         name="测试",
-        personality="活泼",
         knowledge_level="旧值",
         behavior_traits="积极",
         subject_level="优秀",

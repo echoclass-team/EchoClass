@@ -26,7 +26,6 @@ def _persona() -> Persona:
         id="p1",
         name="小明",
         stage_id="p_middle",
-        personality="活泼好动",
         knowledge_level="中等水平",
         behavior_traits="偶尔走神，但会积极回答",
     )

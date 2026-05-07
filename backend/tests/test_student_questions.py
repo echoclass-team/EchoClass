@@ -31,7 +31,6 @@ def _persona() -> Persona:
         id="p_middle_weak_test",
         name="小红",
         stage_id="p_middle",
-        personality="内向害羞",
         knowledge_level="基础薄弱",
         behavior_traits="沉默寡言",
     )
