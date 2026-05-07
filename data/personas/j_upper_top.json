@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "J3 形式运算成熟"
     }
+  ],
+  "misconception_ids": [
+    "math_inequality_multiply_25",
+    "math_equation_extraneous_16",
+    "physics_work_energy_14"
   ]
 }

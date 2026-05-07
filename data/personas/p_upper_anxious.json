@@ -44,5 +44,10 @@
       "trait": "maladaptive_ability_attribution",
       "notes": "把失败归于'我不行'而非'我没准备好'，是放大焦虑与低效能的关键归因陷阱；老师应在反馈中明确切开'这次错' vs '能力'"
     }
+  ],
+  "misconception_ids": [
+    "math_decimal_align_07",
+    "math_number_zero_divide_06_alt_primary",
+    "eng_grammar_beverb_02"
   ]
 }

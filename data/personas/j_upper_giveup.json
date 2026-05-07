@@ -44,5 +44,10 @@
       "trait": "boredom",
       "notes": "课上趴桌子+对学习冷淡而对游戏活跃，是低控制低价值组合下的无聊表现；老师可借兴趣兜底切入但不能只停留在兴趣层"
     }
+  ],
+  "misconception_ids": [
+    "physics_kinematics_displacement_11",
+    "eng_tense_present_perfect_11",
+    "chem_mass_conservation_03"
   ]
 }

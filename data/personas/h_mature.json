@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "H2 完全进入形式运算，假设演绎推理成熟"
     }
+  ],
+  "misconception_ids": [
+    "math_limit_reach_19",
+    "physics_relativity_time_23",
+    "chi_writing_structure_21"
   ]
 }

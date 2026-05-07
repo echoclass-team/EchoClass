@@ -42,5 +42,9 @@
       "trait": "concrete_operational",
       "notes": "P2（8 岁）处具体运算早期，可逆思维形成中；抽象符号需绑定具体情境"
     }
+  ],
+  "misconception_ids": [
+    "math_algebra_equals_05",
+    "chi_stroke_order_03"
   ]
 }

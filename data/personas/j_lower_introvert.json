@@ -38,5 +38,10 @@
       "trait": "concrete_operational",
       "notes": "J2 八年级正处于具体运算 → 形式运算过渡期，已能跳步证明但仍需老师确认抽象推理的边界条件"
     }
+  ],
+  "misconception_ids": [
+    "math_geometry_altitude_08_alt_junior",
+    "math_arithmetic_multiply_larger_09_alt_junior",
+    "chi_rhetoric_metaphor_08_alt_junior"
   ]
 }

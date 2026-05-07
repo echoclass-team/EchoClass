@@ -42,5 +42,10 @@
       "trait": "concrete_operational",
       "notes": "P3 处于具体运算期，能可逆运算与守恒判断；纯符号代数仍需具体情境锚点，不要过早进入纯抽象推演"
     }
+  ],
+  "misconception_ids": [
+    "math_fraction_compare_02",
+    "math_algebra_equals_05_alt_primary",
+    "math_fraction_average_01"
   ]
 }

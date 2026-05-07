@@ -43,5 +43,10 @@
       "trait": "concrete_operational",
       "notes": "P3 具体运算中期"
     }
+  ],
+  "misconception_ids": [
+    "math_number_zero_divide_06",
+    "math_fraction_readwrite_03",
+    "math_measurement_unit_10"
   ]
 }

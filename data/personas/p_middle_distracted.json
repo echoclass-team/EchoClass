@@ -43,5 +43,10 @@
       "trait": "concrete_operational",
       "notes": "P4（10 岁）具体运算成熟期，可逆与守恒概念稳固"
     }
+  ],
+  "misconception_ids": [
+    "math_fraction_compare_02",
+    "math_geometry_area_perimeter_04",
+    "math_measurement_unit_10"
   ]
 }

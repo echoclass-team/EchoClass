@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "H3 已具备形式运算与元认知能力，能反思自己思维过程；老师可以用 ε-δ 级严谨论证或苏格拉底式追问推动他，而非堆砌具体例子"
     }
+  ],
+  "misconception_ids": [
+    "physics_kinematics_acceleration_05_alt_high",
+    "chem_salt_neutral_19_alt_high",
+    "chi_classical_grammar_03_alt_high"
   ]
 }

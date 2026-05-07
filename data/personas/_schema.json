@@ -3,7 +3,7 @@
   "$id": "https://echoclass.dev/schemas/persona.json",
   "title": "EchoClass Student Persona",
   "description": "虚拟学生人设定义。基于皮亚杰认知发展阶段理论设计，用于驱动 1v1 答疑陪练中 StudentAgent 的角色扮演行为。",
-  "$comment": "v1.3 (2026-05-07)：再移除 3 个字段——personality / catchphrases / family_background。性格 / 口吻 / 家庭背景的人设质感由 speech_style + behavior_traits + theory_anchors + summary 联合承载，prompt 不再单独引用这三个字段，避免与 theory_anchors 行为约束冲突。v1.2 (2026-04-27)：新增 theory_anchors 可选字段。v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation）。",
+  "$comment": "v1.4 (2026-05-08)：新增 misconception_ids 可选字段——结构化引用 data/misconceptions/*.json 中的迷思 id，使 persona 的迷思倾向与 M1 迷思库结构化对齐。原 misconception_tendencies 保留为自由文本副本，prompt 消费方可选地使用新 id 字段拉取 typical_error / cause 以增强迷思颗粒度。v1.3 (2026-05-07)：移除 3 个字段——personality / catchphrases / family_background。人设质感由 speech_style + behavior_traits + theory_anchors + summary 联合承载。v1.2 (2026-04-27)：新增 theory_anchors 可选字段。v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation）。",
   "type": "object",
   "required": [
     "id",
@@ -124,6 +124,16 @@
       "minLength": 10,
       "maxLength": 100,
       "description": "一句话人设概括，用于 API 列表展示"
+    },
+    "misconception_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "description": "迷思条目 id（snake_case），需与 data/misconceptions/*.json 中某条迷思的 id 完全匹配"
+      },
+      "uniqueItems": true,
+      "description": "结构化迷思引用（v1.4 引入）。与 misconception_tendencies 并列，后者保留为人类可读副本。prompt 模板可通过此字段拉出迷思的 typical_error / cause。建议每人 1-3 条，选项需与 persona 的 stage_id / subject_level / 行为偏好匹配。"
     },
     "theory_anchors": {
       "type": "array",

@@ -37,5 +37,9 @@
       "trait": "preoperational",
       "notes": "P1 一年级处于前运算晚期，需要具体物件（手指/小棒）支撑数感，符号性表达尚不成熟"
     }
+  ],
+  "misconception_ids": [
+    "math_algebra_equals_05",
+    "chi_pinyin_initial_final_01"
   ]
 }

@@ -46,5 +46,10 @@
       "trait": "concrete_operational",
       "notes": "J2 但学业薄弱，认知发展实际滞后于年龄，仍依赖具体类比；老师抽象解释需先引入生活化锚点"
     }
+  ],
+  "misconception_ids": [
+    "math_algebra_variable_11",
+    "chi_writing_style_13_alt_junior",
+    "eng_vocabulary_chinglish_03_alt_junior"
   ]
 }

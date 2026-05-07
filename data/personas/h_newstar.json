@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "H1 形式运算已成熟，能处理命题逻辑与多变量推理"
     }
+  ],
+  "misconception_ids": [
+    "math_set_element_30",
+    "math_logarithm_add_24",
+    "chem_equilibrium_static_14"
   ]
 }

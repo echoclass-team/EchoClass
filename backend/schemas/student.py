@@ -40,6 +40,9 @@ class Persona(BaseModel):
     2. 完整模式（从 data/personas/*.json 加载）。
 
     Schema 变更历史：
+    - v1.4 (2026-05-08) 新增 misconception_ids：跨引 `data/misconceptions/` 真实 ID
+      使 persona 的迷思倾向与M1 迷思库结构化对齐。原 `misconception_tendencies`
+      保留为人类可读副本（向后兼容）。
     - v1.3 (2026-05-07) 移除 3 个字段：personality / catchphrases / family_background。
       人设质感由 speech_style + behavior_traits + theory_anchors + summary 联合承载。
     - v1.2 (2026-04-27) 新增 theory_anchors。
@@ -66,7 +69,14 @@ class Persona(BaseModel):
 
     # --- 迷思概念 ---
     misconception_tendencies: list[str] = Field(
-        default_factory=list, description="容易产生的迷思概念倾向"
+        default_factory=list, description="容易产生的迷思概念倾向（自由文本，人类可读副本）"
+    )
+    misconception_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "结构化迷思引用：每项指向 data/misconceptions/*.json 中某条迷思的 id。"
+            " v1.4 引入，prompt 消费方可用此字段拉出 typical_error / cause 以增强迷思颗粒度。"
+        ),
     )
 
     # --- 行为与交互 ---

@@ -43,5 +43,10 @@
       "trait": "concrete_operational",
       "notes": "P6（11 岁）具体运算末期，开始有形式运算萌芽（命题思维 / 假设推理初显）"
     }
+  ],
+  "misconception_ids": [
+    "math_geometry_altitude_08",
+    "math_statistics_average_27",
+    "chi_rhetoric_hyperbole_28"
   ]
 }

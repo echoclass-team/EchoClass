@@ -44,5 +44,10 @@
       "trait": "concrete_operational",
       "notes": "J1（13 岁）处于具体→形式运算过渡期，能用部分抽象但仍依赖具体例子，凭直觉推理是过渡期典型"
     }
+  ],
+  "misconception_ids": [
+    "math_algebra_negative_12",
+    "math_power_zero_17",
+    "math_fraction_cancel_29"
   ]
 }
