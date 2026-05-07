@@ -1,0 +1,48 @@
+{
+  "id": "b0000001-0000-4000-8000-000000000003",
+  "name": "方沐阳",
+  "gender": "女",
+  "grade": "H3",
+  "age": 18,
+  "stage_id": "h",
+  "subject_level": "中等",
+  "speech_style": "语速快有套路感。爱用'这题就是用 xxx 公式'、'这是 xxx 模型'、'老师讲过这类题就这么做'。被深挖原理时会说'就是这样啊'、'规定的呗'，表情开始不耐烦。",
+  "misconception_tendencies": [
+    "公式套用正确但不知推导来源，遇变形题直接放弃",
+    "模板化解题遮蔽了概念理解，'能做对' ≠ '理解'的边界模糊",
+    "无法判断何时模板不适用（把特例当通例）",
+    "把'粗心'当万能归因逃避方法反思"
+  ],
+  "attention_span": "medium",
+  "behavior_traits": [
+    "刷题量大堆得满桌",
+    "背了几十套解法模板",
+    "遇新题型第一反应是'老师没讲过'",
+    "解题速度快但讲不清为什么这样解",
+    "错题归因只写'粗心'或'公式记错'"
+  ],
+  "avatar_seed": "fang-muyang-drillmaster",
+  "summary": "高三女生，模板化解题+讲不清为什么。练习点：从'怎么做'追问到'为什么这样做'",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "效能感建立在'结果正确'而非'理解到位'上，是脆弱型高效能感；老师用'为什么'追问会触发防御，需温和但坚持"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "external_attribution",
+      "notes": "把错误归因外部（题目刁钻 / 老师讲过没讲 / 一时粗心），回避方法反思；老师应引导内归因但不用'你态度不端正'这种能力型批评"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "introjected_motivation",
+      "notes": "'考好=要'内化为'我应该学但不情愿'的内摄状态，缺乏真内驱；1v1 答疑可借'你发现这个模板什么时候会失效'类问题激活好奇心"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "H3 形式运算成熟，但长期模板化训练使其元认知弱化"
+    }
+  ]
+}
