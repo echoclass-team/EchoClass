@@ -56,6 +56,29 @@ def get_lesson_by_id(db: Session, lesson_id: str) -> Optional[Lesson]:
     return db.query(Lesson).filter(Lesson.id == lesson_id).first()
 
 
+def delete_lesson(db: Session, lesson_id: str, owner_id: str) -> bool:
+    """删除教案（仅限 owner）。返回是否确实删除了记录。"""
+    row = (
+        db.query(Lesson)
+        .filter(Lesson.id == lesson_id, Lesson.owner_id == owner_id)
+        .first()
+    )
+    if row is None:
+        return False
+    db.delete(row)
+    db.commit()
+    return True
+
+
+def list_lessons_by_owner(db: Session, owner_id: str) -> list[Lesson]:
+    return (
+        db.query(Lesson)
+        .filter(Lesson.owner_id == owner_id)
+        .order_by(Lesson.created_at.desc())
+        .all()
+    )
+
+
 def get_lesson_by_hash(db: Session, content_hash: str, owner_id: str) -> Optional[Lesson]:
     return (
         db.query(Lesson)

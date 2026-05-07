@@ -37,6 +37,21 @@ class LessonUploadData(BaseModel):
     difficult_points: list[str] = Field(default_factory=list, description="教学难点")
 
 
+class LessonListItem(BaseModel):
+    """教案列表项（用于 GET /api/lessons）。"""
+
+    lesson_id: str
+    title: str = ""
+    subject: str = ""
+    grade: str = ""
+    topic: str = ""
+    filename: str = ""
+    created_at: str = ""
+    objectives: list[str] = Field(default_factory=list)
+    key_points: list[str] = Field(default_factory=list)
+    difficult_points: list[str] = Field(default_factory=list)
+
+
 class RecommendedPersonasData(BaseModel):
     """教案推荐学生响应数据。"""
 

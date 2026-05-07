@@ -24,7 +24,6 @@ import type { RecommendedPersonasData } from "@/types/qa";
 
 type LoadState = "loading" | "ready" | "error";
 
-const COUNT_OPTIONS = [2, 3, 4, 5];
 
 export default function SetupPersonasPage() {
   // Next 14 要求 useSearchParams 必须在 Suspense 边界内才能 prerender
@@ -57,7 +56,6 @@ function SetupPersonasInner() {
   const [poolLoading, setPoolLoading] = useState(false);
   const [showPool, setShowPool] = useState(false);
 
-  const [countPerStudent, setCountPerStudent] = useState(3);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
 
@@ -138,7 +136,6 @@ function SetupPersonasInner() {
       const data = await createQASession({
         lesson_id: lessonId,
         persona_ids: Array.from(selected),
-        count_per_student: countPerStudent,
       });
       router.push(`/qa/${encodeURIComponent(data.session_id)}`);
     } catch (err) {
@@ -160,7 +157,7 @@ function SetupPersonasInner() {
             选几个会向你提问的学生。
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            系统已根据教案学段挑了一组推荐学生；你可以增减，再决定每位学生要主动提多少个问题（默认 3 个）。
+            系统已根据教案学段挑了一组推荐学生，你可以增减。
           </p>
         </div>
 
@@ -241,30 +238,14 @@ function SetupPersonasInner() {
               )}
             </div>
 
-            {/* 提问数量 + 启动按钮 */}
+            {/* 底部操作栏 */}
             <div className="mt-12 flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-baseline gap-3">
-                <p className="text-sm font-semibold text-slate-900">每位学生提问</p>
-                <div className="flex gap-1.5">
-                  {COUNT_OPTIONS.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setCountPerStudent(n)}
-                      className={`min-w-[2.5rem] rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                        countPerStudent === n
-                          ? "bg-slate-950 text-white"
-                          : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-500">
-                  共 {selected.size} 位学生 × {countPerStudent} = 约 {selected.size * countPerStudent} 个问题
-                </p>
-              </div>
+              <Link
+                href="/setup"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900"
+              >
+                ← 回到上一步（换教案）
+              </Link>
               <button
                 type="button"
                 disabled={selected.size === 0 || creating}
@@ -280,12 +261,6 @@ function SetupPersonasInner() {
                 ⚠ {createError}
               </p>
             )}
-
-            <div className="mt-10 text-sm text-slate-500">
-              <Link href="/setup" className="hover:text-slate-900">
-                ← 回到上一步（换教案）
-              </Link>
-            </div>
           </>
         )}
       </section>

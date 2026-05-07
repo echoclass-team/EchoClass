@@ -48,6 +48,16 @@ export function upsertLessonLibraryItem(item: LessonLibraryItem) {
   return next;
 }
 
+export function removeLessonLibraryItem(lessonId: string) {
+  const current = getLessonLibrary();
+  const items = current.items.filter((entry) => entry.lessonId !== lessonId);
+  const selectedLessonId =
+    current.selectedLessonId === lessonId ? null : current.selectedLessonId;
+  const next: LessonLibraryState = { items, selectedLessonId };
+  setLessonLibrary(next);
+  return next;
+}
+
 export function selectLessonInLibrary(lessonId: string | null) {
   const current = getLessonLibrary();
   const next: LessonLibraryState = { ...current, selectedLessonId: lessonId };

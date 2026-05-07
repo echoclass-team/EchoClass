@@ -2,16 +2,41 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { getLessonLibrary, getSetupDraft } from "@/lib/setup-storage";
-import type { LessonLibraryState, SetupDraft } from "@/types/setup";
+import { getSetupDraft } from "@/lib/setup-storage";
+import { fetchLessons, type LessonListItem } from "@/lib/api/setup";
+import type { LessonLibraryItem, LessonLibraryState, SetupDraft } from "@/types/setup";
 
 export default function ClassroomDemoPage() {
   const [draft, setDraft] = useState<SetupDraft>(getSetupDraft());
-  const [library, setLibrary] = useState<LessonLibraryState>(getLessonLibrary());
+  const [library, setLibrary] = useState<LessonLibraryState>({ items: [], selectedLessonId: null });
 
   useEffect(() => {
     setDraft(getSetupDraft());
-    setLibrary(getLessonLibrary());
+    let active = true;
+    void (async () => {
+      try {
+        const rows = await fetchLessons();
+        if (!active) return;
+        const items: LessonLibraryItem[] = rows.map((r: LessonListItem) => ({
+          lessonId: r.lesson_id,
+          title: r.title || r.topic,
+          subtitle: `${r.subject} · ${r.grade}`,
+          subject: r.subject,
+          grade: r.grade,
+          topic: r.topic,
+          source: "local" as const,
+          status: "ready" as const,
+          createdAt: r.created_at,
+          objectives: r.objectives,
+          key_points: r.key_points,
+          difficult_points: r.difficult_points,
+        }));
+        setLibrary((prev) => ({ items, selectedLessonId: prev.selectedLessonId }));
+      } catch {
+        // silent
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
   const selectedLessonId = draft.selectedLessonId ?? library.selectedLessonId;

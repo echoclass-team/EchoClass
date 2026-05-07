@@ -29,6 +29,30 @@ export async function uploadLesson(formData: FormData) {
   return unwrap((await apiFetch<LessonUploadData>("/api/lessons/upload", { method: "POST", body: formData })).data, "Failed to upload lesson");
 }
 
+export interface LessonListItem {
+  lesson_id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  topic: string;
+  filename: string;
+  created_at: string;
+  objectives: string[];
+  key_points: string[];
+  difficult_points: string[];
+}
+
+export async function fetchLessons() {
+  return unwrap((await apiFetch<LessonListItem[]>("/api/lessons")).data, "Failed to load lessons");
+}
+
 export async function fetchLesson(lessonId: string) {
   return unwrap((await apiFetch<LessonRecord>(`/api/lessons/${encodeURIComponent(lessonId)}`)).data, "Failed to load lesson");
+}
+
+export async function deleteLesson(lessonId: string) {
+  return unwrap(
+    (await apiFetch<{ lesson_id: string; deleted: boolean }>(`/api/lessons/${encodeURIComponent(lessonId)}`, { method: "DELETE" })).data,
+    "Failed to delete lesson",
+  );
 }

@@ -16,13 +16,14 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from api.deps import CurrentUser, get_current_user
 from api.response import ok_response
-from db.crud import get_lesson_by_id, save_lesson
+from db.crud import delete_lesson, get_lesson_by_id, list_lessons_by_owner, save_lesson
 from llm.client import LLMClient
 from rag.extractor import extract_lesson_meta
 from rag.indexer import index_lesson
 from rag.parser import parse_bytes
 from schemas.api import ApiResponse
 from schemas.lesson import (
+    LessonListItem,
     LessonMeta,
     LessonRecord,
     LessonUploadData,
@@ -238,6 +239,35 @@ async def upload_lesson(
     )
 
 
+@router.get("", response_model=ApiResponse[list[LessonListItem]])
+async def list_lessons(
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+) -> ApiResponse[list[LessonListItem]]:
+    """列出当前用户的所有教案。"""
+    from db.engine import SessionLocal
+    db = SessionLocal()
+    try:
+        rows = list_lessons_by_owner(db, _user.id)
+        items = []
+        for r in rows:
+            meta = json.loads(r.meta_json) if r.meta_json else {}
+            items.append(LessonListItem(
+                lesson_id=r.id,
+                title=r.title or meta.get("topic", ""),
+                subject=meta.get("subject", ""),
+                grade=meta.get("grade", ""),
+                topic=meta.get("topic", ""),
+                filename=r.filename or "",
+                created_at=r.created_at.isoformat() if r.created_at else "",
+                objectives=meta.get("objectives", []),
+                key_points=meta.get("key_points", []),
+                difficult_points=meta.get("difficult_points", []),
+            ))
+        return ok_response(items)
+    finally:
+        db.close()
+
+
 @router.get("/{lesson_id}", response_model=ApiResponse[LessonRecord])
 async def get_lesson(
     lesson_id: str,
@@ -287,3 +317,22 @@ async def recommend_personas_for_lesson(
             students=students,
         )
     )
+
+
+@router.delete("/{lesson_id}", response_model=ApiResponse[dict])
+async def delete_lesson_endpoint(
+    lesson_id: str,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+) -> ApiResponse[dict]:
+    """删除教案（仅限上传者）。同时清除内存缓存。"""
+    from db.engine import SessionLocal
+    db = SessionLocal()
+    try:
+        deleted = delete_lesson(db, lesson_id, _user.id)
+    finally:
+        db.close()
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Lesson not found or not owned by you")
+    _store.pop(lesson_id, None)
+    logger.info("Deleted lesson %s by user %s", lesson_id, _user.id)
+    return ok_response({"lesson_id": lesson_id, "deleted": True})
