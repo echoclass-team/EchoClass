@@ -1,7 +1,6 @@
 """``agents.evaluator`` 单元测试 (#M3-A1 / #123)。
 
-仅覆盖骨架 + mock 行为，不调真实 LLM。
-真实 LLM 路径（``llm 非空``）仅断言抛 ``NotImplementedError``，等 #M3-A3 替换。
+覆盖 mock 行为、真实路径 JSON 解析与失败降级；不调真实 LLM。
 """
 
 from __future__ import annotations
@@ -9,7 +8,8 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -220,16 +220,66 @@ async def test_mock_report_is_json_serializable_for_b3() -> None:
     assert len(restored.scores) == len(report.scores)
 
 
-# ============================================================ real path stub
+# ============================================================ real evaluate
 
 
-async def test_real_evaluate_not_implemented_yet() -> None:
-    """传入 LLMClient 的真实路径应在 #M3-A3 实现前明确抛错。"""
-    fake_llm = MagicMock()  # 不会被调用，只用于触发 real 路径分支
+async def test_real_evaluate_parses_llm_json() -> None:
+    fake_llm = MagicMock()
+    evaluator = EvaluatorAgent(llm=fake_llm)
+    dimension_id = evaluator.rubric["dimensions"][0]["id"]
+    fake_llm.chat = AsyncMock(
+        return_value=SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=json.dumps(
+                            {
+                                "scores": [
+                                    {
+                                        "dimension": dimension_id,
+                                        "score": 4,
+                                        "rationale": "能结合学生回答继续追问。",
+                                        "evidence": [
+                                            {
+                                                "dialog_id": "s1",
+                                                "chunk_seq": None,
+                                                "excerpt": "先看分母",
+                                            }
+                                        ],
+                                    }
+                                ],
+                                "overall": 4.0,
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
+                )
+            ]
+        )
+    )
+
+    report = await evaluator.evaluate(_fake_session())
+
+    assert report.overall == 4.0
+    assert len(report.scores) == 1
+    assert report.scores[0].dimension == dimension_id
+    assert report.scores[0].evidence[0].excerpt == "先看分母"
+    fake_llm.chat.assert_awaited_once()
+    messages = fake_llm.chat.await_args.args[0]
+    assert messages[0]["role"] == "system"
+    assert "## Rubric" in messages[0]["content"]
+
+
+async def test_real_evaluate_falls_back_when_llm_fails() -> None:
+    fake_llm = MagicMock()
+    fake_llm.chat = AsyncMock(side_effect=RuntimeError("boom"))
     evaluator = EvaluatorAgent(llm=fake_llm)
 
-    with pytest.raises(NotImplementedError, match="#M3-A3"):
-        await evaluator.evaluate(_fake_session())
+    report = await evaluator.evaluate(_fake_session())
+
+    assert report.session_id == "sess-test"
+    assert report.overall == "unavailable"
+    assert report.scores == []
 
 
 # ============================================================ rubric_version
@@ -251,7 +301,7 @@ def test_unknown_rubric_version_raises_at_construct_time() -> None:
 
 
 def test_evaluator_prompt_template_exists() -> None:
-    """``prompts/evaluator.j2`` 存在；#M3-A3 真实实现会读它。"""
+    """``prompts/evaluator.j2`` 存在，真实评估路径会读它。"""
     prompt_path = Path(__file__).resolve().parent.parent / "prompts" / "evaluator.j2"
     assert prompt_path.exists()
     assert prompt_path.stat().st_size > 0

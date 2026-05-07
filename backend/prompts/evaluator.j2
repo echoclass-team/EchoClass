@@ -1,4 +1,4 @@
-{# EvaluatorAgent prompt 骨架 — #M3-A1 占位 / #M3-A3 真实填充。 #}
+{# EvaluatorAgent prompt — 用于真实 Rubric 评估。 #}
 {# 渲染上下文（由 EvaluatorAgent._real_evaluate 注入）：             #}
 {#   - rubric: dict          来自 data/rubrics/{version}.json        #}
 {#   - lesson: LessonMeta    本次答疑的教案                          #}
@@ -7,8 +7,7 @@
 {#          "questions": list[{question_id, content, messages}],      #}
 {#          "status": "resolved"|"abandoned"|"active" }]              #}
 {#                                                                  #}
-{# 本文件 #M3-A1 阶段为占位骨架；#M3-A3 落地真实评估时按需扩展，    #}
-{# 但应保持以下不变式：                                              #}
+{# 修改本 prompt 时应保持以下不变式：                                #}
 {#   - 严格 JSON 输出（与 schemas.evaluation.EvaluationReport 对齐） #}
 {#   - 每维度 ≥ 1 条 evidence（dialog_id + excerpt 必填）            #}
 {#   - 输出语言：rationale 用中文                                    #}
