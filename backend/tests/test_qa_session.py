@@ -1,12 +1,13 @@
 """QASession orchestrator 集成测试（mock StudentAgent，不调真 LLM）。
 
-覆盖：
-- spawn 为每个学生创建一个 thread dialog，并按学生顺序入队
-- next_pending FIFO 行为；start_dialog 后从 pending 队列移除
-- send_teacher_message 自动 start_dialog；学生回复落历史；self_resolved 透传
-- mark_resolved / abandon_dialog 状态流转 + 幂等
-- summary 统计 covered_key_points / broken_misconception_ids / resolution_sources
-- spawn 时单一学生失败不影响其他学生
+覆盖 M3 预生成题机制：
+
+- spawn 为每个学生预生成 N 题（默认 3），按学生顺序入队
+- next_pending FIFO；start_dialog 后从 pending 队列移除并激活当前题 progress
+- send_teacher_message 自动推进子题：self_resolved / turn_limit / 全部完成
+- mark_resolved 推进当前子题；abandon_dialog 标记当前 active 子题为 abandoned
+- summary 统计；spawn 单一学生失败不影响其他
+- question_progress 的 turns_used / message_start_idx / message_end_idx 切片
 """
 
 from __future__ import annotations
@@ -15,11 +16,15 @@ from typing import Any
 
 import pytest
 
-from schemas.dialog import DialogMessage, DialogReplyResult
-from schemas.followup import FollowupDecision
+from schemas.dialog import DialogReplyResult
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
-from services.qa_session import QASession, QASessionError
+from services.qa_session import (
+    MAX_TURNS_PER_QUESTION,
+    PRESET_QUESTIONS_PER_STUDENT,
+    QASession,
+    QASessionError,
+)
 
 
 # ============================================================ Fakes
@@ -31,10 +36,7 @@ class FakePersona:
 
 
 class FakeStudentAgent:
-    """只提供 QASession 依赖的最小鸭子类型接口。
-
-    QASession 不依赖 StudentAgent 的其他行为，因此用一个鸭子类型的 fake 即可。
-    """
+    """只提供 QASession 依赖的最小鸭子类型接口。"""
 
     def __init__(
         self,
@@ -43,19 +45,18 @@ class FakeStudentAgent:
         name: str,
         questions: list[dict[str, Any]],
         replies: list[DialogReplyResult] | None = None,
-        followups: list[FollowupDecision] | None = None,
         fail_on_generate: bool = False,
     ) -> None:
         self.persona = FakePersona(name)
         self._student_id = student_id
         self._questions_template = questions
         self._replies = list(replies or [])
-        self._followups = list(followups or [])
         self._fail_on_generate = fail_on_generate
         self.respond_questions: list[str] = []
-        self.decide_current_questions: list[str] = []
 
-    async def generate_questions(self, lesson_meta: LessonMeta, *, count: int = 3):
+    async def generate_questions(
+        self, lesson_meta: LessonMeta, *, count: int = 3
+    ) -> list[StudentQuestion]:
         if self._fail_on_generate:
             raise RuntimeError(f"{self.persona.name} simulated LLM failure")
         out: list[StudentQuestion] = []
@@ -87,19 +88,6 @@ class FakeStudentAgent:
             return DialogReplyResult(content="嗯……", self_resolved=False, raw="嗯……")
         return self._replies.pop(0)
 
-    async def decide_followup(
-        self,
-        *,
-        current_question: StudentQuestion,
-        dialog_history: list[DialogMessage],
-        lesson_meta: LessonMeta,
-        asked_questions: list[StudentQuestion] | None = None,
-    ) -> FollowupDecision:
-        self.decide_current_questions.append(current_question.content)
-        if not self._followups:
-            return FollowupDecision.no_followup(reason="test default")
-        return self._followups.pop(0)
-
 
 def _lesson() -> LessonMeta:
     return LessonMeta(
@@ -112,255 +100,386 @@ def _lesson() -> LessonMeta:
     )
 
 
-def _followup_question(
-    qid: str = "A-f1", content: str = "那分子是什么意思？"
-) -> StudentQuestion:
-    return StudentQuestion(
-        id=qid,
-        speaker_id="A",
-        speaker_name="学生A",
-        content=content,
-        category="clarify_concept",
-        difficulty="easy",
-        linked_key_point="比较大小",
-        rationale="学生对分子产生了好奇。",
-    )
+def _three_questions(prefix: str = "Q") -> list[dict[str, Any]]:
+    return [
+        {"content": f"{prefix}1"},
+        {"content": f"{prefix}2"},
+        {"content": f"{prefix}3"},
+    ]
 
 
 # ============================================================ tests
 
 
-async def test_spawn_creates_one_thread_per_student() -> None:
-    """M3 下 spawn 应为每个学生创建一个 dialog，忽略后续候选问题。"""
+async def test_spawn_creates_n_predetermined_questions_per_student() -> None:
+    """spawn 默认 N=3：每个学生 1 个 dialog，asked_questions 含 3 题，progress 对齐。"""
     a = FakeStudentAgent(
-        student_id="A",
-        name="学生A",
-        questions=[
-            {"content": "A1"},
-            {"content": "A2"},
-        ],
+        student_id="A", name="学生A", questions=_three_questions("A")
     )
     b = FakeStudentAgent(
-        student_id="B",
-        name="学生B",
-        questions=[
-            {"content": "B1"},
-            {"content": "B2"},
-        ],
+        student_id="B", name="学生B", questions=_three_questions("B")
     )
-
     session = QASession(lesson_meta=_lesson())
-    questions = await session.spawn([a, b], questions_per_student=2)
+    first_questions = await session.spawn([a, b])
 
-    assert [q.content for q in questions] == ["A1", "B1"]
+    # 仅返回首问，不包含后续预生成题
+    assert [q.content for q in first_questions] == ["A1", "B1"]
     assert session.pending_count() == 2
     assert list(session.dialogs.keys()) == ["A", "B"]
-    assert session.dialogs["A"].question.content == "A1"
-    assert [q.content for q in session.dialogs["A"].asked_questions] == ["A1"]
+
+    dialog_a = session.dialogs["A"]
+    assert dialog_a.question.content == "A1"
+    assert [q.content for q in dialog_a.asked_questions] == ["A1", "A2", "A3"]
+    assert len(dialog_a.question_progress) == 3
+    assert all(p.status == "pending" for p in dialog_a.question_progress)
+    assert dialog_a.current_question_idx == 0
 
 
-async def test_next_pending_fifo_order_and_drains() -> None:
+async def test_spawn_with_explicit_count() -> None:
     a = FakeStudentAgent(
-        student_id="A",
-        name="学生A",
-        questions=[{"content": "A1"}],
-    )
-    b = FakeStudentAgent(
-        student_id="B",
-        name="学生B",
-        questions=[{"content": "B1"}],
+        student_id="A", name="学生A", questions=_three_questions("A")
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a, b], questions_per_student=2)
+    await session.spawn([a], questions_per_student=2)
+    dialog = session.dialogs["A"]
+    assert len(dialog.asked_questions) == 2
+    assert len(dialog.question_progress) == 2
+
+
+async def test_spawn_invalid_count_raises() -> None:
+    a = FakeStudentAgent(
+        student_id="A", name="学生A", questions=_three_questions("A")
+    )
+    session = QASession(lesson_meta=_lesson())
+    with pytest.raises(QASessionError):
+        await session.spawn([a], questions_per_student=0)
+
+
+async def test_preset_constant_is_three() -> None:
+    """合约：N=3 是公开常量，不可悄悄改。"""
+    assert PRESET_QUESTIONS_PER_STUDENT == 3
+    assert MAX_TURNS_PER_QUESTION == 8
+
+
+async def test_next_pending_fifo_order() -> None:
+    a = FakeStudentAgent(
+        student_id="A", name="学生A", questions=_three_questions("A")
+    )
+    b = FakeStudentAgent(
+        student_id="B", name="学生B", questions=_three_questions("B")
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a, b])
 
     first = session.next_pending()
-    assert first is not None and first.question.content == "A1"
-
+    assert first is not None and first.id == "A"
     session.start_dialog(first.id)
-    second = session.next_pending()
-    assert second is not None and second.question.content == "B1"
 
+    second = session.next_pending()
+    assert second is not None and second.id == "B"
     session.start_dialog(second.id)
+
     assert session.next_pending() is None
 
 
-async def test_send_teacher_message_auto_starts_and_records_history() -> None:
+async def test_start_dialog_activates_first_question_progress() -> None:
+    a = FakeStudentAgent(
+        student_id="A", name="学生A", questions=_three_questions("A")
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a])
+    session.start_dialog("A")
+
+    dialog = session.get_dialog("A")
+    assert dialog.status == "active"
+    assert dialog.question_progress[0].status == "active"
+    assert dialog.question_progress[0].message_start_idx == 0
+    # 后续题保持 pending
+    assert dialog.question_progress[1].status == "pending"
+
+
+async def test_send_teacher_message_records_history() -> None:
     a = FakeStudentAgent(
         student_id="A",
         name="学生A",
-        questions=[{"content": "A1"}],
-        replies=[
-            DialogReplyResult(
-                content="哦，明白了。", self_resolved=False, raw="哦，明白了。"
-            )
-        ],
+        questions=_three_questions("A"),
+        replies=[DialogReplyResult(content="哦。", self_resolved=False)],
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
-
+    await session.spawn([a])
     pending = session.next_pending()
     assert pending is not None
 
-    result = await session.send_teacher_message(pending.id, "几分之一就是分母。")
-
-    assert result.content == "哦，明白了。"
+    result = await session.send_teacher_message(pending.id, "讲解 A1")
+    assert result.content == "哦。"
     dialog = session.get_dialog(pending.id)
     assert dialog.status == "active"
-    assert len(dialog.messages) == 2
-    assert dialog.messages[0].role == "teacher"
-    assert dialog.messages[1].role == "student"
-    assert dialog.messages[1].content == "哦，明白了。"
+    assert [m.role for m in dialog.messages] == ["teacher", "student"]
+    # 当前题 turns_used+=1，但还没推进
+    assert dialog.current_question_idx == 0
+    assert dialog.question_progress[0].turns_used == 1
+    assert dialog.question_progress[0].status == "active"
 
 
-async def test_send_teacher_message_records_followup_question() -> None:
-    followup = _followup_question()
+async def test_self_resolved_advances_to_next_question() -> None:
+    """学生说 [懂了] → 当前题标 resolved(self_resolve)，自动抛下一题为 is_new_question。"""
     a = FakeStudentAgent(
         student_id="A",
         name="学生A",
-        questions=[{"content": "A1"}],
-        replies=[DialogReplyResult(content="我懂一点了。", self_resolved=False)],
-        followups=[
-            FollowupDecision(
-                should_followup=True,
-                new_question=followup,
-                reason="学生还有追问",
-            )
-        ],
+        questions=_three_questions("A"),
+        replies=[DialogReplyResult(content="懂了！", self_resolved=True)],
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
+    await session.spawn([a])
     pending = session.next_pending()
     assert pending is not None
 
-    result = await session.send_teacher_message(pending.id, "先看分母。")
+    result = await session.send_teacher_message(pending.id, "讲解 A1")
+    assert result.self_resolved is True
 
-    assert result.content == "我懂一点了。"
     dialog = session.get_dialog(pending.id)
-    assert [q.content for q in dialog.asked_questions] == ["A1", "那分子是什么意思？"]
+    # 当前题 resolved
+    assert dialog.question_progress[0].status == "resolved"
+    assert dialog.question_progress[0].resolution_source == "self_resolve"
+    assert dialog.question_progress[0].message_end_idx == 2  # teacher + student
+    # 推进到第 2 题
+    assert dialog.current_question_idx == 1
+    assert dialog.question_progress[1].status == "active"
+    assert dialog.question_progress[1].message_start_idx == 2
+    # is_new_question 消息已 append
     assert [m.role for m in dialog.messages] == ["teacher", "student", "student"]
-    followup_msg = dialog.messages[-1]
-    assert followup_msg.content == "那分子是什么意思？"
-    assert followup_msg.is_new_question is True
-    assert followup_msg.question_id == followup.id
+    new_q_msg = dialog.messages[-1]
+    assert new_q_msg.is_new_question is True
+    assert new_q_msg.content == "A2"
+    assert new_q_msg.question_id == dialog.asked_questions[1].id
+    # dialog 整体仍 active
+    assert dialog.status == "active"
 
 
-async def test_send_teacher_message_uses_latest_followup_as_current_question() -> None:
-    followup = _followup_question()
+async def test_turn_limit_advances_with_abandoned_source() -> None:
+    """连续 M 轮没说懂 → 当前题 abandoned(turn_limit)，自动推进。"""
+    # 8 轮都没 self_resolved
+    replies = [
+        DialogReplyResult(content=f"嗯{i}", self_resolved=False)
+        for i in range(MAX_TURNS_PER_QUESTION)
+    ]
     a = FakeStudentAgent(
         student_id="A",
         name="学生A",
-        questions=[{"content": "A1"}],
+        questions=_three_questions("A"),
+        replies=replies,
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a])
+    pending = session.next_pending()
+    assert pending is not None
+
+    for i in range(MAX_TURNS_PER_QUESTION):
+        await session.send_teacher_message(pending.id, f"讲第{i}遍")
+
+    dialog = session.get_dialog(pending.id)
+    assert dialog.question_progress[0].status == "abandoned"
+    assert dialog.question_progress[0].resolution_source == "turn_limit"
+    assert dialog.current_question_idx == 1
+    # 最后一条是 is_new_question
+    assert dialog.messages[-1].is_new_question is True
+    assert dialog.messages[-1].content == "A2"
+
+
+async def test_all_questions_resolved_closes_dialog() -> None:
+    """3 题都自我解决 → dialog 整体 resolved。"""
+    a = FakeStudentAgent(
+        student_id="A",
+        name="学生A",
+        questions=_three_questions("A"),
         replies=[
-            DialogReplyResult(content="第一轮回复", self_resolved=False),
-            DialogReplyResult(content="第二轮回复", self_resolved=False),
-        ],
-        followups=[
-            FollowupDecision(
-                should_followup=True,
-                new_question=followup,
-                reason="学生还有追问",
-            ),
-            FollowupDecision.no_followup(reason="停止追问"),
+            DialogReplyResult(content="懂了1", self_resolved=True),
+            DialogReplyResult(content="懂了2", self_resolved=True),
+            DialogReplyResult(content="懂了3", self_resolved=True),
         ],
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
+    await session.spawn([a])
     pending = session.next_pending()
     assert pending is not None
 
     await session.send_teacher_message(pending.id, "T1")
-    await session.send_teacher_message(pending.id, "T2")
-
-    assert a.respond_questions == ["A1", "那分子是什么意思？"]
-    assert a.decide_current_questions == ["A1", "那分子是什么意思？"]
-
-
-async def test_send_teacher_message_propagates_self_resolved_flag() -> None:
-    """学生 [懂了] 标记应被 result.self_resolved 透传给调用方，但不自动结会话。"""
-    a = FakeStudentAgent(
-        student_id="A",
-        name="学生A",
-        questions=[{"content": "A1"}],
-        replies=[
-            DialogReplyResult(
-                content="原来如此！",
-                self_resolved=True,
-                raw="原来如此！\n[懂了]",
-            )
-        ],
-    )
-    session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
-    pending = session.next_pending()
-    assert pending is not None
-
-    result = await session.send_teacher_message(pending.id, "...")
-    assert result.self_resolved is True
-    # 但 dialog 不会自动 resolved，等待师范生确认
-    assert session.get_dialog(pending.id).status == "active"
-    # issue #102: self_resolved 也要落到 dialog.messages，便于 GET 复原
-    student_msg = session.get_dialog(pending.id).messages[-1]
-    assert student_msg.role == "student"
-    assert student_msg.self_resolved is True
-
-
-async def test_mark_resolved_records_source_and_is_idempotent() -> None:
-    a = FakeStudentAgent(
-        student_id="A",
-        name="学生A",
-        questions=[{"content": "A1"}],
-    )
-    session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
-    pending = session.next_pending()
-    assert pending is not None
-
-    session.start_dialog(pending.id)
-    session.mark_resolved(pending.id, source="self_resolve")
     dialog = session.get_dialog(pending.id)
+    assert dialog.current_question_idx == 1 and dialog.status == "active"
+
+    await session.send_teacher_message(pending.id, "T2")
+    assert dialog.current_question_idx == 2 and dialog.status == "active"
+
+    await session.send_teacher_message(pending.id, "T3")
+    # 第 3 题也 resolved → 整 dialog resolved
     assert dialog.status == "resolved"
     assert dialog.resolution_source == "self_resolve"
-    assert dialog.ended_at is not None
+    assert dialog.current_question_idx == 3  # 越过最后一题
+    assert all(p.status == "resolved" for p in dialog.question_progress)
 
-    # 再次 mark_resolved 是幂等的
-    session.mark_resolved(pending.id, source="teacher_marked")
-    assert (
-        session.get_dialog(pending.id).resolution_source == "self_resolve"
-    )  # 不被覆盖
+
+async def test_send_message_on_resolved_dialog_raises() -> None:
+    """所有题都做完后，dialog 已 resolved，再发消息应抛错。"""
+    a = FakeStudentAgent(
+        student_id="A",
+        name="学生A",
+        questions=[{"content": "A1"}],  # 仅 1 题
+        replies=[DialogReplyResult(content="懂了！", self_resolved=True)],
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a], questions_per_student=1)
+    pending = session.next_pending()
+    assert pending is not None
+
+    await session.send_teacher_message(pending.id, "讲")
+    assert session.get_dialog(pending.id).status == "resolved"
+
+    with pytest.raises(QASessionError):
+        await session.send_teacher_message(pending.id, "再问")
+
+
+async def test_self_resolved_marker_lands_on_student_message() -> None:
+    """self_resolved=True 应同时落到 dialog.messages 上，便于 GET 复原。"""
+    a = FakeStudentAgent(
+        student_id="A",
+        name="学生A",
+        questions=_three_questions("A"),
+        replies=[DialogReplyResult(content="懂了！", self_resolved=True)],
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a])
+    pending = session.next_pending()
+    assert pending is not None
+
+    await session.send_teacher_message(pending.id, "讲")
+    dialog = session.get_dialog(pending.id)
+    # messages: [teacher, student(self_resolved=True), student(is_new_question=True)]
+    assert dialog.messages[1].role == "student"
+    assert dialog.messages[1].self_resolved is True
+
+
+async def test_mark_resolved_advances_current_question() -> None:
+    """老师手动 mark_resolved → 当前题 resolved(teacher_marked)，推进下一题。"""
+    a = FakeStudentAgent(
+        student_id="A", name="学生A", questions=_three_questions("A")
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a])
+    session.start_dialog("A")
+
+    dialog = session.mark_resolved("A", source="teacher_marked")
+    assert dialog.current_question_idx == 1
+    assert dialog.question_progress[0].status == "resolved"
+    assert dialog.question_progress[0].resolution_source == "teacher_marked"
+    assert dialog.question_progress[1].status == "active"
+    assert dialog.status == "active"  # 还有题
+
+
+async def test_mark_resolved_on_last_question_closes_dialog() -> None:
+    """对最后一题 mark_resolved → 整个 dialog resolved。"""
+    a = FakeStudentAgent(
+        student_id="A", name="学生A", questions=_three_questions("A")
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a])
+    session.start_dialog("A")
+
+    session.mark_resolved("A", source="teacher_marked")
+    session.mark_resolved("A", source="teacher_marked")
+    session.mark_resolved("A", source="teacher_marked")
+
+    dialog = session.get_dialog("A")
+    assert dialog.status == "resolved"
+    assert dialog.resolution_source == "teacher_marked"
+
+
+async def test_mark_resolved_idempotent_on_finished_dialog() -> None:
+    a = FakeStudentAgent(
+        student_id="A", name="学生A", questions=[{"content": "A1"}]
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a], questions_per_student=1)
+    session.start_dialog("A")
+
+    session.mark_resolved("A", source="teacher_marked")
+    # 再次调用是幂等的，不抛错
+    dialog = session.mark_resolved("A", source="self_resolve")
+    assert dialog.status == "resolved"
+    # source 不被覆盖
+    assert dialog.resolution_source == "teacher_marked"
 
 
 async def test_mark_resolved_after_abandoned_raises() -> None:
     a = FakeStudentAgent(
-        student_id="A",
-        name="学生A",
-        questions=[{"content": "A1"}],
+        student_id="A", name="学生A", questions=_three_questions("A")
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
-    pending = session.next_pending()
-    assert pending is not None
-
-    session.abandon_dialog(pending.id)
+    await session.spawn([a])
+    session.abandon_dialog("A")
     with pytest.raises(QASessionError):
-        session.mark_resolved(pending.id, source="teacher_marked")
+        session.mark_resolved("A")
 
 
-async def test_send_message_on_resolved_raises() -> None:
+async def test_abandon_dialog_marks_current_active_question() -> None:
+    """abandon_dialog 整 dialog 标 abandoned，并把当前 active 子题也标 abandoned。"""
     a = FakeStudentAgent(
         student_id="A",
         name="学生A",
-        questions=[{"content": "A1"}],
+        questions=_three_questions("A"),
+        replies=[DialogReplyResult(content="嗯", self_resolved=False)],
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a], questions_per_student=1)
+    await session.spawn([a])
+    pending = session.next_pending()
+    assert pending is not None
+    await session.send_teacher_message(pending.id, "讲")
+
+    dialog = session.abandon_dialog("A")
+    assert dialog.status == "abandoned"
+    assert dialog.resolution_source == "abandoned"
+    # 当前 active 题也被关闭
+    assert dialog.question_progress[0].status == "abandoned"
+    assert dialog.question_progress[0].resolution_source == "abandoned"
+    assert dialog.question_progress[0].message_end_idx == 2
+    # 未开启的题保持 pending
+    assert dialog.question_progress[1].status == "pending"
+
+
+async def test_question_progress_message_indices_track_segments() -> None:
+    """progress.message_start_idx / end_idx 应正确切片每题的 messages。"""
+    a = FakeStudentAgent(
+        student_id="A",
+        name="学生A",
+        questions=_three_questions("A"),
+        replies=[
+            DialogReplyResult(content="嗯1", self_resolved=False),
+            DialogReplyResult(content="懂了！", self_resolved=True),
+            DialogReplyResult(content="懂了2", self_resolved=True),
+        ],
+    )
+    session = QASession(lesson_meta=_lesson())
+    await session.spawn([a])
     pending = session.next_pending()
     assert pending is not None
 
-    session.start_dialog(pending.id)
-    session.mark_resolved(pending.id, source="teacher_marked")
+    # 第 1 题：teacher + student(嗯1) + teacher + student(懂了!) → 4 条
+    await session.send_teacher_message(pending.id, "T1-1")
+    await session.send_teacher_message(pending.id, "T1-2")
+    # 第 2 题已被自动抛出（is_new_question），messages 含 5 条
+    # 接下来对第 2 题: teacher + student(懂了2) → +2 条 = 7 条
+    await session.send_teacher_message(pending.id, "T2-1")
 
-    with pytest.raises(QASessionError):
-        await session.send_teacher_message(pending.id, "再问一句")
+    dialog = session.get_dialog(pending.id)
+    p0 = dialog.question_progress[0]
+    p1 = dialog.question_progress[1]
+    assert p0.message_start_idx == 0
+    assert p0.message_end_idx == 4  # 第 1 题占据 [0, 4)
+    assert p1.message_start_idx == 4  # 第 2 题从 is_new_question 起
+    # 第 2 题 resolved 后 end_idx 应为推进时的 messages 长度
+    assert p1.message_end_idx is not None
+    # 切片完整性：messages[start:end] 应能回放该题对话
+    seg0 = dialog.messages[p0.message_start_idx : p0.message_end_idx]
+    assert [m.role for m in seg0] == ["teacher", "student", "teacher", "student"]
 
 
 async def test_summary_aggregates_resolved_metadata() -> None:
@@ -380,25 +499,21 @@ async def test_summary_aggregates_resolved_metadata() -> None:
         student_id="B",
         name="学生B",
         questions=[
-            {
-                "content": "B1",
-                "category": "clarify_concept",
-                "linked_key_point": "比较大小",
-            }
+            {"content": "B1", "linked_key_point": "比较大小"},
         ],
     )
     c = FakeStudentAgent(
-        student_id="C",
-        name="学生C",
-        questions=[{"content": "C1"}],
+        student_id="C", name="学生C", questions=[{"content": "C1"}]
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a, b, c], questions_per_student=3)
+    await session.spawn([a, b, c], questions_per_student=1)
 
-    ids = list(session.dialogs.keys())
-    session.mark_resolved(ids[0], source="self_resolve")
-    session.mark_resolved(ids[1], source="teacher_marked")
-    session.abandon_dialog(ids[2])
+    session.start_dialog("A")
+    session.start_dialog("B")
+    session.start_dialog("C")
+    session.mark_resolved("A", source="self_resolve")
+    session.mark_resolved("B", source="teacher_marked")
+    session.abandon_dialog("C")
 
     summary = session.summary()
     assert summary["total_questions"] == 3
@@ -414,7 +529,6 @@ async def test_summary_aggregates_resolved_metadata() -> None:
 
 
 async def test_spawn_resilient_to_one_student_failure() -> None:
-    """一个学生 generate_questions 抛异常，其余仍正常入队。"""
     bad = FakeStudentAgent(
         student_id="bad",
         name="坏学生",
@@ -422,12 +536,10 @@ async def test_spawn_resilient_to_one_student_failure() -> None:
         fail_on_generate=True,
     )
     good = FakeStudentAgent(
-        student_id="good",
-        name="好学生",
-        questions=[{"content": "G1"}],
+        student_id="good", name="好学生", questions=_three_questions("G")
     )
     session = QASession(lesson_meta=_lesson())
-    questions = await session.spawn([bad, good], questions_per_student=1)
+    questions = await session.spawn([bad, good])
     assert len(questions) == 1
     assert questions[0].speaker_id == "good"
 
@@ -439,33 +551,20 @@ async def test_get_dialog_unknown_id_raises() -> None:
 
 
 async def test_iter_students_yields_spawn_order() -> None:
-    """``iter_students`` 应按 spawn 注册顺序遍历 (student_id, agent)。
-
-    这是 REST / WS 投影层的公开访问器，替代直接读 ``_agents`` 私有字段。
-    顺序由 spawn 入参决定，dict 维持插入顺序。
-    """
     a = FakeStudentAgent(
-        student_id="A",
-        name="学生A",
-        questions=[{"content": "A1"}],
+        student_id="A", name="学生A", questions=_three_questions("A")
     )
     b = FakeStudentAgent(
-        student_id="B",
-        name="学生B",
-        questions=[{"content": "B1"}],
+        student_id="B", name="学生B", questions=_three_questions("B")
     )
     session = QASession(lesson_meta=_lesson())
-    await session.spawn([a, b], questions_per_student=1)
+    await session.spawn([a, b])
 
     pairs = list(session.iter_students())
     assert [sid for sid, _ in pairs] == ["A", "B"]
     assert pairs[0][1] is a
-    assert pairs[1][1] is b
-    # 暴露的 agent 应当是原对象，可以直接读 .persona
-    assert pairs[0][1].persona.name == "学生A"
 
 
 async def test_iter_students_empty_before_spawn() -> None:
-    """``iter_students`` 在 spawn 之前应当为空。"""
     session = QASession(lesson_meta=_lesson())
     assert list(session.iter_students()) == []

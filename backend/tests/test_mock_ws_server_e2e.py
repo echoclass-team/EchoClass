@@ -30,8 +30,11 @@ from schemas.ws_events import (
     WsErrorCode,
     WsServerEvent,
 )
+from api.auth_utils import create_access_token
 from scripts.mock_ws_server import create_mock_app
 from services.qa_session_registry import get_registry
+
+_TEST_TOKEN = create_access_token("test-mock-user", "mock_teacher")
 
 
 _SERVER_EVENT_ADAPTER: TypeAdapter[WsServerEvent] = TypeAdapter(WsServerEvent)
@@ -80,7 +83,7 @@ def test_mock_app_bootstraps_demo_session(mock_client: TestClient) -> None:
 
 def test_mock_session_init_frame_matches_protocol(mock_client: TestClient) -> None:
     """连上 mock 立即收到的 ``session_init`` 应满足协议规范。"""
-    with mock_client.websocket_connect(WS_PATH) as ws:
+    with mock_client.websocket_connect(f"{WS_PATH}?token={_TEST_TOKEN}") as ws:
         frame = _recv(ws)
 
     # 通过 Pydantic 反序列化间接验证字段完整性 + Literal 受控枚举
@@ -103,7 +106,7 @@ def test_mock_full_dialog_loop(mock_client: TestClient) -> None:
     - delta 拼接结果 == ``reply_end.full_content``
     - ``[懂了]`` 标记不在任何 delta 中（hold-back 生效）
     """
-    with mock_client.websocket_connect(WS_PATH) as ws:
+    with mock_client.websocket_connect(f"{WS_PATH}?token={_TEST_TOKEN}") as ws:
         init = _recv(ws)
         first_dialog_id = init["questions"][0]["id"]
 
@@ -156,7 +159,7 @@ def test_mock_full_dialog_loop(mock_client: TestClient) -> None:
 
 def test_mock_resolve_emits_dialog_resolved(mock_client: TestClient) -> None:
     """``resolve`` 应回 ``dialog_resolved`` + 正确 source。"""
-    with mock_client.websocket_connect(WS_PATH) as ws:
+    with mock_client.websocket_connect(f"{WS_PATH}?token={_TEST_TOKEN}") as ws:
         init = _recv(ws)
         dialog_id = init["questions"][0]["id"]
 
@@ -177,9 +180,9 @@ def test_mock_resolve_emits_dialog_resolved(mock_client: TestClient) -> None:
 
 def test_mock_replaced_on_second_connection(mock_client: TestClient) -> None:
     """同 session 第二个连接挤掉第一个；旧连接应收到 ``error{code:replaced}``。"""
-    with mock_client.websocket_connect(WS_PATH) as ws_old:
+    with mock_client.websocket_connect(f"{WS_PATH}?token={_TEST_TOKEN}") as ws_old:
         _ = _recv(ws_old)  # session_init
-        with mock_client.websocket_connect(WS_PATH) as ws_new:
+        with mock_client.websocket_connect(f"{WS_PATH}?token={_TEST_TOKEN}") as ws_new:
             _ = _recv(ws_new)  # 新连接也收到 session_init
             old_err = _recv(ws_old)
 

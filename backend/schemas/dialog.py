@@ -15,18 +15,29 @@
     N 个 dialog（每题一个），师范生从队列里挑题进入 1v1。
     ``messages`` 内全部消息都属于 ``dialog.question`` 这一道题。
 
-**M3 连续答疑模式（v2，规划中，issue #111）**
+**M3 连续答疑模式（v2，当前实现）**
     每个 ``DialogSession`` 1:1 对应一个**学生**（``student_id``）：一个学生只
-    有一个 dialog，``dialog.question`` 退化为"学生抛出的第一个问题"，后续
-    问题由 ``StudentAgent.decide_followup`` 自主决定何时发出，以
-    ``DialogMessage(role="student", is_new_question=True, question_id=...)``
-    形式插入 ``messages``。``mark_resolved`` 语义升级为"结束整段辅导"。
+    有一个 dialog。``spawn`` 时一次性预生成 N 道题（当前 N=3），按序放入
+    ``asked_questions``，并以对齐的 ``question_progress`` 记录每题进度。
+
+    推进规则（确定性，不再调用 LLM 决策）：
+
+    - 首问（``asked_questions[0]``）直接作为 dialog 的入口抛出
+    - 当前题收到学生 ``[懂了]`` 标记 → 单题标 ``resolved``，指针推进，自动
+      把下一题作为 ``DialogMessage(is_new_question=True)`` 抛出（复用
+      ``followup`` stream event 通道）
+    - 当前题累计 turn 数超过上限 M（当前 M=8）→ 单题标 ``abandoned``
+      （``resolution_source='turn_limit'``），指针推进同上
+    - 指针越过最后一题 → 整个 ``DialogSession`` 标 ``resolved``
+
+    ``dialog.question`` 保留为首问（==``asked_questions[0]``），向后兼容。
 
 两种形态在字段层完全兼容：
 - v1 的 ``DialogMessage`` 永远 ``is_new_question=False`` / ``question_id=None``
 - v2 引入新字段 + 新 WS 帧 ``student_new_question``（见 ``ws_events``）
-- v2 给 ``DialogSession`` 加了 ``asked_questions`` 字段追踪首问 + 追问列表，
-  M2 模式下仅含首问一项，向后兼容
+- v2 给 ``DialogSession`` 加了 ``asked_questions`` / ``question_progress`` /
+  ``current_question_idx`` 字段；M2 模式下 ``asked_questions`` 仅含首问、
+  ``question_progress`` 为空列表、``current_question_idx=0``，向后兼容
 """
 
 from __future__ import annotations
@@ -52,6 +63,7 @@ ResolutionSource = Literal[
     "teacher_marked",  # 师范生手动点"已解答"按钮
     "auto_evaluator",  # 评估 Agent 自动判定（v2 才会有）
     "abandoned",  # 师范生放弃
+    "turn_limit",  # M3：单题累计 turn 数超过上限被自动作废（dialog 整体仍可继续到下一题）
 ]
 
 
@@ -79,7 +91,8 @@ class DialogMessage(BaseModel):
         description=(
             "M3 连续答疑模式下，仅 role='student' 时可能为 True：本条消息是学生"
             "主动抛出的新问题（不是对老师上一句的回应）。前端据此渲染'新问题'气泡。"
-            "M2 闯关模式下永远 False。"
+            "M3 下由 ``QASession`` 从 ``asked_questions`` 队列确定性弹出（不再走 "
+            "LLM 决策）。M2 闯关模式下永远 False。"
         ),
     )
     question_id: str | None = Field(
@@ -88,6 +101,54 @@ class DialogMessage(BaseModel):
             "M3 连续答疑模式下，本条消息所属 question 的 id；用于评估时按问题分段。"
             "M2 闯关模式下永远 None（dialog 与 question 一一对应，无需冗余记录）。"
         ),
+    )
+
+
+QuestionStatus = Literal["pending", "active", "resolved", "abandoned"]
+"""M3 连续答疑模式下单题的状态：
+
+- ``pending``：题目已预生成，尚未被抛出（在 ``current_question_idx`` 之后）
+- ``active``：题目正在被讨论（即 ``current_question_idx`` 指向的那一题）
+- ``resolved``：学生已宣称懂了（``[懂了]`` 标记）
+- ``abandoned``：已放弃（通常是 ``resolution_source='turn_limit'`` 触发）
+"""
+
+
+class QuestionProgress(BaseModel):
+    """M3 连续答疑模式下单道预生成题目的进度追踪。
+
+    与 ``DialogSession.asked_questions`` 按下标对齐；记录单题的运行状态、
+    已用轮数、以及该题在 ``DialogSession.messages`` 中的切片范围，供 evaluator
+    按题分段引用证据，供编排层判断是否推进到下一题。
+    """
+
+    question_id: str = Field(
+        ..., description="对应 ``asked_questions[i].id``，便于反向索引"
+    )
+    status: QuestionStatus = Field(default="pending", description="单题当前状态")
+    turns_used: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "本题已累计的师生 turn 数（老师一句 + 学生一句算 1 轮）。"
+            "超过上限 M（当前 M=8）时单题自动 ``abandoned``。"
+        ),
+    )
+    message_start_idx: int = Field(
+        ...,
+        ge=0,
+        description="该题在 ``DialogSession.messages`` 中的起始下标（含）",
+    )
+    message_end_idx: int | None = Field(
+        default=None,
+        description=(
+            "该题在 ``DialogSession.messages`` 中的结束下标（开区间，不含）；"
+            "题目结束（resolved/abandoned）时设置"
+        ),
+    )
+    resolution_source: ResolutionSource | None = Field(
+        default=None,
+        description="单题结束方式；``status='resolved'/'abandoned'`` 时必填",
     )
 
 
@@ -115,9 +176,27 @@ class DialogSession(BaseModel):
     asked_questions: list[StudentQuestion] = Field(
         default_factory=list,
         description=(
-            "M3 连续答疑模式下，学生在本 dialog 中抛出的所有问题：首问（==``question``）为第"
-            "一项，后续由 ``StudentAgent.decide_followup`` 生成的追问依次追加。供决策层查重 / "
-            "评估层按问题分段。M2 闯关模式下仅含首问一项。spawn 时赋初值=[question]。"
+            "M3 连续答疑模式下，``spawn`` 时一次性预生成的全部 N 道题（当前 N=3）。"
+            "首问 == ``asked_questions[0]`` == ``question``；后续题按序排列。"
+            "运行期长度不变、不追加。供 ``QASession`` 按 ``current_question_idx`` 推进。"
+            "M2 闯关模式下仅含首问一项。"
+        ),
+    )
+    question_progress: list[QuestionProgress] = Field(
+        default_factory=list,
+        description=(
+            "M3 连续答疑模式下，与 ``asked_questions`` 按下标对齐的进度列表；每项"
+            "记录单题状态、已用轮数、对应的 ``messages`` 切片范围，供 evaluator 按题"
+            "分段引用证据。M2 闯关模式下可为空列表。"
+        ),
+    )
+    current_question_idx: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "M3 连续答疑模式下，当前正在讨论的题目在 ``asked_questions`` 中的下标。"
+            "指针越过最后一题（``== len(asked_questions)``）表示所有题已结束，整"
+            "个 dialog 应被 resolve。M2 闯关模式下永远 0。"
         ),
     )
 
@@ -149,8 +228,10 @@ StudentStreamEventType = Literal["delta", "final", "followup"]
 - ``final``：本轮学生回复结束，``result`` 是结构化的最终结果（含
   self_resolved）。由 ``StudentAgent.stream_in_dialog`` 产生。
 - ``followup``（M3 / #111）：本轮回复后学生主动抛出的新问题。``new_question``
-  非空。由 ``QASession.stream_teacher_message`` 在 ``final`` 之后可选追加（
-  ``StudentAgent.decide_followup`` 决策 should_followup=True 时）。仅出现一次。
+  非空。由 ``QASession.stream_teacher_message`` 在 ``final`` 之后可选追加：
+  当本轮学生 ``self_resolved=True`` 或当前题 turn 数达上限时，从
+  ``asked_questions`` 队列确定性弹出下一题（不再调用 LLM 决策）。队列空时
+  不发出。仅出现一次。
 """
 
 
@@ -177,7 +258,7 @@ class StudentStreamEvent(BaseModel):
     - delta 不会包含末尾的 ``[懂了]`` 标记（agent 内部用 hold-back 缓冲过滤）
     - final.content 是权威最终文本，UI 收到 final 时建议覆盖一次以处理边界差异
     - delta 可能为空字符串（流未产出新可见文本时不发，但调用方应宽松对待）
-    - followup 仅 M3 连续答疑模式产生，未启用或 LLM 决策不追问时不出现
+    - followup 仅 M3 连续答疑模式产生；当前题未结束或已是最后一题时不出现
     """
 
     type: StudentStreamEventType = Field(..., description="事件类型")

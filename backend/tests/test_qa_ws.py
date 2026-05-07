@@ -175,10 +175,12 @@ def _send(ws, payload: dict[str, Any]) -> None:
 
 
 async def test_session_init_emitted_on_connect(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         msg = _recv(ws)
         assert msg["type"] == "session_init"
         assert msg["seq"] == 0
@@ -190,11 +192,13 @@ async def test_session_init_emitted_on_connect(
 
 
 async def test_select_dialog_emits_dialog_active(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
     dialog_id = next(iter(session.dialogs.keys()))
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)  # session_init
         _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
         msg = _recv(ws)
@@ -204,7 +208,7 @@ async def test_select_dialog_emits_dialog_active(
 
 
 async def test_teacher_message_streams_chunks_then_end(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     final = DialogReplyResult(
         content="哦！我懂了。", self_resolved=True, raw="哦！我懂了。[懂了]"
@@ -221,7 +225,9 @@ async def test_teacher_message_streams_chunks_then_end(
     )
     dialog_id = next(iter(session.dialogs.keys()))
 
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)  # session_init
         _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
         _recv(ws)  # dialog_active
@@ -255,11 +261,13 @@ async def test_teacher_message_streams_chunks_then_end(
 
 
 async def test_resolve_emits_dialog_resolved(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
     dialog_id = next(iter(session.dialogs.keys()))
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)
         _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
         _recv(ws)
@@ -276,11 +284,13 @@ async def test_resolve_emits_dialog_resolved(
 
 
 async def test_abandon_emits_dialog_abandoned(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
     dialog_id = next(iter(session.dialogs.keys()))
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)
         _send(ws, {"type": "abandon", "dialog_id": dialog_id})
         msg = _recv(ws)
@@ -291,10 +301,12 @@ async def test_abandon_emits_dialog_abandoned(
 
 
 async def test_select_unknown_dialog_emits_error(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)
         _send(ws, {"type": "select_dialog", "dialog_id": "ghost-id"})
         err = _recv(ws)
@@ -305,11 +317,13 @@ async def test_select_unknown_dialog_emits_error(
 
 
 async def test_resolve_already_ended_emits_error(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
     dialog_id = next(iter(session.dialogs.keys()))
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)
         _send(ws, {"type": "abandon", "dialog_id": dialog_id})
         _recv(ws)  # dialog_abandoned
@@ -321,12 +335,14 @@ async def test_resolve_already_ended_emits_error(
 
 
 async def test_unknown_session_id_closes_with_4004(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     from starlette.websockets import WebSocketDisconnect
 
     with pytest.raises(WebSocketDisconnect) as exc_info:
-        with client.websocket_connect("/ws/qa-sessions/nonexistent") as ws:
+        with client.websocket_connect(
+            f"/ws/qa-sessions/nonexistent?token={auth_token}"
+        ) as ws:
             # 服务端会先发一条 session_not_found error 再关闭；试着收一下，然后下一次 recv 抛断开
             ws.receive_text()
             ws.receive_text()
@@ -334,10 +350,12 @@ async def test_unknown_session_id_closes_with_4004(
 
 
 async def test_invalid_json_emits_invalid_message_error(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)
         ws.send_text("not json at all")
         err = _recv(ws)
@@ -347,10 +365,12 @@ async def test_invalid_json_emits_invalid_message_error(
 
 
 async def test_unknown_event_type_emits_invalid_message_error(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)
         _send(ws, {"type": "made_up_type"})
         err = _recv(ws)
@@ -360,12 +380,16 @@ async def test_unknown_event_type_emits_invalid_message_error(
 
 
 async def test_second_connection_replaces_first(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     session = await _build_session(isolated_registry)
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws1:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws1:
         _recv(ws1)  # session_init on ws1
-        with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws2:
+        with client.websocket_connect(
+            f"/ws/qa-sessions/{session.id}?token={auth_token}"
+        ) as ws2:
             _recv(ws2)  # session_init on ws2
             # ws1 应当收到一帧 error{replaced} 然后被关闭
             replaced = _recv(ws1)
@@ -374,7 +398,7 @@ async def test_second_connection_replaces_first(
 
 
 async def test_chunk_seq_resets_per_dialog(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     """跨 dialog 的 chunk_seq 计数器互不影响（每个 dialog 都从 0 起）。"""
     session = await _build_session(
@@ -400,7 +424,9 @@ async def test_chunk_seq_resets_per_dialog(
         student_count=2,
     )
     d1, d2 = list(session.dialogs.keys())
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)  # session_init
 
         _send(ws, {"type": "select_dialog", "dialog_id": d1})
@@ -419,7 +445,7 @@ async def test_chunk_seq_resets_per_dialog(
 
 
 async def test_followup_emits_student_new_question(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     """service 层产生 followup 事件时，WS 应推送 student_new_question 帧。"""
     followup_q = StudentQuestion(
@@ -448,7 +474,9 @@ async def test_followup_emits_student_new_question(
     )
     dialog_id = next(iter(session.dialogs.keys()))
 
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)  # session_init (seq=0)
         _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
         _recv(ws)  # dialog_active (seq=1)
@@ -457,9 +485,9 @@ async def test_followup_emits_student_new_question(
             ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "你说说看"}
         )
 
-        chunk = _recv(ws)   # reply_chunk (seq=2)
-        end = _recv(ws)     # reply_end   (seq=3)
-        nq = _recv(ws)      # student_new_question (seq=4)
+        chunk = _recv(ws)  # reply_chunk (seq=2)
+        end = _recv(ws)  # reply_end   (seq=3)
+        nq = _recv(ws)  # student_new_question (seq=4)
 
     assert chunk["type"] == "reply_chunk"
     assert end["type"] == "reply_end"
@@ -472,7 +500,7 @@ async def test_followup_emits_student_new_question(
 
 
 async def test_followup_without_question_is_silently_ignored(
-    client: TestClient, isolated_registry: QASessionRegistry
+    client: TestClient, isolated_registry: QASessionRegistry, auth_token: str
 ) -> None:
     """followup 事件 new_question=None 时不应发帧，连接正常继续。"""
     session = await _build_session(
@@ -493,17 +521,17 @@ async def test_followup_without_question_is_silently_ignored(
     )
     dialog_id = next(iter(session.dialogs.keys()))
 
-    with client.websocket_connect(f"/ws/qa-sessions/{session.id}") as ws:
+    with client.websocket_connect(
+        f"/ws/qa-sessions/{session.id}?token={auth_token}"
+    ) as ws:
         _recv(ws)  # session_init
         _send(ws, {"type": "select_dialog", "dialog_id": dialog_id})
         _recv(ws)  # dialog_active
 
-        _send(
-            ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "说说看"}
-        )
+        _send(ws, {"type": "teacher_message", "dialog_id": dialog_id, "text": "说说看"})
 
-        chunk = _recv(ws)   # reply_chunk
-        end = _recv(ws)     # reply_end
+        chunk = _recv(ws)  # reply_chunk
+        end = _recv(ws)  # reply_end
 
         # 不应再有帧（followup 被跳过了）；发 abandon 验证连接仍在
         _send(ws, {"type": "abandon", "dialog_id": dialog_id})

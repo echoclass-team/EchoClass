@@ -17,6 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
+from api.deps import CurrentUser, get_current_user
 from rag.extractor import _parse_meta, extract_lesson_meta
 from rag.indexer import chunk_text, index_lesson, query_lesson
 from rag.parser import SUPPORTED_EXTENSIONS, parse_bytes, parse_file
@@ -290,6 +291,16 @@ class TestLessonSchema:
 
 class TestLessonAPI:
     """API 路由集成测试（mock LLM + Chroma）。"""
+
+    @pytest.fixture(autouse=True)
+    def _auth_override(self):
+        from main import app
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+            id="test-user", username="tester"
+        )
+        yield
+        app.dependency_overrides.pop(get_current_user, None)
 
     @patch("api.lessons.index_lesson", return_value=5)
     @patch("api.lessons.extract_lesson_meta")
