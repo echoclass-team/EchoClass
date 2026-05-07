@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "H3 形式运算成熟，但长期模板化训练使其元认知弱化"
     }
+  ],
+  "misconception_ids": [
+    "math_logarithm_add_24",
+    "physics_mechanics_centripetal_26",
+    "chem_le_chatelier_28"
   ]
 }

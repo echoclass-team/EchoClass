@@ -44,5 +44,10 @@
       "trait": "concrete_operational",
       "notes": "P5（11 岁）处具体→形式运算过渡，已有部分抽象能力但仍依赖具体例子验证"
     }
+  ],
+  "misconception_ids": [
+    "math_decimal_align_07",
+    "math_arithmetic_multiply_larger_09",
+    "eng_grammar_3rdsingular_01"
   ]
 }

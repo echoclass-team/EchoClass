@@ -44,5 +44,9 @@
       "trait": "concrete_operational",
       "notes": "P2 具体运算早期，但学业薄弱使发展水平实际偏 preoperational 末"
     }
+  ],
+  "misconception_ids": [
+    "chi_stroke_order_03",
+    "math_algebra_equals_05"
   ]
 }

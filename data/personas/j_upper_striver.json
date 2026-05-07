@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "J3 形式运算基本成熟，能处理多步代数与几何证明"
     }
+  ],
+  "misconception_ids": [
+    "math_equation_extraneous_16",
+    "physics_kinematics_acceleration_05",
+    "chem_mass_conservation_03"
   ]
 }

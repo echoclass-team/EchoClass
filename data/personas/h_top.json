@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "H2 形式运算成熟，能进行命题逻辑与多变量推理"
     }
+  ],
+  "misconception_ids": [
+    "math_complex_compare_23",
+    "physics_quantum_photon_24",
+    "chem_le_chatelier_28"
   ]
 }

@@ -44,5 +44,10 @@
       "trait": "formal_operational",
       "notes": "H2 形式运算成熟"
     }
+  ],
+  "misconception_ids": [
+    "physics_momentum_conserve_16",
+    "math_vector_multiply_22",
+    "chi_reading_open_30"
   ]
 }
