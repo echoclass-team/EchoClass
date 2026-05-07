@@ -1,13 +1,13 @@
-"""FeedbackAgent — 给师范生写结课反馈（W2 / #M3-A2 骨架）。
+"""FeedbackAgent — 给师范生写结课反馈。
 
 与 ``EvaluatorAgent`` 配对但**受众不同**：
 
 - ``EvaluatorAgent``（#M3-A1）→ 评委 / 数据看板：维度打分 + 证据
 - ``FeedbackAgent``（本文件）→ 师范生：自然语言的肯定 + 改进 + 下一步
 
-设计原则与 #M3-A1 对齐：
+设计原则：
 
-- 骨架 + mock 优先；真实 LLM 实现由 #M3-A4 在 ``_real_generate`` 里替换
+- 默认 mock 模式保证 B3 / B4 可稳定消费；传入 ``LLMClient`` 时走真实 LLM 路径
 - ``schemas/feedback.py`` 已在 Epic #121 / PR #141 冻结，本 agent 只消费
 - 与 ``EvaluatorAgent`` schema 解耦：``evaluation`` 仅作为可选输入参考（缺失
   时仍能给出占位反馈，配合 ``docs/api_contract.md §2.6.4`` 的降级语义）
@@ -15,15 +15,53 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
+from jinja2 import Environment, FileSystemLoader
+
+from agents.evaluator import build_dialog_projection
 from llm.client import LLMClient
 from schemas.evaluation import EvaluationReport
 from schemas.feedback import TeacherFeedback
 from services.qa_session import QASession
 
 logger = logging.getLogger(__name__)
+
+_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+_jinja_env = Environment(
+    loader=FileSystemLoader(str(_PROMPTS_DIR)),
+    autoescape=False,
+    keep_trailing_newline=True,
+)
+
+_VALID_TONES = {"encouraging", "neutral", "critical"}
+
+
+def _extract_json_object(raw: str) -> dict[str, Any]:
+    match = re.search(r"```(?:json)?\s*(\{.*\})\s*```", raw, re.DOTALL)
+    candidate = match.group(1) if match else None
+    if candidate is None:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start >= 0 and end > start:
+            candidate = raw[start : end + 1]
+    if candidate is None:
+        raise ValueError("no JSON object found in feedback output")
+    data = json.loads(candidate)
+    if not isinstance(data, dict):
+        raise ValueError("feedback output is not a JSON object")
+    return data
+
+
+def _coerce_str_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
 
 
 class FeedbackAgent:
@@ -32,9 +70,8 @@ class FeedbackAgent:
     Parameters
     ----------
     llm
-        ``LLMClient`` 实例。**留 ``None`` 走 mock 模式**，本 issue（#M3-A2）
-        只支持 mock；传入真实 client 抛 ``NotImplementedError``，等 #M3-A4
-        替换。
+        ``LLMClient`` 实例。留 ``None`` 走 mock 模式；传入真实 client 走
+        prompt 渲染 + JSON 解析路径，失败时返回占位降级反馈。
     """
 
     def __init__(self, llm: LLMClient | None = None) -> None:
@@ -58,7 +95,7 @@ class FeedbackAgent:
         当前实现：
 
         - ``llm is None`` → mock：返回固定的 ``[mock]`` 占位文案
-        - 否则 → ``NotImplementedError``（等 #M3-A4）
+        - 否则 → 调 LLM 生成反馈，失败时返回占位降级反馈
         """
         if self.llm is None:
             return self._mock_generate(session, evaluation)
@@ -103,19 +140,59 @@ class FeedbackAgent:
         session: QASession,
         evaluation: EvaluationReport | None,
     ) -> TeacherFeedback:
-        """真实 LLM 反馈实现。**由 #M3-A4 填充。**
+        """真实 LLM 反馈：渲染 prompt → 调 LLM → 解析 JSON → 失败降级。"""
+        template = _jinja_env.get_template("feedback.j2")
+        prompt = template.render(
+            lesson=session.lesson_meta,
+            dialogs=build_dialog_projection(session),
+            evaluation=evaluation,
+        )
+        try:
+            resp = await self.llm.chat(
+                [{"role": "system", "content": prompt}],
+                temperature=0.4,
+            )
+            raw = resp.choices[0].message.content or ""
+            data = _extract_json_object(raw)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "FeedbackAgent real generation failed for session %s: %s",
+                session.id,
+                exc,
+                exc_info=True,
+            )
+            return self._fallback_feedback()
 
-        预期流程（设计参考，非冻结）：
+        strengths = _coerce_str_list(data.get("strengths"))
+        improvements = _coerce_str_list(data.get("improvements"))
+        next_steps = _coerce_str_list(data.get("next_steps"))
+        tone = data.get("tone")
+        if tone not in _VALID_TONES:
+            tone = "neutral"
 
-        1. 用 ``prompts/feedback.j2`` 渲染：注入对话片段 + 评估分（若有）
-        2. ``self.llm.chat(...)`` 获取 JSON 输出
-        3. 解析为 ``TeacherFeedback``，``tone`` 字段必须是 schema 三选一
-        4. LLM 失败时降级：strengths/improvements/next_steps 用占位文案，
-           ``tone="neutral"``，字段不为 null（契约 api_contract §2.6.4）
-        """
-        raise NotImplementedError(
-            "Real LLM feedback lands in #M3-A4. "
-            "Pass llm=None to use the mock implementation."
+        # 契约：三个列表均不得为空；缺失时补占位以保持 §2.6.4 降级语义
+        if not strengths:
+            strengths = ["[fallback] 本次反馈未能生成具体亮点，请结合对话自查。"]
+        if not improvements:
+            improvements = ["[fallback] 本次反馈未能生成具体改进点，请结合对话自查。"]
+        if not next_steps:
+            next_steps = ["[fallback] 建议回看对话并整理下次答疑的准备要点。"]
+
+        return TeacherFeedback(
+            strengths=strengths,
+            improvements=improvements,
+            next_steps=next_steps,
+            tone=tone,
+            generated_at=datetime.now(timezone.utc),
+        )
+
+    def _fallback_feedback(self) -> TeacherFeedback:
+        return TeacherFeedback(
+            strengths=["[fallback] 反馈生成暂不可用，请稍后重试。"],
+            improvements=["[fallback] 反馈生成暂不可用，请稍后重试。"],
+            next_steps=["[fallback] 反馈生成暂不可用，请稍后重试。"],
+            tone="neutral",
+            generated_at=datetime.now(timezone.utc),
         )
 
 

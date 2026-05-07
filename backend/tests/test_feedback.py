@@ -1,16 +1,15 @@
 """``agents.feedback`` 单元测试 (#M3-A2 / #138)。
 
-仅覆盖骨架 + mock 行为，不调真实 LLM。
-真实 LLM 路径（``llm`` 非空）仅断言抛 ``NotImplementedError``，等 #M3-A4 替换。
+覆盖 mock 行为、真实路径 JSON 解析与失败降级；不调真实 LLM。
 """
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock
-
-import pytest
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
 
 from agents.feedback import FeedbackAgent
 from schemas.evaluation import EvaluationReport, RubricScore
@@ -107,23 +106,91 @@ async def test_mock_feedback_is_json_serializable_for_b3() -> None:
     assert restored.strengths == fb.strengths
 
 
-# ============================================================ real path stub
+# ============================================================ real generate
 
 
-async def test_real_generate_not_implemented_yet() -> None:
-    """传入 LLMClient 的真实路径应在 #M3-A4 实现前明确抛错。"""
+async def test_real_generate_parses_llm_json() -> None:
     fake_llm = MagicMock()
+    fake_llm.chat = AsyncMock(
+        return_value=SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=json.dumps(
+                            {
+                                "strengths": ["先肯定学生的提问。"],
+                                "improvements": ["遇迷思时先问例子。"],
+                                "next_steps": ["准备 2 个反例。"],
+                                "tone": "encouraging",
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
+                )
+            ]
+        )
+    )
     agent = FeedbackAgent(llm=fake_llm)
-    with pytest.raises(NotImplementedError, match="#M3-A4"):
-        await agent.generate(_fake_session())
+
+    fb = await agent.generate(_fake_session(), _fake_evaluation())
+
+    assert fb.tone == "encouraging"
+    assert fb.strengths == ["先肯定学生的提问。"]
+    assert fb.improvements == ["遇迷思时先问例子。"]
+    assert fb.next_steps == ["准备 2 个反例。"]
+    fake_llm.chat.assert_awaited_once()
+    messages = fake_llm.chat.await_args.args[0]
+    assert messages[0]["role"] == "system"
+    assert "教案" in messages[0]["content"]
+
+
+async def test_real_generate_defaults_invalid_tone_to_neutral() -> None:
+    fake_llm = MagicMock()
+    fake_llm.chat = AsyncMock(
+        return_value=SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=json.dumps(
+                            {
+                                "strengths": ["a"],
+                                "improvements": ["b"],
+                                "next_steps": ["c"],
+                                "tone": "不合法枚举",
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
+                )
+            ]
+        )
+    )
+    agent = FeedbackAgent(llm=fake_llm)
+
+    fb = await agent.generate(_fake_session())
+
+    assert fb.tone == "neutral"
+
+
+async def test_real_generate_falls_back_when_llm_fails() -> None:
+    fake_llm = MagicMock()
+    fake_llm.chat = AsyncMock(side_effect=RuntimeError("boom"))
+    agent = FeedbackAgent(llm=fake_llm)
+
+    fb = await agent.generate(_fake_session())
+
+    assert fb.tone == "neutral"
+    assert len(fb.strengths) >= 1
+    assert len(fb.improvements) >= 1
+    assert len(fb.next_steps) >= 1
+    all_lines = fb.strengths + fb.improvements + fb.next_steps
+    assert all("[fallback]" in line for line in all_lines)
 
 
 # ============================================================ prompt file
 
 
 def test_feedback_prompt_template_exists() -> None:
-    prompt_path = (
-        Path(__file__).resolve().parent.parent / "prompts" / "feedback.j2"
-    )
+    prompt_path = Path(__file__).resolve().parent.parent / "prompts" / "feedback.j2"
     assert prompt_path.exists()
     assert prompt_path.stat().st_size > 0
