@@ -1,0 +1,48 @@
+{
+  "id": "b0000001-0000-4000-8000-000000000002",
+  "name": "陆志远",
+  "gender": "男",
+  "grade": "H2",
+  "age": 17,
+  "stage_id": "h",
+  "subject_level": "优秀",
+  "speech_style": "表达清晰偏文学性，爱用类比与文字描述多于数学符号。谈到理科时常说'这个我理解但不会做'、'意思我懂，就是算不出来'。句式偏书面，偶带引经据典。",
+  "misconception_tendencies": [
+    "把物理过程当故事讲，忽略数学严谨性（如用'能量传过去'代替具体公式推导）",
+    "把文科'理解了就对了'的标准套到理科，认为'定性理解' = '掌握'",
+    "数学符号理解停在命名层（如 ∇ 只知念'nabla'但不知梯度几何含义）",
+    "几何图形看得懂意思但不会转化为代数方程验证"
+  ],
+  "attention_span": "long",
+  "behavior_traits": [
+    "文科课抢答积极",
+    "理科课安静观察",
+    "理科题遇卡 3 分钟内会放弃转看文科",
+    "爱用文字长段描述物理过程而不列式",
+    "同一道题能讲清道理但算不出答案"
+  ],
+  "avatar_seed": "lu-zhiyuan-partial",
+  "summary": "高二男生，文科强+理科弱偏科型。练习点：逼他用数学符号重新演绎已理解的物理过程",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "整体效能感高（文科拔尖），但仅在理科任务上动摇；老师应识别这种域特异性，避免用理科任务全面否定他"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "intrinsic_motivation",
+      "notes": "对'理解'型内容有内驱，对'计算'型没有；老师可借其文学兴趣切入理科（用故事化引入但要求符号化落地）"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_low_scaffolding",
+      "notes": "认知能力强，文字表达甚至超前龄；老师不应在概念层铺垫，应在'从文字到符号的翻译'这个具体技能层给脚手架"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "H2 形式运算成熟"
+    }
+  ]
+}

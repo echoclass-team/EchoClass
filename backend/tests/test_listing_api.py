@@ -86,7 +86,7 @@ class TestPersonasAPI:
         assert resp.status_code == 200
         data = assert_wrapped(resp.json())
         assert isinstance(data, list)
-        assert len(data) == 18
+        assert len(data) == 21  # v1.3: 原 18 + PR C 新增 3 份高中
         # 概要字段齐全
         for p in data:
             assert "id" in p

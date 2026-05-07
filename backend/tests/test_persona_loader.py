@@ -20,8 +20,8 @@ VALID_STAGE_IDS = {"p_lower", "p_middle", "p_upper", "j_lower", "j_upper", "h"}
 
 
 def test_load_all_personas(personas: list[Persona]) -> None:
-    """应加载 18 个人设（6 学段 × 3 水平，跳过 _schema.json）。"""
-    assert len(personas) == 18
+    """应加载 21 个人设（v1.3：原 18 份 + PR C 新增 3 份高中 persona，跳过 _schema.json）。"""
+    assert len(personas) == 21
 
 
 def test_personas_cover_all_stages(personas: list[Persona]) -> None:

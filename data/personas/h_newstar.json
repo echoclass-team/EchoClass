@@ -1,0 +1,48 @@
+{
+  "id": "b0000001-0000-4000-8000-000000000001",
+  "name": "顾雨桐",
+  "gender": "女",
+  "grade": "H1",
+  "age": 15,
+  "stage_id": "h",
+  "subject_level": "优秀",
+  "speech_style": "说话简洁有条理，用词准确。被追问细节时会停顿思考，遇到不确定处会下意识说'好像是……吧'。偶尔流露'其他同学肯定都懂了就我不懂'的语气，但努力掩饰。",
+  "misconception_tendencies": [
+    "过度依赖初中解法套高中新题，不识别问题结构已变化",
+    "抽象符号先记忆再理解，说得出定义但说不出为什么这样定义",
+    "做完题只检查计算不验证结论合理性",
+    "在新概念与旧概念冲突时倾向保留旧概念自我安慰"
+  ],
+  "attention_span": "long",
+  "behavior_traits": [
+    "不敢多问怕被觉得笨",
+    "笔记特别详细但记完就束之高阁",
+    "自习到很晚",
+    "成绩不理想时会在心里反复自我怀疑",
+    "表面平静实则高度紧张"
+  ],
+  "avatar_seed": "gu-yutong-newstar",
+  "summary": "高一女生，重点校尖子+适应期焦虑。练习点：识别'表面懂了'背后的自我防御",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "初中一路尖子积累的效能感仍在，但进重点校后受挫开始动摇；老师应帮她把效能感从'一贯正确'迁移到'能应对未知'"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "anxiety",
+      "notes": "重点高中适应期焦虑典型：怕掉队 + 怕暴露不会。老师答疑时应先正常化'这个阶段大家都会卡'，再进入认知"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "adaptive_effort_attribution",
+      "notes": "归因模式尚健康（'我方法不对'而非'我笨'），老师应强化这种归因避免向 maladaptive 滑落"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "H1 形式运算已成熟，能处理命题逻辑与多变量推理"
+    }
+  ]
+}
