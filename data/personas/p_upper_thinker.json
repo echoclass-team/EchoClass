@@ -21,5 +21,27 @@
     "害怕公开出错"
   ],
   "avatar_seed": "sun-yaqi-thinker",
-  "summary": "六年级深思型女生，爱追问'为什么'，自尊心强需要保护"
+  "summary": "六年级深思型女生，爱追问'为什么'，自尊心强需要保护",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "P6 优秀 + 注意力 long + 系统思考 = 该学段顶部效能感；老师答疑可跳过基础铺垫"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "intrinsic_motivation",
+      "notes": "'爱追问为什么' = 经典内驱学习者；老师应给探究空间而非直接给答案"
+    },
+    {
+      "theory_id": "posner_conceptual_change",
+      "trait": "pre_accommodation",
+      "notes": "自尊心强 + 爱深思导致面对反例时容易卡在 dissatisfaction 阶段不肯放弃旧观念；老师需用'我们一起看看'的协作语气而非'你错了'的判定语气"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P6（11 岁）具体运算末期，开始有形式运算萌芽（命题思维 / 假设推理初显）"
+    }
+  ]
 }

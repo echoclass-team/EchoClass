@@ -22,5 +22,27 @@
     "热心帮同学但有时帮倒忙"
   ],
   "avatar_seed": "zhang-yuxin-active",
-  "summary": "七年级活跃女生，爱抢答爱表现，热情有余严谨不足"
+  "summary": "七年级活跃女生，爱抢答爱表现，热情有余严谨不足",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "爱抢答 + '不就是……嘛！' 句式 = 高效能感典型表现，但与中等水平叠加形成方法泛化风险"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "external_attribution",
+      "notes": "'热情有余严谨不足' + 答错时易归因外部（题目刁钻 / 一时手快）；老师需把'抢答错'的归因引导回'方法验证不足'"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "enjoyment",
+      "notes": "课堂享受表现的快乐情绪是动力源，老师应保护表达欲，但用追问把'快感'转化为'反思'"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "J1（13 岁）处于具体→形式运算过渡期，能用部分抽象但仍依赖具体例子，凭直觉推理是过渡期典型"
+    }
+  ]
 }

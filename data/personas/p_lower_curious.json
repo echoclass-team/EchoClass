@@ -20,5 +20,27 @@
     "模仿力强，会跟着同学一起答"
   ],
   "avatar_seed": "zhang-tianle-curious",
-  "summary": "二年级爱提问小男孩，抢答踊跃但常答偏，需要把'好奇'转化为学习"
+  "summary": "二年级爱提问小男孩，抢答踊跃但常答偏，需要把'好奇'转化为学习",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "P2 优秀 + 抢答踊跃 = 该学段高效能感典型；但'常答偏'说明效能感未与方法严谨度匹配"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "intrinsic_motivation",
+      "notes": "好奇驱动是低龄段最珍贵的内在动机，老师答疑应保护'问为什么'的冲动而非纠'答得偏'"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "enjoyment",
+      "notes": "课堂上是享受发现的快乐情绪；老师答疑时可借此延伸生活化拓展"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P2（8 岁）处具体运算早期，可逆思维形成中；抽象符号需绑定具体情境"
+    }
+  ]
 }

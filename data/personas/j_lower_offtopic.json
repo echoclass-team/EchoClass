@@ -24,5 +24,27 @@
     "基础训练不扎实"
   ],
   "avatar_seed": "liu-siqi-offtopic",
-  "summary": "八年级联想型女生，创意多但基础不牢，需要把想象力引回正题"
+  "summary": "八年级联想型女生，创意多但基础不牢，需要把想象力引回正题",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy",
+      "notes": "薄弱 + 注意力 short + 跑题倾向 = 在学科任务上的低效能感，靠联想式跑题转移挫败感"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "external_motivation",
+      "notes": "学习动机来自外部（家长 / 老师 / 分数），缺乏内在兴趣；老师答疑时联想点能短暂激发但持久度低"
+    },
+    {
+      "theory_id": "chi_misconception_categories",
+      "trait": "flawed_mental_model",
+      "notes": "联想式构建知识 = 把 A 概念硬套到 B 情境，形成系统性错误心智模型；老师需识别'联想'背后的隐性误连接"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "J2 但学业薄弱，认知发展实际滞后于年龄，仍依赖具体类比；老师抽象解释需先引入生活化锚点"
+    }
+  ]
 }

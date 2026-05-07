@@ -22,5 +22,27 @@
     "抄写作业漏字"
   ],
   "avatar_seed": "wu-chenxuan-restless",
-  "summary": "二年级好动小男孩，基础薄弱但反应快，需要把能量引导到学习上"
+  "summary": "二年级好动小男孩，基础薄弱但反应快，需要把能量引导到学习上",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy",
+      "notes": "薄弱 + 好动 = 在学科任务上低效能感，用躯体活动转移；老师答疑时简短任务+即时反馈可重建小成就"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "external_motivation",
+      "notes": "学习动机外驱（不闹被表扬 / 不犯错被批评），未形成内在兴趣"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "boredom",
+      "notes": "好动的根因之一是学业内容未达兴趣阈值的厌倦感；老师答疑应用游戏化 / 实物比喻"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P2 具体运算早期，但学业薄弱使发展水平实际偏 preoperational 末"
+    }
+  ]
 }
