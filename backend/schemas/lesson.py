@@ -35,6 +35,13 @@ class LessonUploadData(BaseModel):
     objectives: list[str] = Field(default_factory=list, description="教学目标")
     key_points: list[str] = Field(default_factory=list, description="教学重点")
     difficult_points: list[str] = Field(default_factory=list, description="教学难点")
+    reused: bool = Field(
+        default=False,
+        description=(
+            "本次上传是否命中了该用户已有同内容教案的缓存：True 表示未重新"
+            "解析 / 索引，直接复用了已存在的 ``lesson_id`` 与 Chroma 切片。"
+        ),
+    )
 
 
 class LessonListItem(BaseModel):

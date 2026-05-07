@@ -16,7 +16,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from api.deps import CurrentUser, get_current_user
 from api.response import ok_response
-from db.crud import delete_lesson, get_lesson_by_id, list_lessons_by_owner, save_lesson
+from db.crud import (
+    delete_lesson,
+    get_lesson_by_hash,
+    get_lesson_by_id,
+    list_lessons_by_owner,
+    save_lesson,
+)
 from llm.client import LLMClient
 from rag.extractor import extract_lesson_meta
 from rag.indexer import index_lesson
@@ -173,6 +179,55 @@ async def upload_lesson(
         raise HTTPException(status_code=400, detail="No filename provided")
 
     content = await file.read()
+    content_hash = hashlib.sha256(content).hexdigest()[:16]
+
+    # dedup：同一用户重复上传完全相同的文件内容 → 直接复用已有 lesson_id
+    # 与 Chroma 切片，不再调用 parser / extractor / indexer，避免重复消耗
+    # LLM token 与向量库空间（#132）。
+    from db.engine import SessionLocal
+    db = SessionLocal()
+    try:
+        existing = get_lesson_by_hash(db, content_hash, _user.id)
+    finally:
+        db.close()
+    if existing is not None:
+        try:
+            meta = LessonMeta(**json.loads(existing.meta_json))
+        except (ValueError, TypeError) as e:
+            # 理论上 meta_json 永远是 LessonMeta 的合法 dump；若损坏则降级走重建路径
+            logger.warning(
+                "stale meta_json for lesson %s, falling back to re-ingest: %s",
+                existing.id,
+                e,
+            )
+        else:
+            record = LessonRecord(
+                lesson_id=existing.id,
+                filename=existing.filename,
+                meta=meta,
+                text_length=existing.text_length,
+                chunk_count=existing.chunk_count,
+            )
+            _store[existing.id] = record
+            logger.info(
+                "Reused lesson %s for owner %s (hash=%s)",
+                existing.id,
+                _user.id,
+                content_hash,
+            )
+            return ok_response(
+                LessonUploadData(
+                    lesson_id=existing.id,
+                    subject=meta.subject,
+                    grade=meta.grade,
+                    topic=meta.topic,
+                    objectives=meta.objectives,
+                    key_points=meta.key_points,
+                    difficult_points=meta.difficult_points,
+                    reused=True,
+                )
+            )
+
     try:
         text = parse_bytes(content, file.filename)
     except ValueError as e:
@@ -199,9 +254,6 @@ async def upload_lesson(
     )
     _store[lesson_id] = record
 
-    # DB 持久化
-    content_hash = hashlib.sha256(content).hexdigest()[:16]
-    from db.engine import SessionLocal
     db = SessionLocal()
     try:
         save_lesson(
@@ -235,6 +287,7 @@ async def upload_lesson(
             objectives=meta.objectives,
             key_points=meta.key_points,
             difficult_points=meta.difficult_points,
+            reused=False,
         )
     )
 
