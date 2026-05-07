@@ -22,6 +22,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api import qa_sessions as qa_sessions_module
+from api.deps import CurrentUser, get_current_user
 from api.qa_sessions import (
     AgentFactory,
     LessonLookup,
@@ -34,6 +35,8 @@ from schemas.question import StudentQuestion
 from schemas.stage import StageProfile
 from schemas.student import Persona, load_personas
 from services.qa_session_registry import QASessionRegistry, get_registry
+
+_FAKE_USER = CurrentUser(id="test-user-001", username="test_teacher")
 
 
 # ============================================================ Fakes
@@ -111,7 +114,9 @@ def client(
     lesson_store: dict[str, LessonRecord],
     fake_agents: AgentFactory,
 ) -> TestClient:
-    return TestClient(app)
+    app.dependency_overrides[get_current_user] = lambda: _FAKE_USER
+    yield TestClient(app)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture
@@ -413,7 +418,13 @@ async def test_get_session_state_reflects_transitions(
     first_id = next(iter(session.dialogs))
     second_id = list(session.dialogs)[1]
     session.start_dialog(first_id)
-    session.mark_resolved(first_id, source="teacher_marked")
+    # M3: count_per_student=2, 需要对每个子题 resolve 才能结束 dialog
+    session.mark_resolved(
+        first_id, source="teacher_marked"
+    )  # Q1 resolved, advance to Q2
+    session.mark_resolved(
+        first_id, source="teacher_marked"
+    )  # Q2 resolved, dialog resolved
     session.abandon_dialog(second_id)
 
     resp = client.get(f"/api/qa-sessions/{session_id}")
@@ -454,7 +465,11 @@ async def test_end_session_success(
     session = await isolated_registry.get(session_id)
     assert session is not None
     first_id = next(iter(session.dialogs))
-    session.mark_resolved(first_id, source="teacher_marked")
+    # M3: count_per_student=2, 需要 resolve 两次才能结束整个 dialog
+    session.mark_resolved(first_id, source="teacher_marked")  # Q1 resolved → Q2
+    session.mark_resolved(
+        first_id, source="teacher_marked"
+    )  # Q2 resolved → dialog resolved
 
     resp = client.post(f"/api/qa-sessions/{session_id}/end")
     assert resp.status_code == 200

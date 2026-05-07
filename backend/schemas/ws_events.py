@@ -251,8 +251,9 @@ class WsReplyEnd(_ServerBase):
 class WsStudentNewQuestion(_ServerBase):
     """学生在连续答疑中主动抛出的新问题帧（M3 / issue #111）。
 
-    仅在**连续答疑模式**（v2）出现：``StudentAgent.decide_followup`` 判断学生
-    应该主动追问时，由服务端在合适时机推送（通常在 ``reply_end`` 之后）。
+    仅在**连续答疑模式**（v2）出现：当前题被 ``self_resolved`` 或 ``turn_limit``
+    触发结束后，由 ``QASession`` 从 ``asked_questions`` 队列**确定性**弹出下一题
+    并推送（通常在 ``reply_end`` 之后；不再调用 LLM 决策）。
 
     前端处理：追加一个“新问题”气泡到对话区域（区别于普通 reply），可推送
     提示师范生“学生提出了新问题”；question 字段复用 ``StudentQuestion``，可以

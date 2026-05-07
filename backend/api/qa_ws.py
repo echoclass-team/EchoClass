@@ -396,6 +396,9 @@ async def _handle_resolve(
             dialog_id=event.dialog_id,
         )
         return
+    dialog = session.get_dialog(event.dialog_id)
+    prev_msg_count = len(dialog.messages)
+
     try:
         session.mark_resolved(event.dialog_id, source=event.source)
     except QASessionError as exc:
@@ -407,12 +410,50 @@ async def _handle_resolve(
             dialog_id=event.dialog_id,
         )
         return
-    await _send(
-        ws,
-        WsDialogResolved(
-            seq=seq.next(), dialog_id=event.dialog_id, source=event.source
-        ),
-    )
+
+    # M3 推进逻辑：mark_resolved 可能抛出了新题（is_new_question 消息 append 到 messages）
+    if len(dialog.messages) > prev_msg_count:
+        last_msg = dialog.messages[-1]
+        if last_msg.is_new_question and last_msg.question_id:
+            # 找到新抛的 question 对象
+            next_q = next(
+                (q for q in dialog.asked_questions if q.id == last_msg.question_id),
+                None,
+            )
+            if next_q is not None:
+                await _send(
+                    ws,
+                    WsStudentNewQuestion(
+                        seq=seq.next(),
+                        dialog_id=event.dialog_id,
+                        question=next_q,
+                    ),
+                )
+                # 落盘
+                try:
+                    db = SessionLocal()
+                    f_seq = get_next_seq(db, session.id)
+                    save_dialog_message(
+                        db,
+                        session_id=session.id,
+                        dialog_id=event.dialog_id,
+                        seq=f_seq,
+                        role="student",
+                        content=next_q.content,
+                        is_new_question=True,
+                        question_id=next_q.id,
+                    )
+                    db.close()
+                except Exception:  # noqa: BLE001
+                    logger.warning("persist resolve-advance msg failed", exc_info=True)
+
+    if dialog.status == "resolved":
+        await _send(
+            ws,
+            WsDialogResolved(
+                seq=seq.next(), dialog_id=event.dialog_id, source=event.source
+            ),
+        )
 
 
 async def _handle_abandon(

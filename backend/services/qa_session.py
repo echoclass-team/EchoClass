@@ -36,14 +36,27 @@ from schemas.dialog import (
     DialogMessage,
     DialogReplyResult,
     DialogSession,
+    QuestionProgress,
     ResolutionSource,
     StudentStreamEvent,
 )
-from schemas.followup import FollowupDecision
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
 
 logger = logging.getLogger(__name__)
+
+PRESET_QUESTIONS_PER_STUDENT = 3
+"""M3 预生成问题数：每个学生 spawn 时一次性生成的题数。
+
+重要：改动此值要同步更新 ``schemas/dialog.py`` 和 ``docs/api_contract.md`` 中的
+N=3 文案。过大（≥5）会显著拉高 spawn 阶段 LLM 输出 tokens，且学生处境难以
+支撑 5+ 个互独立的真实问题。
+"""
+
+MAX_TURNS_PER_QUESTION = 8
+"""M3 单题最大轮数（老师一句 + 学生一句算1 轮）。超过即单题自动 ``abandoned``
+（``resolution_source='turn_limit'``）并推进下一题，避免关卡在单题上。
+"""
 
 
 class QASessionError(Exception):
@@ -95,37 +108,44 @@ class QASession:
         self,
         student_agents: Iterable[StudentAgent],
         *,
-        questions_per_student: int = 1,
+        questions_per_student: int = PRESET_QUESTIONS_PER_STUDENT,
     ) -> list[StudentQuestion]:
-        """为每个学生 spawn 一个 thread dialog（M3 / #111）。
+        """为每个学生 spawn 一个 thread dialog（M3）。
 
-        每个学生调 ``generate_questions(count=1)`` 产出首问，在本 session 里创建
-        **一个** ``DialogSession``（``id == student_id``）。后续追问不在这里生成，
-        由 ``send/stream_teacher_message`` 内部调 ``decide_followup`` 产生并以
-        ``DialogMessage(is_new_question=True)`` 形式入 ``messages`` + 追加到
-        ``dialog.asked_questions``。
+        每个学生调 ``generate_questions(count=questions_per_student)`` 一次性预生成 N
+        道独立问题（缺省 N=``PRESET_QUESTIONS_PER_STUDENT``=3），在本 session 里创建
+        **一个** ``DialogSession``（``id == student_id``），全部 N 题按序放入
+        ``asked_questions``，对齐 ``question_progress`` 记录每题进度。
+
+        首问即 ``asked_questions[0]``，直接作为 dialog 入口抛出给师范生；后续题
+        在单题 resolved（学生 ``[懂了]``）或 ``turn_limit`` 超限时由
+        ``send/stream_teacher_message`` 确定性弹出为 ``DialogMessage(is_new_question=True)``。
 
         生成并行（``asyncio.gather``），任一学生失败不影响其他。返回按学生提交
-        顺序的首问列表。
+        顺序的首问列表（**仅首问**，用于对外的问题列表 DTO；后续题可从
+        ``dialog.asked_questions`` 取到）。
 
         Parameters
         ----------
         questions_per_student : int
-            **已废弃、仅兼容 M2 调用方**。M3 下每学生只有 1 个 dialog；传 >1 不报错
-            但仅取首题。后续 PR 清理 M2 测试后会移除。
+            每个学生预生成的题目数量。默认 3；传 1 则退化为 M2/早期 M3 行为（
+            仅首问，后续题队列为空）。不允许 0 或负数。
         """
+        if questions_per_student < 1:
+            raise QASessionError(
+                f"questions_per_student must be >= 1, got {questions_per_student}"
+            )
         agents = list(student_agents)
         if not agents:
             return []
 
-        # M3: 仅需首问，overhead·overshoot·self_check 仅一次。
-        # 各学生并行入入口，索引位置与 agents 一致以保证顺序。
+        # 各学生并行生成（预生成 N 题走同一次 ask prompt + self-check + 多样性筛选）。
         results: list[list[StudentQuestion]] = await asyncio.gather(
-            *(self._generate_safe(a, count=1) for a in agents),
+            *(self._generate_safe(a, count=questions_per_student) for a in agents),
             return_exceptions=False,
         )
 
-        all_questions: list[StudentQuestion] = []
+        first_questions: list[StudentQuestion] = []
         for agent, qs in zip(agents, results):
             if not qs:
                 logger.warning(
@@ -135,30 +155,49 @@ class QASession:
                 )
                 continue
             student_id = qs[0].speaker_id
-            first_question = qs[0].model_copy(update={"id": student_id})
+            # 首问 id 强绑 student_id，保证 dialog.id == student_id == first_question.id。
+            # 后续题保留 LLM 给的 uuid，避免重复。
+            normalized: list[StudentQuestion] = [
+                qs[0].model_copy(update={"id": student_id, "speaker_id": student_id})
+            ]
+            for q in qs[1:]:
+                normalized.append(q.model_copy(update={"speaker_id": student_id}))
             self._agents[student_id] = agent
             dialog = DialogSession(
                 id=student_id,
                 student_id=student_id,
-                question=first_question,
+                question=normalized[0],
                 status="pending",
-                asked_questions=[first_question],
+                asked_questions=normalized,
+                question_progress=[
+                    QuestionProgress(
+                        question_id=q.id,
+                        status="pending",
+                        turns_used=0,
+                        # 所有题预初始化为 0；在 start_dialog / 推进时改写成真实下标
+                        message_start_idx=0,
+                    )
+                    for q in normalized
+                ],
+                current_question_idx=0,
             )
             self.dialogs[dialog.id] = dialog
             self._pending_order.append(dialog.id)
-            all_questions.append(first_question)
+            first_questions.append(normalized[0])
 
         logger.info(
-            "QASession[%s] spawned %d student threads",
+            "QASession[%s] spawned %d student threads (N=%d per student)",
             self.id,
-            len(all_questions),
+            len(first_questions),
+            questions_per_student,
             extra={
                 "event": "session_spawn",
                 "session_id": self.id,
-                "student_count": len(all_questions),
+                "student_count": len(first_questions),
+                "questions_per_student": questions_per_student,
             },
         )
-        return all_questions
+        return first_questions
 
     async def _generate_safe(
         self, agent: StudentAgent, *, count: int
@@ -207,7 +246,11 @@ class QASession:
     # ============================================================ transitions
 
     def start_dialog(self, dialog_id: str) -> DialogSession:
-        """把 ``pending`` 对话切为 ``active``。重复调用对已 active 的会话是幂等的。"""
+        """把 ``pending`` 对话切为 ``active``。重复调用对已 active 的会话是幂等的。
+
+        M3：同时把 ``question_progress[current_question_idx]`` 标为 ``active``，并绑定
+        ``message_start_idx = 0``（首问的所有 message 累加从头开始）。
+        """
         dialog = self.get_dialog(dialog_id)
         if dialog.status == "active":
             return dialog
@@ -217,6 +260,11 @@ class QASession:
             )
         dialog.status = "active"
         dialog.started_at = datetime.now(timezone.utc)
+        # 激活当前题的 progress（如果有 question_progress）
+        if dialog.question_progress:
+            progress = dialog.question_progress[dialog.current_question_idx]
+            progress.status = "active"
+            progress.message_start_idx = len(dialog.messages)
         # 从 pending 队列移除
         if dialog_id in self._pending_order:
             self._pending_order.remove(dialog_id)
@@ -266,7 +314,7 @@ class QASession:
                 self_resolved=result.self_resolved,
             )
         )
-        await self._decide_and_record_followup(agent=agent, dialog=dialog)
+        self._after_student_reply(dialog, result)
         return result
 
     async def stream_teacher_message(
@@ -347,44 +395,143 @@ class QASession:
                 f"stream_in_dialog finished without final event for {dialog_id}"
             )
         if final_event.result is not None:
-            decision = await self._decide_and_record_followup(
-                agent=agent, dialog=dialog
-            )
-            if decision.should_followup and decision.new_question is not None:
-                yield StudentStreamEvent(
-                    type="followup", new_question=decision.new_question
-                )
+            next_q = self._after_student_reply(dialog, final_event.result)
+            if next_q is not None:
+                yield StudentStreamEvent(type="followup", new_question=next_q)
 
     @staticmethod
     def _current_question(dialog: DialogSession) -> StudentQuestion:
-        return dialog.asked_questions[-1] if dialog.asked_questions else dialog.question
+        """返回当前正在讨论的题目。
 
-    async def _decide_and_record_followup(
-        self, *, agent: StudentAgent, dialog: DialogSession
-    ) -> FollowupDecision:
-        decide_followup = getattr(agent, "decide_followup", None)
-        if decide_followup is None:
-            return FollowupDecision.no_followup(reason="decide_followup unavailable")
+        M3：``asked_questions[current_question_idx]``（确定性指针）。
+        M2 / 单问退化：空列表时回调到 ``dialog.question``。
+        """
+        if not dialog.asked_questions:
+            return dialog.question
+        idx = min(dialog.current_question_idx, len(dialog.asked_questions) - 1)
+        return dialog.asked_questions[idx]
 
-        decision = await decide_followup(
-            current_question=self._current_question(dialog),
-            dialog_history=dialog.messages,
-            lesson_meta=self.lesson_meta,
-            asked_questions=dialog.asked_questions or [dialog.question],
+    def _after_student_reply(
+        self, dialog: DialogSession, result: DialogReplyResult
+    ) -> StudentQuestion | None:
+        """学生回复落库后调用，判定是否推进子题。
+
+        规则：
+
+        - ``progress.turns_used += 1``（本轮老师+学生算 1 轮）
+        - 若 ``result.self_resolved=True`` → 标单题 ``resolved (self_resolve)`` 并推进
+        - 若 ``turns_used >= MAX_TURNS_PER_QUESTION`` → 标单题 ``abandoned (turn_limit)`` 并推进
+        - 否则本题继续
+
+        Returns
+        -------
+        StudentQuestion | None
+            推进后抛出的新题（已作为 ``is_new_question=True`` 消息 append 到
+            ``dialog.messages``）；若不推进或已是最后一题则返回 ``None``。
+        """
+        if not dialog.question_progress:
+            return None  # M2 退化：没有进度追踪，不推进
+        idx = dialog.current_question_idx
+        if idx >= len(dialog.question_progress):
+            return None
+        progress = dialog.question_progress[idx]
+        progress.turns_used += 1
+
+        if result.self_resolved:
+            return self._advance_after_question_end(dialog, source="self_resolve")
+        if progress.turns_used >= MAX_TURNS_PER_QUESTION:
+            return self._advance_after_question_end(dialog, source="turn_limit")
+        return None
+
+    def _advance_after_question_end(
+        self,
+        dialog: DialogSession,
+        *,
+        source: ResolutionSource,
+    ) -> StudentQuestion | None:
+        """关闭当前子题并推进指针；可能抛下一题或结束整 dialog。
+
+        该函数为 ``_after_student_reply``（学生自称懂了 / 超轮限）与
+        ``mark_resolved``（老师手动点解答）共用的推进内核。
+
+        Source 映射 ``progress.status``：
+
+        - ``self_resolve`` / ``teacher_marked`` / ``auto_evaluator`` → ``resolved``
+        - ``abandoned`` / ``turn_limit`` → ``abandoned``
+
+        Returns
+        -------
+        StudentQuestion | None
+            抛出的下一题；若已是最后一题则 ``None`` 并把 ``dialog`` 整体标 ``resolved``。
+        """
+        idx = dialog.current_question_idx
+        if idx >= len(dialog.question_progress):  # pragma: no cover - 防御性
+            return None
+        progress = dialog.question_progress[idx]
+        if progress.status in {"resolved", "abandoned"}:
+            return None  # 幂等：本题已结束
+        progress.status = (
+            "resolved"
+            if source in {"self_resolve", "teacher_marked", "auto_evaluator"}
+            else "abandoned"
         )
-        if decision.should_followup and decision.new_question is not None:
-            question = decision.new_question
-            dialog.asked_questions.append(question)
-            dialog.messages.append(
-                DialogMessage(
-                    role="student",
-                    content=question.content,
-                    timestamp=datetime.now(timezone.utc),
-                    is_new_question=True,
-                    question_id=question.id,
-                )
+        progress.resolution_source = source
+        progress.message_end_idx = len(dialog.messages)
+
+        next_idx = idx + 1
+        dialog.current_question_idx = next_idx
+
+        if next_idx >= len(dialog.asked_questions):
+            # 所有题结束，整个 dialog 标 resolved
+            dialog.status = "resolved"
+            dialog.ended_at = datetime.now(timezone.utc)
+            dialog.resolution_source = source
+            if dialog.id in self._pending_order:
+                self._pending_order.remove(dialog.id)
+            logger.info(
+                "QASession[%s] dialog %s auto-resolved (last source=%s)",
+                self.id,
+                dialog.id,
+                source,
+                extra={
+                    "event": "dialog_auto_resolved",
+                    "session_id": self.id,
+                    "dialog_id": dialog.id,
+                    "source": source,
+                },
             )
-        return decision
+            return None
+
+        # 抛下一题：激活 progress 并 append is_new_question message
+        next_q = dialog.asked_questions[next_idx]
+        next_progress = dialog.question_progress[next_idx]
+        next_progress.status = "active"
+        next_progress.message_start_idx = len(dialog.messages)
+        dialog.messages.append(
+            DialogMessage(
+                role="student",
+                content=next_q.content,
+                timestamp=datetime.now(timezone.utc),
+                is_new_question=True,
+                question_id=next_q.id,
+            )
+        )
+        logger.info(
+            "QASession[%s] dialog %s advance q[%d]/%d prev_src=%s",
+            self.id,
+            dialog.id,
+            next_idx,
+            len(dialog.asked_questions),
+            source,
+            extra={
+                "event": "question_advance",
+                "session_id": self.id,
+                "dialog_id": dialog.id,
+                "next_idx": next_idx,
+                "prev_source": source,
+            },
+        )
+        return next_q
 
     def mark_resolved(
         self,
@@ -392,39 +539,65 @@ class QASession:
         *,
         source: ResolutionSource = "teacher_marked",
     ) -> DialogSession:
-        """把对话标记为 resolved。重复对已 resolved 对话调用是幂等的。"""
+        """将**当前子题**标记为 resolved 并推进到下一题；若已是最后一题则整个
+        dialog 标 ``resolved``。
+
+        M3 语义变化：从旧版"结束整段辅导"改为"结束当前子题并推进"。
+        要中途放弃整个学生的辅导，请用 ``abandon_dialog``。
+
+        重复对已结束 dialog 调用是幂等的。
+        """
         dialog = self.get_dialog(dialog_id)
         if dialog.status == "resolved":
             return dialog
         if dialog.status == "abandoned":
             raise QASessionError(f"dialog {dialog_id} already abandoned")
-        dialog.status = "resolved"
-        dialog.ended_at = datetime.now(timezone.utc)
-        dialog.resolution_source = source
-        if dialog_id in self._pending_order:
-            self._pending_order.remove(dialog_id)
-        logger.info(
-            "QASession[%s] resolved dialog %s via %s",
-            self.id,
-            dialog_id,
-            source,
-            extra={
-                "event": "dialog_resolved",
-                "session_id": self.id,
-                "dialog_id": dialog_id,
-                "source": source,
-            },
-        )
+
+        if not dialog.question_progress:
+            # M2 退化：无进度追踪，直接结束整个 dialog（保持旧语义）
+            dialog.status = "resolved"
+            dialog.ended_at = datetime.now(timezone.utc)
+            dialog.resolution_source = source
+            if dialog_id in self._pending_order:
+                self._pending_order.remove(dialog_id)
+            logger.info(
+                "QASession[%s] resolved dialog %s via %s (M2 fallback)",
+                self.id,
+                dialog_id,
+                source,
+                extra={
+                    "event": "dialog_resolved",
+                    "session_id": self.id,
+                    "dialog_id": dialog_id,
+                    "source": source,
+                },
+            )
+            return dialog
+
+        self._advance_after_question_end(dialog, source=source)
         return dialog
 
     def abandon_dialog(self, dialog_id: str) -> DialogSession:
-        """师范生主动放弃当前对话（切到下一个学生或退出）。"""
+        """师范生主动放弃当前对话（切到下一个学生或退出）。
+
+        M3：整个 dialog 标 ``abandoned``；同时将当前 active 的子题标 ``abandoned``
+        并记录 ``message_end_idx``，未开启的 ``pending`` 子题保持原样。
+        """
         dialog = self.get_dialog(dialog_id)
         if dialog.status in {"resolved", "abandoned"}:
             return dialog
         dialog.status = "abandoned"
         dialog.ended_at = datetime.now(timezone.utc)
         dialog.resolution_source = "abandoned"
+        # 关闭当前 active 子题（如果有）
+        if dialog.question_progress:
+            idx = dialog.current_question_idx
+            if idx < len(dialog.question_progress):
+                progress = dialog.question_progress[idx]
+                if progress.status == "active":
+                    progress.status = "abandoned"
+                    progress.resolution_source = "abandoned"
+                    progress.message_end_idx = len(dialog.messages)
         if dialog_id in self._pending_order:
             self._pending_order.remove(dialog_id)
         return dialog

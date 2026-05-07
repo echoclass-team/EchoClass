@@ -8,8 +8,11 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from main import app
+from api.deps import CurrentUser, get_current_user
 from api.lessons import _store, infer_stage_id_from_grade
 from schemas.lesson import LessonMeta, LessonRecord
+
+_FAKE_USER = CurrentUser(id="test-user-001", username="test_teacher")
 
 
 SAMPLE_META_JSON = {
@@ -31,8 +34,10 @@ def assert_wrapped(resp_json):
 
 @pytest.fixture
 def client():
+    app.dependency_overrides[get_current_user] = lambda: _FAKE_USER
     transport = ASGITransport(app=app)
-    return AsyncClient(transport=transport, base_url="http://test")
+    yield AsyncClient(transport=transport, base_url="http://test")
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 # ── Stages ──────────────────────────────────────────────────
@@ -267,7 +272,9 @@ class TestLessonsAPI:
         assert data["recommended_count"] == 2
         assert len(data["students"]) == 2
 
-    async def test_recommend_personas_lesson_not_found(self, client: AsyncClient) -> None:
+    async def test_recommend_personas_lesson_not_found(
+        self, client: AsyncClient
+    ) -> None:
         resp = await client.get("/api/lessons/nonexistent/recommended-personas")
         assert resp.status_code == 404
 

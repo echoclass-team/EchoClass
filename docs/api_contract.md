@@ -343,7 +343,8 @@ interface DialogStateSummary {
     | "self_resolve"
     | "teacher_marked"
     | "auto_evaluator"
-    | "abandoned";
+    | "abandoned"
+    | "turn_limit";              // M3：单题累计 turn 数超上限被自动作废
   history: DialogMessage[];                       // 完整对话历史（issue #102）
 }
 
@@ -352,7 +353,7 @@ interface DialogMessage {
   content: string;
   timestamp: string;                              // ISO-8601
   self_resolved: boolean;                         // 仅 student 回合可能 true
-  is_new_question: boolean;                       // M3：学生主动追问的回合为 true；M2 永远 false
+  is_new_question: boolean;                       // M3：由 QASession 从 asked_questions 队列确定性弹出的新问题为 true；M2 永远 false
   question_id?: string | null;                    // M3：本条所属 question id；M2 永远 null
 }
 ```
@@ -360,7 +361,7 @@ interface DialogMessage {
 > ⚠️ **形态说明**（issue #111）：
 >
 > - **M2 闯关模式**（v1，已上线）：一题一 dialog，``id == question.id``，``history`` 全部属于同一道题
-> - **M3 连续答疑模式**（v2，规划中）：一学生一 dialog，``id == student_id``，``history`` 可能跨越多个 question（追问回合 ``is_new_question=true``）
+> - **M3 连续答疑模式**（v2，当前实现）：一学生一 dialog，``id == student_id``，``history`` 可能跨越多个 question（确定性队列弹出的新问题回合 ``is_new_question=true``）
 >
 > 两种形态在字段层兼容：``is_new_question`` / ``question_id`` 为M3 新增字段，M2 永远默认值。
 
@@ -626,7 +627,7 @@ interface DialogResolved {
   seq: number;
   timestamp: ISO8601;
   dialog_id: string;
-  source: "teacher_marked" | "self_resolve";
+  source: "teacher_marked" | "self_resolve" | "turn_limit" | "auto_evaluator" | "abandoned";
 }
 
 interface DialogAbandoned {
@@ -684,7 +685,10 @@ Server → Client: {"type":"dialog_resolved","seq":8,"dialog_id":"q-1","source":
 
 #### 3.5.2 M3 连续答疑模式（v2，一学生一 dialog，issue #111）
 
-引入 ``student_new_question`` 帧后的泛型序列（``stu_a`` = 某学生 thread id）：
+引入 ``student_new_question`` 帧后的泛型序列（``stu_a`` = 某学生 thread id）。
+**关键机制**：每个学生 spawn 时预生成 N 道题（当前 N=3），按确定性队列推进，
+不再调用 LLM 决定是否追问。推进触发条件：学生 ``self_resolved=true`` 或当前题
+累计 turn 数达到上限 M（当前 M=8）。
 
 ```
 Server → Client: {"type":"session_init","seq":0,...,"questions":[Q1_for_a, Q1_for_b]}  // 每人首问
@@ -693,21 +697,25 @@ Server → Client: {"type":"dialog_active","seq":1,"dialog_id":"stu_a"}
 Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"说说看"}
 Server → Client: {"type":"reply_chunk","seq":2,...,"chunk_seq":0}
 Server → Client: {"type":"reply_end","seq":3,"dialog_id":"stu_a","full_content":"...","self_resolved":false}
-Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"还有什么不明白的吗？"}
-Server → Client: {"type":"student_new_question","seq":4,"dialog_id":"stu_a","question":Q2,"after_reply_chunk_seq":0}
-Server → Client: {"type":"reply_chunk","seq":5,...}                             // 针对 Q2 的说明
-Server → Client: {"type":"reply_end","seq":6,"dialog_id":"stu_a","full_content":"...","self_resolved":false}
-Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"你试试看。"}
-... 多轮互动 ...
-Client → Server: {"type":"resolve","dialog_id":"stu_a","source":"teacher_marked"}  // 结束整段辅导
-Server → Client: {"type":"dialog_resolved","seq":N,"dialog_id":"stu_a","source":"teacher_marked"}
+Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"对的！分母代表分成几份。"}
+Server → Client: {"type":"reply_chunk","seq":4,...,"chunk_seq":0}
+Server → Client: {"type":"reply_end","seq":5,"dialog_id":"stu_a","full_content":"哦！我懂了。","self_resolved":true}
+// ↑ self_resolved=true 触发确定性队列弹出下一题 Q2
+Server → Client: {"type":"student_new_question","seq":6,"dialog_id":"stu_a","question":Q2}
+Client → Server: {"type":"teacher_message","dialog_id":"stu_a","text":"好，我们来看新问题。"}
+Server → Client: {"type":"reply_chunk","seq":7,...}                             // 针对 Q2 的回复
+Server → Client: {"type":"reply_end","seq":8,"dialog_id":"stu_a","full_content":"...","self_resolved":false}
+... 多轮互动（若达 8 轮则 turn_limit 自动推进到 Q3）...
+// 所有预生成题结束后，dialog 整体 resolved
+Server → Client: {"type":"dialog_resolved","seq":N,"dialog_id":"stu_a","source":"self_resolve"}
 ```
 
 **差异要点**：
 
-- ``session_init.questions`` 的语义从“所有题”变为“每学生首问”（同原型，数量变少）
-- 新增 ``student_new_question`` 帧：学生主动追问时服务端推送，前端追加“新问题”气泡
-- ``resolve.source="teacher_marked"`` 语义从“该题已解”升级为“结束整段辅导”（字段不变）
+- ``session_init.questions`` 的语义从"所有题"变为"每学生首问"（同原型，数量变少）
+- ``student_new_question`` 帧：由确定性队列弹出（非 LLM 决策），出现在 ``reply_end(self_resolved=true)`` 之后，或当前题 turn 数达上限时
+- **推进规则**：``self_resolved`` → 单题 ``resolved``；turn 数达上限 M=8 → 单题 ``abandoned(turn_limit)``；队列空 → 整个 dialog ``resolved``
+- ``resolve``/``dialog_resolved`` 仍可使用——``teacher_marked`` 语义从"该题已解"升级为"结束整段辅导"（字段不变）
 - 老前端运行 v2 服务端：遇到 ``student_new_question`` 未知类型静默丢弃，reply / resolve 流程仍可运行
 
 ### 3.6 关键不变式
@@ -836,3 +844,4 @@ interface StageListItem {
 | v1 (#72) | 2026-04-28 | 新增 §2.5 — `/api/qa-sessions` 创建/查询/结束 REST 接口，对应 `backend/api/qa_sessions.py` 实现 | B-Full |
 | v2-schema (#111) | 2026-04-28 | M3 连续答疑模式 schema 演进：`DialogMessage` 新增 `is_new_question` / `question_id`；WS 新增 `student_new_question` 帧；`DialogStateSummary.id` 语义扩展为 `student_id`。严格向后兼容，M2 行为不变。编排实现在后续 PR 切换 | A-Agent |
 | v2-freeze (#121) | 2026-05-05 | **M3 协议冻结**：新增 §0.5 鉴权（Bearer JWT + WS `?token=` + close 4401 + 错误码 40101/40301）；新增 §2.6 评估报告（`GET /api/qa-sessions/{id}/evaluation` 三态机、`EvaluationReport`、`TeacherFeedback`）。`owner_id` 不进 REST body，从 JWT claim 取。schema 占位文件 `backend/schemas/evaluation.py` / `feedback.py`，真实实现见 #M3-A1 ~ #M3-B3 | A+B+C |
+| v2-queue | 2026-05-06 | **M3 确定性队列重构**：移除 LLM 追问决策（`decide_followup`），改为预生成 N=3 题、确定性推进（`self_resolved` / `turn_limit` M=8）。`ResolutionSource` 新增 `turn_limit`；`DialogResolved.source` 扩展为完整 `ResolutionSource` 联合类型；§3.5.2 典型序列更新。`DialogSession` 新增 `asked_questions` / `question_progress` / `current_question_idx` 字段 | A-Agent |
