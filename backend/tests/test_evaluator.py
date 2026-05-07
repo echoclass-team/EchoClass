@@ -13,9 +13,16 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agents.evaluator import RUBRIC_DIR, EvaluatorAgent, load_rubric
+from agents.evaluator import (
+    RUBRIC_DIR,
+    EvaluatorAgent,
+    build_dialog_projection,
+    load_rubric,
+)
+from schemas.dialog import DialogMessage, DialogSession, QuestionProgress
 from schemas.evaluation import EvaluationReport
 from schemas.lesson import LessonMeta
+from schemas.question import StudentQuestion
 from services.qa_session import QASession
 
 
@@ -32,6 +39,27 @@ def _fake_session(session_id: str = "sess-test") -> QASession:
         difficult_points=["平均分的理解"],
     )
     return QASession(lesson_meta=lesson, session_id=session_id)
+
+
+def _fake_question(question_id: str, content: str) -> StudentQuestion:
+    return StudentQuestion(
+        id=question_id,
+        speaker_id="s1",
+        speaker_name="小明",
+        content=content,
+        category="clarify_concept",
+        difficulty="easy",
+        rationale="",
+    )
+
+
+def _message(role: str, content: str, **kwargs) -> DialogMessage:
+    return DialogMessage(
+        role=role,
+        content=content,
+        timestamp=datetime.now().astimezone(),
+        **kwargs,
+    )
 
 
 # ============================================================ load_rubric
@@ -57,6 +85,96 @@ def test_load_rubric_v0_matches_disk() -> None:
 def test_load_rubric_unknown_version_raises() -> None:
     with pytest.raises(FileNotFoundError, match="Rubric not found"):
         load_rubric("v999")
+
+
+# ============================================================ dialog projection
+
+
+def test_build_dialog_projection_segments_m3_questions_by_progress() -> None:
+    session = _fake_session()
+    q1 = _fake_question("s1", "分母是什么意思？")
+    q2 = _fake_question("s1-q2", "分子是什么意思？")
+    dialog = DialogSession(
+        id="s1",
+        student_id="s1",
+        question=q1,
+        status="active",
+        messages=[
+            _message("teacher", "先看分母"),
+            _message("student", "分母是下面的数"),
+            _message(
+                "student",
+                "分子是什么意思？",
+                is_new_question=True,
+                question_id="s1-q2",
+            ),
+            _message("teacher", "再看上面的数"),
+            _message("student", "分子表示取了几份", self_resolved=True),
+        ],
+        asked_questions=[q1, q2],
+        question_progress=[
+            QuestionProgress(
+                question_id="s1",
+                status="resolved",
+                turns_used=1,
+                message_start_idx=0,
+                message_end_idx=2,
+                resolution_source="teacher_marked",
+            ),
+            QuestionProgress(
+                question_id="s1-q2",
+                status="active",
+                turns_used=1,
+                message_start_idx=2,
+            ),
+        ],
+        current_question_idx=1,
+    )
+    session.dialogs[dialog.id] = dialog
+
+    projection = build_dialog_projection(session)
+
+    assert len(projection) == 1
+    projected_dialog = projection[0]
+    assert projected_dialog["dialog_id"] == "s1"
+    assert [q["question_id"] for q in projected_dialog["questions"]] == ["s1", "s1-q2"]
+    assert [m["message_idx"] for m in projected_dialog["questions"][0]["messages"]] == [
+        0,
+        1,
+    ]
+    assert [m["message_idx"] for m in projected_dialog["questions"][1]["messages"]] == [
+        2,
+        3,
+        4,
+    ]
+    assert projected_dialog["questions"][0]["resolution_source"] == "teacher_marked"
+    assert projected_dialog["questions"][1]["messages"][0]["is_new_question"] is True
+    assert projected_dialog["questions"][1]["messages"][0]["question_id"] == "s1-q2"
+
+
+def test_build_dialog_projection_falls_back_without_progress() -> None:
+    session = _fake_session()
+    q1 = _fake_question("legacy-q1", "什么是分数？")
+    dialog = DialogSession(
+        id="legacy-q1",
+        student_id="s1",
+        question=q1,
+        status="resolved",
+        messages=[
+            _message("teacher", "你哪里不懂？"),
+            _message("student", "我不懂平均分", self_resolved=True),
+        ],
+        resolution_source="self_resolve",
+    )
+    session.dialogs[dialog.id] = dialog
+
+    projection = build_dialog_projection(session)
+
+    questions = projection[0]["questions"]
+    assert len(questions) == 1
+    assert questions[0]["question_id"] == "legacy-q1"
+    assert questions[0]["resolution_source"] == "self_resolve"
+    assert [m["message_idx"] for m in questions[0]["messages"]] == [0, 1]
 
 
 # ============================================================ mock evaluate

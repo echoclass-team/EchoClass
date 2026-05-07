@@ -46,6 +46,89 @@ RUBRIC_DIR: Path = (
 _MOCK_SCORE = 3
 
 
+def _project_message(message: Any, message_idx: int) -> dict[str, Any]:
+    return {
+        "message_idx": message_idx,
+        "role": message.role,
+        "content": message.content,
+        "self_resolved": message.self_resolved,
+        "is_new_question": message.is_new_question,
+        "question_id": message.question_id,
+    }
+
+
+def build_dialog_projection(session: QASession) -> list[dict[str, Any]]:
+    projections: list[dict[str, Any]] = []
+    for dialog in session.dialogs.values():
+        flat_messages = [
+            _project_message(message, idx)
+            for idx, message in enumerate(dialog.messages)
+        ]
+        questions: list[dict[str, Any]] = []
+        if dialog.asked_questions and dialog.question_progress:
+            for idx, question in enumerate(dialog.asked_questions):
+                progress = (
+                    dialog.question_progress[idx]
+                    if idx < len(dialog.question_progress)
+                    else None
+                )
+                start = progress.message_start_idx if progress is not None else 0
+                end = (
+                    progress.message_end_idx
+                    if progress is not None and progress.message_end_idx is not None
+                    else len(dialog.messages)
+                )
+                start = max(0, min(start, len(dialog.messages)))
+                end = max(start, min(end, len(dialog.messages)))
+                questions.append(
+                    {
+                        "question_index": idx,
+                        "question_id": question.id,
+                        "content": question.content,
+                        "status": progress.status
+                        if progress is not None
+                        else dialog.status,
+                        "turns_used": (
+                            progress.turns_used
+                            if progress is not None
+                            else dialog.turn_count()
+                        ),
+                        "resolution_source": (
+                            progress.resolution_source if progress is not None else None
+                        ),
+                        "messages": [
+                            _project_message(message, msg_idx)
+                            for msg_idx, message in enumerate(
+                                dialog.messages[start:end], start=start
+                            )
+                        ],
+                    }
+                )
+        else:
+            questions.append(
+                {
+                    "question_index": 0,
+                    "question_id": dialog.question.id,
+                    "content": dialog.question.content,
+                    "status": dialog.status,
+                    "turns_used": dialog.turn_count(),
+                    "resolution_source": dialog.resolution_source,
+                    "messages": flat_messages,
+                }
+            )
+        projections.append(
+            {
+                "dialog_id": dialog.id,
+                "student_id": dialog.student_id,
+                "persona_name": dialog.question.speaker_name,
+                "status": dialog.status,
+                "messages": flat_messages,
+                "questions": questions,
+            }
+        )
+    return projections
+
+
 def load_rubric(version: str = "v0") -> dict[str, Any]:
     """加载 ``data/rubrics/{version}.json`` 并返回原始字典。
 
@@ -156,4 +239,4 @@ class EvaluatorAgent:
         )
 
 
-__all__ = ["EvaluatorAgent", "load_rubric"]
+__all__ = ["EvaluatorAgent", "build_dialog_projection", "load_rubric"]

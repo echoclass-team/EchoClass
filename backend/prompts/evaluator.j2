@@ -4,7 +4,7 @@
 {#   - lesson: LessonMeta    本次答疑的教案                          #}
 {#   - dialogs: list[dict]   每个学生 thread 的精简对话记录          #}
 {#       [{ "student_id": str, "persona_name": str,                  #}
-{#          "messages": list[{role, content}],                       #}
+{#          "questions": list[{question_id, content, messages}],      #}
 {#          "status": "resolved"|"abandoned"|"active" }]              #}
 {#                                                                  #}
 {# 本文件 #M3-A1 阶段为占位骨架；#M3-A3 落地真实评估时按需扩展，    #}
@@ -41,8 +41,15 @@
 {% for d in dialogs %}
 ### 学生 {{ d.persona_name }}（id={{ d.student_id }}，状态={{ d.status }}）
 
-{% for m in d.messages %}
-- **{{ m.role }}**：{{ m.content }}
+{% for q in d.questions %}
+#### 问题 {{ q.question_index + 1 }}（id={{ q.question_id }}，状态={{ q.status }}）
+
+学生问题：{{ q.content }}
+
+{% for m in q.messages %}
+- [msg_idx={{ m.message_idx }}] **{{ m.role }}**：{{ m.content }}
+{% endfor %}
+
 {% endfor %}
 
 {% endfor %}
