@@ -22,5 +22,27 @@
     "考试前失眠"
   ],
   "avatar_seed": "shen-qingyang-top",
-  "summary": "初三尖子生女孩，高智商+高压焦虑，需要关注心理健康"
+  "summary": "初三尖子生女孩，高智商+高压焦虑，需要关注心理健康",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "尖子生稳定的高效能感，但被高压焦虑反向施压，需老师识别'懂了背后的不安'"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "anxiety",
+      "notes": "高智商 + 高压焦虑组合：怕'这次没考好'多过怕'不会'；老师不应在答疑中加码（'这道题中考必考'类话术）"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_low_scaffolding",
+      "notes": "认知能力强，过多铺垫反让她觉得被低估；老师应直接进入挑战层"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "J3 形式运算成熟"
+    }
+  ]
 }

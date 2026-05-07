@@ -21,5 +21,27 @@
     "喜欢和同桌窃窃私语"
   ],
   "avatar_seed": "wang-haoran-distracted",
-  "summary": "四年级走神男生，注意力短但偶有灵光，需要趣味引导"
+  "summary": "四年级走神男生，注意力短但偶有灵光，需要趣味引导",
+  "theory_anchors": [
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "boredom",
+      "notes": "走神的核心情绪是对当前内容的厌倦；'偶有灵光'说明能力够，是动机不到位"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_high_scaffolding",
+      "notes": "注意力短意味着每次能吸收的解释段落短；老师答疑需把概念切成 2-3 句的小段，节奏快"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "external_motivation",
+      "notes": "尚未建立内在学习动机，老师可借'偶有灵光'瞬间锚定成就感引导内化"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P4（10 岁）具体运算成熟期，可逆与守恒概念稳固"
+    }
+  ]
 }

@@ -22,5 +22,27 @@
     "愿意帮同学讲题但有耐心"
   ],
   "avatar_seed": "xu-nuo-top",
-  "summary": "高二重点中学尖子生，思想成熟有深度，面临专业选择迷茫"
+  "summary": "高二重点中学尖子生，思想成熟有深度，面临专业选择迷茫",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "高二尖子生，自我效能感稳定；老师可在答疑中给挑战性反例而非保护性铺垫"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "intrinsic_motivation",
+      "notes": "深度型尖子，'专业选择迷茫'反映是在思考价值层面，非外部驱动学习"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_low_scaffolding",
+      "notes": "优秀 + 注意力 long，能直接消化抽象论证；老师答疑时可跳步用'由对称性可知'类术语"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "H2 形式运算成熟，能进行命题逻辑与多变量推理"
+    }
+  ]
 }

@@ -22,5 +22,27 @@
     "偶尔挑老师的刺"
   ],
   "avatar_seed": "zhao-zihang-rebel",
-  "summary": "五年级青春期前期男生，嘴硬心不服，需要被尊重的沟通方式"
+  "summary": "五年级青春期前期男生，嘴硬心不服，需要被尊重的沟通方式",
+  "theory_anchors": [
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "external_attribution",
+      "notes": "'嘴硬心不服' = 把错误归因外部（题目傻 / 老师讲不清）以保护自尊；老师应避免正面对抗，用'你说说看怎么解'让他自证"
+    },
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "introjected_motivation",
+      "notes": "学习是'被要求'内化为'我应该学但不情愿'的内摄状态；老师强压会触发对抗，需用尊重式商讨语气"
+    },
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "high_self_efficacy",
+      "notes": "中等水平但表层效能感不低（'就这'是其口头禅），实际是用嘴硬掩护内在不确定；老师追问需精确到具体步骤"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P5（11 岁）处具体→形式运算过渡，已有部分抽象能力但仍依赖具体例子验证"
+    }
+  ]
 }

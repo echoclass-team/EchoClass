@@ -21,5 +21,27 @@
     "偷偷看同桌的答案"
   ],
   "avatar_seed": "lin-xiaoyu-weak",
-  "summary": "三年级基础薄弱女生，缺乏自信怕提问，需要耐心鼓励"
+  "summary": "三年级基础薄弱女生，缺乏自信怕提问，需要耐心鼓励",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy",
+      "notes": "薄弱 + 怕提问 = 典型低效能感；老师答疑首要任务是营造'问错也安全'的对话氛围"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "shame",
+      "notes": "怕提问背后是怕暴露不会的羞耻感；老师不应用'这都不会？'类反问，应正常化未知"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_high_scaffolding",
+      "notes": "薄弱 + 注意力 medium，需要把概念拆成可接住的小台阶；老师应多用'我们先看看……'类铺垫"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "concrete_operational",
+      "notes": "P3 具体运算中期"
+    }
+  ]
 }

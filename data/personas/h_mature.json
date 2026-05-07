@@ -22,5 +22,27 @@
     "和老师保持恰当距离的尊重"
   ],
   "avatar_seed": "lin-hao-mature",
-  "summary": "高二普通中学中等生，思想成熟务实，喜欢深度讨论不爱套路"
+  "summary": "高二普通中学中等生，思想成熟务实，喜欢深度讨论不爱套路",
+  "theory_anchors": [
+    {
+      "theory_id": "deci_ryan_sdt",
+      "trait": "intrinsic_motivation",
+      "notes": "高二中等生但'喜欢深度讨论不爱套路' = 内驱型；老师不应用'考试要考'压他，应给思想空间"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "adaptive_effort_attribution",
+      "notes": "思想成熟务实 = 复盘型归因；做错后倾向反思方法/审题，老师应肯定其反思过程而非仅结果"
+    },
+    {
+      "theory_id": "vygotsky_zpd",
+      "trait": "needs_low_scaffolding",
+      "notes": "中等水平 + 思维成熟 + 注意力 long，能消化抽象解释；老师过度铺垫反而冗余"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "H2 完全进入形式运算，假设演绎推理成熟"
+    }
+  ]
 }

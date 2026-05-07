@@ -22,5 +22,27 @@
     "偶尔和好朋友互相打气"
   ],
   "avatar_seed": "gao-junhao-striver",
-  "summary": "初三中等挣扎男生，压力大目标高，需要方法指导和情绪支持"
+  "summary": "初三中等挣扎男生，压力大目标高，需要方法指导和情绪支持",
+  "theory_anchors": [
+    {
+      "theory_id": "bandura_self_efficacy",
+      "trait": "low_self_efficacy",
+      "notes": "中等水平 + 中考压力 + 高目标 = 自我效能与目标差距过大；'我是不是真的能考上'是反复闪现的内心 OS"
+    },
+    {
+      "theory_id": "pekrun_academic_emotions",
+      "trait": "anxiety",
+      "notes": "中考焦虑核心情绪，老师答疑时若直接出反例会触发防御；需先安抚再引入认知重构"
+    },
+    {
+      "theory_id": "weiner_attribution",
+      "trait": "adaptive_effort_attribution",
+      "notes": "挣扎型但归因较健康（'方法不对' / '题没刷够'）；老师应肯定其归因模式以避免向 maladaptive 滑落"
+    },
+    {
+      "theory_id": "piaget_cognitive_stages",
+      "trait": "formal_operational",
+      "notes": "J3 形式运算基本成熟，能处理多步代数与几何证明"
+    }
+  ]
 }
