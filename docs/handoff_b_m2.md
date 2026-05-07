@@ -50,11 +50,13 @@ from agents.student import StudentAgent
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
 from schemas.dialog import DialogMessage, DialogReplyResult, StudentStreamEvent
-from schemas.student import Persona, PersonaSummary  # v1.1: 14 字段（#78）
+from schemas.student import Persona, PersonaSummary  # v1.3: 13 个核心字段
 from schemas.ws_events import WsClientEvent, WsServerEvent, ...  # PR #77 已合入
 ```
 
-> **Persona schema v1.1（#78 已合）**：移除 4 个未被消费的死字段——`cognitive_stage` / `interaction_frequency` / `emotional_tendency` / `learning_motivation`（认知阶段由 `stage.piaget_stage` 统一约束）；`family_background` 降级为可选。**对前端无破坏性影响**：`WsStudentInfo` 仅用 `id` / `name` / `stage_id` / `subject_level` / `avatar_seed` / `summary` 6 个字段，全部保留。
+> **Persona schema v1.3（M3 起）**：在 v1.1 基础上再移除 3 个字段——`personality` / `catchphrases` / `family_background`。人设质感由 `speech_style` + `behavior_traits` + `theory_anchors` + `summary` 联合承载。**对 B 端 WS 协议无破坏性影响**：`WsStudentInfo` 6 字段全部保留。前端 `PersonaDetail` 类型已同步精简（`frontend/src/types/persona.ts`）。
+>
+> **Persona schema v1.1（#78 已合）**：移除 4 个未被消费的死字段——`cognitive_stage` / `interaction_frequency` / `emotional_tendency` / `learning_motivation`（认知阶段由 `stage.piaget_stage` 统一约束）。
 
 ### 1.3 `QASession` API 速查（B 端 REST 调这些）
 

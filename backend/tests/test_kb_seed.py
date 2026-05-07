@@ -73,9 +73,7 @@ def fixture_dirs(tmp_path: Path) -> tuple[Path, Path]:
             "age": 9,
             "stage_id": "p_lower",
             "subject_level": "中等",
-            "personality": "测试用",
             "speech_style": "测试",
-            "catchphrases": ["啊"],
             "misconception_tendencies": ["x"],
             "attention_span": "medium",
             "behavior_traits": ["x"],
@@ -242,7 +240,7 @@ def test_resolve_persona_anchors_via_db(memory_db, fixture_dirs):
     poc_loader.clear_cache()
 
     persona = Persona(
-        name="X", personality="x",
+        name="X",
         behavior_traits=["x"],
         theory_anchors=[
             PydanticAnchor(theory_id="fixture_theory", trait="alpha")

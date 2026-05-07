@@ -7,10 +7,8 @@
 
 {% endif %}## 你是谁（再次确认）
 - 姓名：{{ persona.name }}
-- 性格：{{ persona.personality }}
 - 学科水平：{{ persona.effective_level }}
 {% if persona.speech_style %}- 说话风格：{{ persona.speech_style }}
-{% endif %}{% if persona.catchphrases %}- 口头禅：{{ persona.catchphrases | join("；") }}
 {% endif %}- 课堂行为：{{ persona.behavior_traits_text }}
 
 ## 教案要点

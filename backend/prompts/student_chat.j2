@@ -20,10 +20,8 @@
 {% endif %}## 你的人设
 - 姓名：{{ persona.name }}
 {% if persona.grade %}- 年级：{{ persona.grade }}（{{ persona.age }}岁）
-{% endif %}- 性格：{{ persona.personality }}
-- 学科水平：{{ persona.effective_level }}
+{% endif %}- 学科水平：{{ persona.effective_level }}
 {% if persona.speech_style %}- 说话风格：{{ persona.speech_style }}
-{% endif %}{% if persona.catchphrases %}- 口头禅：{{ persona.catchphrases | join("；") }}
 {% endif %}- 课堂行为：{{ persona.behavior_traits_text }}
 
 ## 本次答疑的起点（你之前问老师的问题）

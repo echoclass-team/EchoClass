@@ -127,9 +127,9 @@ class TestPersonasAPI:
         resp = await client.get(f"/api/personas/{name}")
         assert resp.status_code == 200
         assert assert_wrapped(resp.json())["name"] == name
-        # 完整字段
-        assert "personality" in assert_wrapped(resp.json())
-        assert "catchphrases" in assert_wrapped(resp.json())
+        # 完整字段（v1.3 移除 personality/catchphrases/family_background）
+        assert "speech_style" in assert_wrapped(resp.json())
+        assert "misconception_tendencies" in assert_wrapped(resp.json())
 
     async def test_get_persona_by_id(self, client: AsyncClient) -> None:
         all_resp = await client.get("/api/personas")

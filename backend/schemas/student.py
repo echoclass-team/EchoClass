@@ -36,10 +36,15 @@ class Persona(BaseModel):
     """学生人设描述。
 
     兼容两种构造方式：
-    1. 简易模式（4 字段）：name / personality / knowledge_level / behavior_traits
-    2. 完整模式（从 data/personas/*.json 加载）：包含全部 14 字段。
-       v1.1 (2026-04-25) 移除 4 个死字段：cognitive_stage / interaction_frequency /
-       emotional_tendency / learning_motivation。认知阶段由 stage.piaget_stage 统一约束。
+    1. 简易模式（3 字段）：name / knowledge_level / behavior_traits
+    2. 完整模式（从 data/personas/*.json 加载）。
+
+    Schema 变更历史：
+    - v1.3 (2026-05-07) 移除 3 个字段：personality / catchphrases / family_background。
+      人设质感由 speech_style + behavior_traits + theory_anchors + summary 联合承载。
+    - v1.2 (2026-04-27) 新增 theory_anchors。
+    - v1.1 (2026-04-25) 移除 4 个死字段（cognitive_stage / interaction_frequency /
+      emotional_tendency / learning_motivation）；认知阶段由 stage.piaget_stage 统一约束。
     """
 
     # --- 核心身份 ---
@@ -55,11 +60,9 @@ class Persona(BaseModel):
 
     # --- 认知与学业 ---
     subject_level: str = Field(default="", description="学科水平：优秀/中等/薄弱")
-    personality: str = Field(..., description="性格特征描述")
 
     # --- 语言风格 ---
     speech_style: str = Field(default="", description="说话风格描述")
-    catchphrases: list[str] = Field(default_factory=list, description="口头禅列表")
 
     # --- 迷思概念 ---
     misconception_tendencies: list[str] = Field(
@@ -73,9 +76,6 @@ class Persona(BaseModel):
     behavior_traits: str | list[str] = Field(
         ..., description="课堂行为倾向（字符串或列表）"
     )
-
-    # --- 背景 ---
-    family_background: str = Field(default="", description="家庭背景描述，可选")
 
     # --- 系统辅助 ---
     avatar_seed: str = Field(default="", description="头像种子")

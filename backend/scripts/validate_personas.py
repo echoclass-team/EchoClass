@@ -44,13 +44,11 @@ def main() -> None:
                 print(f"   - {err.json_path}: {err.message}")
             all_ok = False
         else:
-            # 额外检查
+            # 额外检查（v1.3 起 schema 12 个 required 字段，建议 ≥12）
             field_count = len(data)
-            catchphrase_count = len(data.get("catchphrases", []))
             print(
                 f"✅ {pf.name:30s} "
-                f"字段数={field_count:2d}(≥15✓) "
-                f"口头禅={catchphrase_count}(≥3✓) "
+                f"字段数={field_count:2d}(≥12✓) "
                 f"人设={data['name']} ({data['grade']})"
             )
 

@@ -1,9 +1,9 @@
 # 学生人设设计文档 · EchoClass
 
-> **版本**：v1.1（1v1 答疑陪练适配版）
+> **版本**：v1.3（1v1 答疑陪练适配版）
 > **作者**：C-Prod
 > **适用场景**：学生人设驱动的 **1v1 答疑陪练**（由 `StudentAgent.generate_questions` 与 `respond_in_dialog` 消费）
-> **最后更新**：2026-04-25
+> **最后更新**：2026-05-07
 
 ---
 
@@ -115,17 +115,19 @@ EchoClass 面向小学（7-12 岁）和初中（12-15 岁），正好跨越**具
 |---|---|
 | `attention_span` | 在 1v1 答疑场景下作为提问与对话风格提示注入 prompt：`short` 会在 ask 阶段增加跳步 / 跑题趋势，会在 chat 多轮过程中偶尔出现注意力涣散表达；`long` 则表现为追问有耐心 / 不轻易跳出主线。（转型前由 Director 调度走神事件，在 1v1 中由 prompt 直接指导。） |
 | `behavior_traits` | 行为标签数组，是 prompt 里**人设鲜活度的主要质感来源**（如"抢着举手但并不知道答案"、"在本子上画画"）。会被 `behavior_traits_text` 拼接后注入 student_ask / student_chat / student_check 三个模板，引导 LLM 输出符合该人设的表达。 |
-| `speech_style` | 直接注入三个 prompt，让 LLM 输出符合人设的语言风格 |
-| `catchphrases` | 口头禅让角色更鲜活，也便于前端做特征化展示 |
+| `speech_style` | 直接注入三个 prompt，让 LLM 输出符合人设的语言风格。**v1.3 起与 `behavior_traits` 共同承担人设质感主职责**（原由 `personality` 加 `catchphrases` 合作承担） |
 
-### 3.4 性格与背景字段
+### 3.4 人设质感的联合承载（v1.3）
 
-| 字段 | 设计理由 |
-|---|---|
-| `personality` | 综合性格描述，是 Prompt 的核心人设锚点。在不同人设之间拉开动机 / 表达 / 情绪差异的主战场，**其他被删除的“动机 / 情绪”字段信息均可融入该字段** |
-| `family_background` | 可选。当前 prompt 模板未直接消费，作为人设语料补充（为未来需要理解学生背景的 prompt 预留） |
+v1.3（2026-05-07）移除 `personality` / `catchphrases` / `family_background` 三个字段。原因：
 
-> 注：原 schema 中的 `emotional_tendency` / `learning_motivation` 在 v1.1（2026-04-25）被移除——三个 prompt 模板（`student_ask` / `student_chat` / `student_check`）均未引用，且 1v1 对话输出 `DialogReplyResult` 不再携带 emotion 结构字段。从字段的意图上看，该两个字段可以被 `personality` 的描述完整覆盖。
+- **`personality`**：与 `theory_anchors` 推入的 operational_rules 产生语义重叠。Posner / Vygotsky 等理论卡已在 `student_chat.j2` 里以“**必须遵守的行为约束**”优先级插入，再叠加一句“性格：XX”反而冲淡理论驱动。
+- **`catchphrases`**：口头禅是 `speech_style` 的附属属性，拆为独立字段后以列表形式拼接到 prompt，LLM 容易机械式重复该口头禅（M2 dogfood 响应中出现 “哦哦哦这个是什么意思告诉我告诉我告诉我” 类伪鲜活）。现交由 `speech_style` 语义描述让 LLM 自然演绀。
+- **`family_background`**：v1.1 起已为 deprecated，prompt 从未消费，作为可选字段存在反而增加人工设计负担。
+
+> 迁移路径：原人设 JSON 里 性格 / 口头禅 的语义不会空白——`speech_style` 中已包含语调 / 口吻信息，`behavior_traits` 提供课堂动作标签，`theory_anchors` 驱动深层行为模式，`summary` 给出一句话高阶概括。四者联合承载之前 `personality` 一个字段试图一口气告诉 LLM 的信息。
+
+> 历史变更：原 schema 中的 `emotional_tendency` / `learning_motivation` 在 v1.1（2026-04-25）被移除——三个 prompt 模板均未引用，且 1v1 对话输出 `DialogReplyResult` 不再携带 emotion 结构字段。
 
 ### 3.5 系统辅助字段
 

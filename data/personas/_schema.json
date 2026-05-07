@@ -3,7 +3,7 @@
   "$id": "https://echoclass.dev/schemas/persona.json",
   "title": "EchoClass Student Persona",
   "description": "虚拟学生人设定义。基于皮亚杰认知发展阶段理论设计，用于驱动 1v1 答疑陪练中 StudentAgent 的角色扮演行为。",
-  "$comment": "v1.2 (2026-04-27)：新增 theory_anchors 可选字段，用于把人设锚定到 data/edu_theories/ 中的理论 trait（每条由 theory_id + trait 组成）。v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation），由 stage.piaget_stage 统一约束认知阶段；family_background 降级为可选。",
+  "$comment": "v1.3 (2026-05-07)：再移除 3 个字段——personality / catchphrases / family_background。性格 / 口吻 / 家庭背景的人设质感由 speech_style + behavior_traits + theory_anchors + summary 联合承载，prompt 不再单独引用这三个字段，避免与 theory_anchors 行为约束冲突。v1.2 (2026-04-27)：新增 theory_anchors 可选字段。v1.1 (2026-04-25)：移除 4 个死字段（cognitive_stage / interaction_frequency / emotional_tendency / learning_motivation）。",
   "type": "object",
   "required": [
     "id",
@@ -13,9 +13,7 @@
     "age",
     "stage_id",
     "subject_level",
-    "personality",
     "speech_style",
-    "catchphrases",
     "misconception_tendencies",
     "attention_span",
     "behavior_traits",
@@ -87,23 +85,10 @@
       ],
       "description": "学科整体水平"
     },
-    "personality": {
-      "type": "string",
-      "minLength": 10,
-      "description": "性格特征描述（2-3 句话）"
-    },
     "speech_style": {
       "type": "string",
       "minLength": 10,
       "description": "说话风格描述，包括用词习惯、句式偏好等"
-    },
-    "catchphrases": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 3,
-      "description": "典型口头禅，≥3 条"
     },
     "misconception_tendencies": {
       "type": "array",
@@ -129,11 +114,6 @@
       },
       "minItems": 2,
       "description": "课堂行为标签列表，如 ['积极举手', '爱抢答']"
-    },
-    "family_background": {
-      "type": "string",
-      "minLength": 10,
-      "description": "简要家庭背景描述，可选；当前 prompt 模板未直接消费，作为人设语料补充与未来扩展材料"
     },
     "avatar_seed": {
       "type": "string",
