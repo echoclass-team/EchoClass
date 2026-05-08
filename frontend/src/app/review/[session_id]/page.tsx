@@ -8,6 +8,7 @@ import { pollEvaluation } from "@/lib/evaluation";
 import { DialogReplay } from "@/components/review/dialog-replay";
 import { EvaluationPanel } from "@/components/review/evaluation-panel";
 import { FeedbackPanel } from "@/components/review/feedback-panel";
+import { buildReviewMarkdown, downloadMarkdown } from "@/lib/export-review-md";
 import type { QASessionStateData, QASessionEvaluationData, DialogStateSummary } from "@/types/qa";
 
 // ============================================================ helpers
@@ -151,6 +152,21 @@ export default function ReviewPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                const md = buildReviewMarkdown(
+                  session,
+                  evalData?.evaluation,
+                  evalData?.feedback,
+                );
+                const name = session.lesson.topic || session.session_id;
+                downloadMarkdown(md, `${name}-复盘.md`);
+              }}
+              className="rounded-full border border-slate-300 bg-white px-5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              导出 MD
+            </button>
             <Link
               href="/setup"
               className="rounded-full bg-slate-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
