@@ -80,6 +80,14 @@ export async function fetchSessionList() {
   );
 }
 
+/** DELETE /api/qa-sessions/{session_id} —— 删除 session 及关联数据。 */
+export async function deleteSession(sessionId: string) {
+  await apiFetch(
+    `/api/qa-sessions/${encodeURIComponent(sessionId)}`,
+    { method: "DELETE" },
+  );
+}
+
 /** GET /api/qa-sessions/{session_id}/evaluation —— 评估报告 + 反馈。 */
 export async function fetchEvaluation(sessionId: string) {
   return unwrap(

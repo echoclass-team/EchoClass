@@ -125,6 +125,26 @@ def get_qa_session_record(db: Session, session_id: str) -> Optional[QASessionRec
     return db.query(QASessionRecord).filter(QASessionRecord.id == session_id).first()
 
 
+def delete_qa_session_record(db: Session, session_id: str, owner_id: str) -> bool:
+    """删除 session 及其关联的 dialog_messages / evaluations / feedbacks。
+
+    仅限 owner 删除。返回是否确实删除了记录。
+    """
+    row = (
+        db.query(QASessionRecord)
+        .filter(QASessionRecord.id == session_id, QASessionRecord.owner_id == owner_id)
+        .first()
+    )
+    if row is None:
+        return False
+    db.query(DialogMessageRecord).filter(DialogMessageRecord.session_id == session_id).delete()
+    db.query(EvaluationRecord).filter(EvaluationRecord.session_id == session_id).delete()
+    db.query(FeedbackRecord).filter(FeedbackRecord.session_id == session_id).delete()
+    db.delete(row)
+    db.commit()
+    return True
+
+
 def list_qa_sessions_by_owner(db: Session, owner_id: str) -> list[QASessionRecord]:
     return (
         db.query(QASessionRecord)

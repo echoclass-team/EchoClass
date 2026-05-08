@@ -8,7 +8,42 @@ import { pollEvaluation } from "@/lib/evaluation";
 import { DialogReplay } from "@/components/review/dialog-replay";
 import { EvaluationPanel } from "@/components/review/evaluation-panel";
 import { FeedbackPanel } from "@/components/review/feedback-panel";
-import type { QASessionStateData, QASessionEvaluationData } from "@/types/qa";
+import type { QASessionStateData, QASessionEvaluationData, DialogStateSummary } from "@/types/qa";
+
+// ============================================================ helpers
+
+const SOURCE_LABEL: Record<string, string> = {
+  teacher_marked: "教师标记",
+  self_resolve: "学生自悟",
+  auto_evaluator: "自动评估",
+  abandoned: "放弃",
+  turn_limit: "轮次上限",
+};
+
+function deriveStudentsBreakdown(dialogs: DialogStateSummary[]) {
+  const map = new Map<string, { name: string; resolved: number; abandoned: number; other: number }>();
+  for (const d of dialogs) {
+    const key = d.student_id;
+    const entry = map.get(key) ?? { name: d.student_name, resolved: 0, abandoned: 0, other: 0 };
+    if (d.status === "resolved") entry.resolved++;
+    else if (d.status === "abandoned") entry.abandoned++;
+    else entry.other++;
+    map.set(key, entry);
+  }
+  return Array.from(map.entries()).map(([id, v]) => ({ id, ...v }));
+}
+
+function deriveResolutionSources(dialogs: DialogStateSummary[]) {
+  const counts: Record<string, number> = {};
+  for (const d of dialogs) {
+    if (d.resolution_source) {
+      counts[d.resolution_source] = (counts[d.resolution_source] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+// ============================================================ page
 
 export default function ReviewPage() {
   const params = useParams<{ session_id: string }>();
@@ -22,7 +57,6 @@ export default function ReviewPage() {
 
   const abortRef = useRef<AbortController | null>(null);
 
-  // Load session detail
   const loadSession = useCallback(async () => {
     try {
       const data = await fetchQASessionState(sessionId);
@@ -36,7 +70,6 @@ export default function ReviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  // Load / poll evaluation
   const loadEvaluation = useCallback(async () => {
     abortRef.current?.abort();
     const ac = new AbortController();
@@ -89,6 +122,12 @@ export default function ReviewPage() {
     );
   }
 
+  const total = session.resolved + session.abandoned + session.pending + session.active;
+  const resolvedPct = total > 0 ? Math.round((session.resolved / total) * 100) : 0;
+  const pending = session.pending + session.active;
+  const students = deriveStudentsBreakdown(session.dialogs);
+  const resSources = deriveResolutionSources(session.dialogs);
+
   return (
     <main className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -102,19 +141,50 @@ export default function ReviewPage() {
               ← 返回列表
             </Link>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
-              复盘：{session.lesson.topic || session.session_id}
+              {session.lesson.topic
+                ? `《${session.lesson.topic}》答疑回顾`
+                : "本次答疑回顾"}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {session.lesson.subject} · {session.lesson.grade} ·{" "}
-              {session.dialogs.length} 个对话 ·{" "}
-              已解答 {session.resolved} / 放弃 {session.abandoned}
+              {session.dialogs.length} 个对话
             </p>
           </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/setup"
+              className="rounded-full bg-slate-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              再来一次
+            </Link>
+            <Link
+              href="/"
+              className="text-sm text-slate-500 hover:text-slate-900"
+            >
+              回首页 →
+            </Link>
+          </div>
+        </div>
+
+        {/* Summary stats */}
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          <BigStat label="已解答" value={session.resolved} accent="emerald" sub={`${resolvedPct}% 完成`} />
+          <BigStat
+            label="已放弃"
+            value={session.abandoned}
+            accent="slate"
+            sub={total > 0 ? `占 ${Math.round((session.abandoned / total) * 100)}%` : "—"}
+          />
+          <BigStat
+            label="未完成"
+            value={pending}
+            accent={pending > 0 ? "amber" : "emerald"}
+            sub={pending > 0 ? "提前结束遗留" : "全部处理完毕"}
+          />
         </div>
 
         {/* Main grid: left = dialog replay, right = eval + feedback */}
         <div className="grid gap-6 lg:grid-cols-5">
-          {/* Dialog replay — takes 3 cols */}
           <div className="lg:col-span-3" style={{ minHeight: "28rem" }}>
             <DialogReplay
               dialogs={session.dialogs}
@@ -123,9 +193,7 @@ export default function ReviewPage() {
             />
           </div>
 
-          {/* Right column: evaluation + feedback — takes 2 cols */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Evaluation */}
             {evalPolling && !evalData && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
                 <h3 className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
@@ -180,13 +248,102 @@ export default function ReviewPage() {
               <EvaluationPanel evaluation={evalData.evaluation} />
             )}
 
-            {/* Feedback */}
             {evalData?.status === "done" && evalData.feedback && (
               <FeedbackPanel feedback={evalData.feedback} />
             )}
           </div>
         </div>
+
+        {/* Bottom section: students breakdown + resolution sources */}
+        {(students.length > 0 || Object.keys(resSources).length > 0) && (
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            {students.length > 0 && (
+              <Card title="按学生维度">
+                <ul className="space-y-3">
+                  {students.map((s) => {
+                    const sTotal = s.resolved + s.abandoned + s.other;
+                    const rPct = sTotal > 0 ? (s.resolved / sTotal) * 100 : 0;
+                    const aPct = sTotal > 0 ? (s.abandoned / sTotal) * 100 : 0;
+                    return (
+                      <li key={s.id}>
+                        <div className="flex items-baseline justify-between gap-3 text-sm">
+                          <span className="font-semibold text-slate-900">{s.name}</span>
+                          <span className="text-xs text-slate-500">
+                            {s.resolved} 解答 · {s.abandoned} 放弃 · {s.other} 其他
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full bg-emerald-500" style={{ width: `${rPct}%` }} />
+                          <div
+                            className="-mt-2 h-full bg-slate-300"
+                            style={{ width: `${aPct}%`, marginLeft: `${rPct}%` }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
+            )}
+
+            {Object.keys(resSources).length > 0 && (
+              <Card title="解决方式分布">
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {Object.entries(resSources).map(([source, count]) => (
+                    <li
+                      key={source}
+                      className="flex items-baseline justify-between rounded-xl bg-slate-50 px-4 py-2.5"
+                    >
+                      <span className="text-sm text-slate-700">
+                        {SOURCE_LABEL[source] ?? source}
+                      </span>
+                      <span className="text-base font-semibold text-slate-950">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </main>
+  );
+}
+
+// ============================================================ blocks
+
+function BigStat({
+  label,
+  value,
+  accent,
+  sub,
+}: {
+  label: string;
+  value: number;
+  accent: "emerald" | "slate" | "amber";
+  sub?: string;
+}) {
+  const accentClass = {
+    emerald: "from-emerald-500 to-emerald-600 text-white",
+    slate: "from-slate-700 to-slate-900 text-white",
+    amber: "from-amber-500 to-amber-600 text-white",
+  }[accent];
+  return (
+    <div className={`rounded-3xl bg-gradient-to-br p-5 shadow-md ${accentClass}`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/80">{label}</p>
+      <p className="mt-2 text-4xl font-semibold leading-none">{value}</p>
+      {sub && <p className="mt-2 text-sm text-white/85">{sub}</p>}
+    </div>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h2 className="text-sm font-semibold tracking-[0.2em] text-slate-700 uppercase">
+        {title}
+      </h2>
+      <div className="mt-4">{children}</div>
+    </div>
   );
 }

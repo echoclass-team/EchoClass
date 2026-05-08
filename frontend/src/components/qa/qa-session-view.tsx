@@ -65,9 +65,9 @@ export function QASessionView(props: Props) {
         ...data.summary,
       } as typeof data.summary;
       saveQASummary(state.sessionId, merged);
-      // 拿到 summary 后断 WS（避免服务器误判 replaced），再跳 summary 页
+      // 拿到 summary 后断 WS（避免服务器误判 replaced），再跳复盘页
       disconnect();
-      router.push(`/qa/${encodeURIComponent(state.sessionId)}/summary`);
+      router.push(`/review/${encodeURIComponent(state.sessionId)}`);
     } catch (err) {
       setEnding(false);
       setEndingError(err instanceof Error ? err.message : "结束陪练失败");

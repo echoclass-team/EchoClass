@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { fetchSessionList } from "@/lib/api/qa";
+import { fetchSessionList, deleteSession } from "@/lib/api/qa";
 import type { QASessionListItem } from "@/types/qa";
 
 function formatTime(iso: string | null | undefined) {
@@ -40,13 +40,13 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<QASessionListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const list = await fetchSessionList();
-      // newest first
       list.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -58,6 +58,26 @@ export default function SessionsPage() {
       setLoading(false);
     }
   }, []);
+
+  const handleDelete = useCallback(
+    async (sessionId: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!window.confirm("确定删除该陪练记录？关联的对话和评估数据将一并删除，不可恢复。")) {
+        return;
+      }
+      setDeleting(sessionId);
+      try {
+        await deleteSession(sessionId);
+        setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "删除失败");
+      } finally {
+        setDeleting(null);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     load();
@@ -143,9 +163,19 @@ export default function SessionsPage() {
                         {s.closed_at && ` · 结束于 ${formatTime(s.closed_at)}`}
                       </p>
                     </div>
-                    <span className="text-sm text-slate-400 transition group-hover:text-slate-600">
-                      查看复盘 →
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(s.session_id, e)}
+                        disabled={deleting === s.session_id}
+                        className="rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+                      >
+                        {deleting === s.session_id ? "删除中…" : "删除"}
+                      </button>
+                      <span className="text-sm text-slate-400 transition group-hover:text-slate-600">
+                        查看复盘 →
+                      </span>
+                    </div>
                   </div>
                 </Link>
               ))}
