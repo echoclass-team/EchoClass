@@ -38,6 +38,7 @@ from api.lessons import get_lesson_record
 from api.response import ok_response
 from db.crud import (
     close_qa_session,
+    delete_qa_session_record,
     get_dialog_messages,
     get_evaluation_by_session,
     get_feedback_by_session,
@@ -361,7 +362,7 @@ async def get_qa_session(
                     id=dialog_id,
                     student_id=dialog_id,
                     student_name=dialog_id,
-                    status="closed",
+                    status="resolved",
                     question_preview=preview,
                     turn_count=(len(msgs) + 1) // 2,
                     resolution_source=None,
@@ -535,6 +536,29 @@ async def end_qa_session(
         )
 
     return ok_response(QASessionEndData(session_id=session_id, summary=summary))
+
+
+# ============================================================ 删除 session
+
+
+@router.delete("/{session_id}", response_model=ApiResponse)
+async def delete_qa_session(
+    session_id: str,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+) -> ApiResponse:
+    """删除一个 session 及其全部关联数据（dialog_messages / evaluations / feedbacks）。
+
+    仅限 owner 删除。不存在或非 owner 返回 404。
+    """
+    db = SessionLocal()
+    try:
+        deleted = delete_qa_session_record(db, session_id, _user.id)
+    finally:
+        db.close()
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
+    logger.info("delete_qa_session: %s by user %s", session_id, _user.id)
+    return ok_response(None)
 
 
 # ============================================================ 历史列表
