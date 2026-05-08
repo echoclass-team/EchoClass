@@ -2,12 +2,13 @@
 
 import type { EvaluationReport } from "@/types/qa";
 
+// 维度 ID 与 data/rubrics/v0.json 中的 dimensions[].id / name_zh 一一对应
 const DIMENSION_LABELS: Record<string, string> = {
-  accuracy: "知识准确性",
-  scaffolding: "引导支架",
-  responsiveness: "回应性",
-  language: "语言表达",
-  misconception_handling: "迷思处理",
+  MR: "迷思破除",
+  KC: "重点覆盖",
+  RR: "解决率",
+  TQ: "师范生提问质量",
+  SS: "学生满意度",
 };
 
 function dimensionLabel(key: string) {
