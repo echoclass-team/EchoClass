@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "label": "bad",
+  "session": {
+    "id": "demo-session-bad",
+    "lesson_meta": {
+      "subject": "数学",
+      "grade": "三年级",
+      "topic": "分数的初步认识",
+      "objectives": [
+        "理解分数表示整体的一部分",
+        "掌握几分之一与几分之几的读写"
+      ],
+      "key_points": [
+        "分数表示部分与整体的关系",
+        "几分之几的写法与读法"
+      ],
+      "difficult_points": [
+        "分母分子相等的分数等于 1",
+        "等值分数的初步感知"
+      ]
+    },
+    "persona_ids": [
+      "p_lower_curious"
+    ],
+    "dialogs": [
+      {
+        "id": "p_lower_curious",
+        "student_id": "p_lower_curious",
+        "question": {
+          "id": "p_lower_curious",
+          "speaker_id": "p_lower_curious",
+          "speaker_name": "张天乐",
+          "content": "老师，3/3 是不是 1 啊？我感觉 3/3 应该比 1 大，因为有 3 个嘛。",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "分母分子相等的分数等于 1",
+          "linked_misconception_id": "frac_equal_to_one",
+          "rationale": "我看到分子有 3 个，下意识觉得比 1 多。",
+          "self_score": null
+        },
+        "status": "abandoned",
+        "messages": [
+          {
+            "role": "teacher",
+            "content": "对，3/3 就是等于 1，记住就行。",
+            "timestamp": "2026-01-01T09:00:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "为什么呀？3 个不就比 1 个多吗？",
+            "timestamp": "2026-01-01T09:01:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "teacher",
+            "content": "规则就是这样的，分子分母相等就等于 1。课本上写了。",
+            "timestamp": "2026-01-01T09:02:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "哦……（还是不太懂为什么）",
+            "timestamp": "2026-01-01T09:03:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "teacher",
+            "content": "多做几道题就熟了，先记下来。",
+            "timestamp": "2026-01-01T09:04:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "好吧。",
+            "timestamp": "2026-01-01T09:05:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          }
+        ],
+        "started_at": "2026-01-01T09:00:00Z",
+        "ended_at": "2026-01-01T09:05:00Z",
+        "resolution_source": "abandoned",
+        "asked_questions": [
+          {
+            "id": "p_lower_curious",
+            "speaker_id": "p_lower_curious",
+            "speaker_name": "张天乐",
+            "content": "老师，3/3 是不是 1 啊？我感觉 3/3 应该比 1 大，因为有 3 个嘛。",
+            "category": "stuck_misconception",
+            "difficulty": "medium",
+            "linked_key_point": "分母分子相等的分数等于 1",
+            "linked_misconception_id": "frac_equal_to_one",
+            "rationale": "我看到分子有 3 个，下意识觉得比 1 多。",
+            "self_score": null
+          }
+        ],
+        "question_progress": [
+          {
+            "question_id": "p_lower_curious",
+            "status": "abandoned",
+            "turns_used": 3,
+            "message_start_idx": 0,
+            "message_end_idx": 6,
+            "resolution_source": "abandoned"
+          }
+        ],
+        "current_question_idx": 1
+      }
+    ]
+  },
+  "evaluation": {
+    "session_id": "demo-session-bad",
+    "rubric_version": "v0",
+    "scores": [
+      {
+        "dimension": "MR",
+        "score": 0,
+        "rationale": "老师识别到学生迷思但只给结论不解释为什么；学生明确追问后仍以'记住就行'敷衍，迷思未破除。",
+        "evidence": [
+          {
+            "dialog_id": "p_lower_curious",
+            "chunk_seq": 2,
+            "excerpt": "规则就是这样的……课本上写了"
+          }
+        ]
+      },
+      {
+        "dimension": "KC",
+        "score": 1,
+        "rationale": "触及'分母分子相等的分数等于 1'但仅以规则陈述，未用任何学段适配脚手架（如切蛋糕情境）。",
+        "evidence": []
+      },
+      {
+        "dimension": "RR",
+        "score": 1,
+        "rationale": "问题最终 abandoned；学生最后说'好吧'是典型的虚假接受，self_efficacy 受打击。",
+        "evidence": [
+          {
+            "dialog_id": "p_lower_curious",
+            "chunk_seq": 5,
+            "excerpt": "好吧。"
+          }
+        ]
+      },
+      {
+        "dimension": "TQ",
+        "score": 0,
+        "rationale": "老师全程只用陈述句和'记住'，没有任何反问或脚手架，缺失 ZPD 引导。",
+        "evidence": []
+      },
+      {
+        "dimension": "SS",
+        "score": 1,
+        "rationale": "学生从主动质疑→被动接受，态度从开放转为关闭，是负面学习体验。",
+        "evidence": []
+      }
+    ],
+    "overall": 0.6,
+    "generated_at": "2026-01-01T09:05:20Z"
+  },
+  "feedback": {
+    "strengths": [
+      "能听到学生的提问并给出回应"
+    ],
+    "improvements": [
+      "学生追问'为什么 3 个不比 1 个多'是宝贵的认知冲突机会，应抓住而非以'记住'回避",
+      "建议用具体情境（如蛋糕被切成 3 块、把 3 块都拿走）让学生自己看到 3/3 = 整个 = 1",
+      "学生'好吧'是虚假接受信号，下次遇到类似回应应主动追问'你真的明白了吗？'"
+    ],
+    "next_steps": [
+      "复习 Posner 概念变化模型：识别迷思 → 提供反例 → 引导类比 → 学生复述",
+      "下次答疑前准备 2-3 个具体情境道具（图片、实物），减少纯规则解释"
+    ],
+    "tone": "critical",
+    "generated_at": "2026-01-01T09:05:30Z"
+  }
+}

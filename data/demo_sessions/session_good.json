@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "label": "good",
+  "session": {
+    "id": "demo-session-good",
+    "lesson_meta": {
+      "subject": "数学",
+      "grade": "三年级",
+      "topic": "分数的初步认识",
+      "objectives": [
+        "理解分数表示整体的一部分",
+        "掌握几分之一与几分之几的读写"
+      ],
+      "key_points": [
+        "分数表示部分与整体的关系",
+        "几分之几的写法与读法"
+      ],
+      "difficult_points": [
+        "分母分子相等的分数等于 1",
+        "等值分数的初步感知"
+      ]
+    },
+    "persona_ids": [
+      "p_lower_curious"
+    ],
+    "dialogs": [
+      {
+        "id": "p_lower_curious",
+        "student_id": "p_lower_curious",
+        "question": {
+          "id": "p_lower_curious",
+          "speaker_id": "p_lower_curious",
+          "speaker_name": "张天乐",
+          "content": "老师，1/2 和 2/4 是一样大的吗？我感觉下面那个数字大的应该更大呀。",
+          "category": "stuck_misconception",
+          "difficulty": "medium",
+          "linked_key_point": "分数表示部分与整体的关系",
+          "linked_misconception_id": "frac_size_by_denominator",
+          "rationale": "我以为分母越大分数越大，所以 2/4 应该比 1/2 大。",
+          "self_score": null
+        },
+        "status": "resolved",
+        "messages": [
+          {
+            "role": "teacher",
+            "content": "这是个好问题。我们想象有一个苹果，把它平均分成 2 份，你拿走 1 份，是 1/2；如果把同一个苹果平均分成 4 份，你拿走 2 份，是 2/4。你画一下，比比看大小？",
+            "timestamp": "2026-01-01T09:00:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "嗯……我画了……欸？两块拼起来好像和半个一样大！",
+            "timestamp": "2026-01-01T09:01:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "teacher",
+            "content": "对！这就说明 1/2 和 2/4 一样大。分子和分母同时变大几倍，分数大小不变，这叫等值分数。再看 3/6 你猜呢？",
+            "timestamp": "2026-01-01T09:02:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "3/6 也是一样大！因为 3 份和 6 份比起来正好是一半！老师我懂了。\n[懂了]",
+            "timestamp": "2026-01-01T09:03:00Z",
+            "self_resolved": true,
+            "is_new_question": false,
+            "question_id": null
+          }
+        ],
+        "started_at": "2026-01-01T09:00:00Z",
+        "ended_at": "2026-01-01T09:03:00Z",
+        "resolution_source": "self_resolve",
+        "asked_questions": [
+          {
+            "id": "p_lower_curious",
+            "speaker_id": "p_lower_curious",
+            "speaker_name": "张天乐",
+            "content": "老师，1/2 和 2/4 是一样大的吗？我感觉下面那个数字大的应该更大呀。",
+            "category": "stuck_misconception",
+            "difficulty": "medium",
+            "linked_key_point": "分数表示部分与整体的关系",
+            "linked_misconception_id": "frac_size_by_denominator",
+            "rationale": "我以为分母越大分数越大，所以 2/4 应该比 1/2 大。",
+            "self_score": null
+          }
+        ],
+        "question_progress": [
+          {
+            "question_id": "p_lower_curious",
+            "status": "resolved",
+            "turns_used": 2,
+            "message_start_idx": 0,
+            "message_end_idx": 4,
+            "resolution_source": "self_resolve"
+          }
+        ],
+        "current_question_idx": 1
+      }
+    ]
+  },
+  "evaluation": {
+    "session_id": "demo-session-good",
+    "rubric_version": "v0",
+    "scores": [
+      {
+        "dimension": "MR",
+        "score": 4,
+        "rationale": "老师精准识别学生'分母大=分数大'的迷思，用切苹果反例 + 等值分数类比，让学生自己说出'拼起来一样大'。",
+        "evidence": [
+          {
+            "dialog_id": "p_lower_curious",
+            "chunk_seq": 0,
+            "excerpt": "把同一个苹果平均分成 4 份，你拿走 2 份，是 2/4。你画一下"
+          }
+        ]
+      },
+      {
+        "dimension": "KC",
+        "score": 3,
+        "rationale": "覆盖了'分数表示部分与整体'与'等值分数'两个重点，用画图脚手架适配低年级具体运算阶段。",
+        "evidence": []
+      },
+      {
+        "dimension": "RR",
+        "score": 3,
+        "rationale": "self_resolve 比例落入 40-70% 甜区，学生在确认前主动验证 3/6 同理，体现 Bandura 自我效能。",
+        "evidence": []
+      },
+      {
+        "dimension": "TQ",
+        "score": 4,
+        "rationale": "老师不直接给答案，先让学生画图自验，再泛化到 3/6 检验类比迁移，是典型 ZPD scaffolding。",
+        "evidence": [
+          {
+            "dialog_id": "p_lower_curious",
+            "chunk_seq": 2,
+            "excerpt": "再看 3/6 你猜呢？"
+          }
+        ]
+      },
+      {
+        "dimension": "SS",
+        "score": 3,
+        "rationale": "学生表达从困惑→具象操作→泛化，完成一次完整的认知重构。",
+        "evidence": []
+      }
+    ],
+    "overall": 3.4,
+    "generated_at": "2026-01-01T09:03:20Z"
+  },
+  "feedback": {
+    "strengths": [
+      "用切苹果具体情境替代抽象比较，精准命中'分母大=分数大'迷思",
+      "让学生自己画图验证，再泛化到 3/6，体现脚手架式提问"
+    ],
+    "improvements": [
+      "可以让学生用自己的话复述'什么是等值分数'，进一步检验是否真懂"
+    ],
+    "next_steps": [
+      "下次答疑可准备 1-2 个变式题（如 4/8、5/10）让学生独立判断是否等值"
+    ],
+    "tone": "encouraging",
+    "generated_at": "2026-01-01T09:03:30Z"
+  }
+}
