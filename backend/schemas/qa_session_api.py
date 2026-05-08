@@ -11,11 +11,13 @@ WS 协议复用 ``schemas.ws_events`` 那套帧；REST 这里只负责"拉起 se
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 from schemas.dialog import DialogMessage, DialogStatus, ResolutionSource
+from schemas.evaluation import EvaluationReport
+from schemas.feedback import TeacherFeedback
 from schemas.lesson import LessonMeta
 from schemas.question import StudentQuestion
 from schemas.ws_events import WsStudentInfo
@@ -132,4 +134,32 @@ class QASessionEndData(BaseModel):
     session_id: str
     summary: dict[str, Any] = Field(
         ..., description="``QASession.summary()`` 直接返回的统计字典"
+    )
+
+
+class QASessionEvaluationData(BaseModel):
+    """``GET /api/qa-sessions/{id}/evaluation`` 响应数据。
+
+    与 ``docs/api_contract.md §2.6`` 保持一致：
+
+    - HTTP 200 + ``status="done"``：``evaluation`` 与 ``feedback`` 均非空
+    - HTTP 202 + ``status="pending"``：评估仍在跑（或尚未触发），轮询即可
+    - HTTP 200 + ``status="failed"``：评估或反馈生成失败但已落定，
+      ``error`` 给出简要原因；前端可据此显示 retry / fallback 文案
+    """
+
+    status: Literal["done", "pending", "failed"] = Field(
+        ..., description="评估状态。前端据此决定渲染 / 轮询 / 报错"
+    )
+    evaluation: EvaluationReport | None = Field(
+        default=None,
+        description="评估报告（``status=done`` 时非空）",
+    )
+    feedback: TeacherFeedback | None = Field(
+        default=None,
+        description="师范生反馈（``status=done`` 时非空）",
+    )
+    error: str | None = Field(
+        default=None,
+        description="``status=failed`` 时给出的简要错误信息",
     )

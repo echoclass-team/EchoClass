@@ -28,7 +28,7 @@ import json
 import logging
 from typing import Callable, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from api.deps import CurrentUser, get_current_user
@@ -39,20 +39,31 @@ from api.response import ok_response
 from db.crud import (
     close_qa_session,
     get_dialog_messages,
+    get_evaluation_by_session,
+    get_feedback_by_session,
     get_qa_session_record,
     list_qa_sessions_by_owner,
     save_qa_session,
+    upsert_evaluation,
+    upsert_feedback,
 )
 from db.engine import SessionLocal
 from llm.client import LLMClient
 from schemas.api import ApiResponse
+from schemas.evaluation import EvaluationReport
+from schemas.feedback import TeacherFeedback
 from schemas.lesson import LessonMeta, LessonRecord
 from schemas.qa_session_api import (
     CreateQASessionData,
     CreateQASessionRequest,
     DialogStateSummary,
     QASessionEndData,
+    QASessionEvaluationData,
     QASessionStateData,
+)
+from services.evaluation_service import (
+    EvaluationService,
+    get_evaluation_service,
 )
 from schemas.stage import StageProfile, load_stage_profile_by_id
 from schemas.student import Persona, load_personas
@@ -364,6 +375,113 @@ async def get_qa_session(
                 active=0,
                 resolved=len(dialogs),
                 abandoned=0,
+            )
+        )
+    finally:
+        db.close()
+
+
+@router.get(
+    "/{session_id}/evaluation",
+    response_model=ApiResponse[QASessionEvaluationData],
+)
+async def get_qa_session_evaluation(
+    session_id: str,
+    response: Response,
+    _user: CurrentUser = Depends(get_current_user),  # noqa: B008
+    eval_service: EvaluationService = Depends(get_evaluation_service),  # noqa: B008
+) -> ApiResponse[QASessionEvaluationData]:
+    """读取某 session 的评估报告 + 师范生反馈。
+
+    状态机（与 ``docs/api_contract.md §2.6.1`` 一致）:
+
+    - 200 ``status="done"``：DB 命中 ``evaluations`` + ``feedbacks`` 行；
+      或内存 ``EvaluationService`` 命中 done 且首次落盘成功。
+    - 200 ``status="failed"``：内存命中 failed bundle；前端可显示 retry。
+    - 202 ``status="pending"``：内存命中 pending bundle，或两边都 miss
+      （此时评估尚未触发，前端轮询即可，等 #M3-A3 真实触发流程完成自然转 done）。
+    - 404：session 不存在或不属于当前用户（不区分两者，避免泄露存在性）。
+    - 401：未登录（由 ``get_current_user`` 抛出）。
+    """
+    db = SessionLocal()
+    try:
+        record = get_qa_session_record(db, session_id)
+        # 不存在 / 别人家的 session：统一 404，不泄露存在性
+        if record is None or record.owner_id != _user.id:
+            raise HTTPException(
+                status_code=404, detail=f"session {session_id!r} not found"
+            )
+
+        # 优先读 DB 落盘（A 端写、B 端只读契约：models §evaluations/feedbacks）
+        eval_row = get_evaluation_by_session(db, session_id)
+        feedback_row = get_feedback_by_session(db, session_id)
+        if eval_row is not None and feedback_row is not None:
+            try:
+                evaluation = EvaluationReport.model_validate_json(eval_row.report_json)
+                feedback = TeacherFeedback.model_validate_json(
+                    feedback_row.feedback_json
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "evaluation row corrupted for session %s, falling back to memory: %s",
+                    session_id,
+                    exc,
+                )
+            else:
+                return ok_response(
+                    QASessionEvaluationData(
+                        status="done",
+                        evaluation=evaluation,
+                        feedback=feedback,
+                    )
+                )
+
+        # DB miss：查内存 service（#M3-A3 fallback；评估正在跑或刚跑完未落盘）
+        bundle = eval_service.get(session_id)
+        if bundle is None:
+            response.status_code = 202
+            return ok_response(QASessionEvaluationData(status="pending"))
+
+        if bundle.status == "pending":
+            response.status_code = 202
+            return ok_response(QASessionEvaluationData(status="pending"))
+
+        if bundle.status == "failed":
+            return ok_response(
+                QASessionEvaluationData(
+                    status="failed",
+                    error=bundle.error or "evaluation failed",
+                )
+            )
+
+        # status == "done"：写穿到 DB 让下次直接命中
+        if bundle.evaluation is not None:
+            try:
+                upsert_evaluation(
+                    db,
+                    session_id=session_id,
+                    rubric_version=bundle.evaluation.rubric_version,
+                    report_json=bundle.evaluation.model_dump_json(),
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "upsert_evaluation failed for %s: %s", session_id, exc
+                )
+        if bundle.feedback is not None:
+            try:
+                upsert_feedback(
+                    db,
+                    session_id=session_id,
+                    feedback_json=bundle.feedback.model_dump_json(),
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("upsert_feedback failed for %s: %s", session_id, exc)
+
+        return ok_response(
+            QASessionEvaluationData(
+                status="done",
+                evaluation=bundle.evaluation,
+                feedback=bundle.feedback,
             )
         )
     finally:

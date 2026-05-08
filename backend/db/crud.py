@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 
 from db.models import (
     DialogMessageRecord,
+    EvaluationRecord,
+    FeedbackRecord,
     Lesson,
     QASessionRecord,
 )
@@ -209,3 +211,87 @@ def get_next_seq(db: Session, session_id: str) -> int:
         .scalar()
     )
     return (result or 0) + 1
+
+
+# ============================================================ evaluations
+
+
+def upsert_evaluation(
+    db: Session,
+    *,
+    session_id: str,
+    rubric_version: str,
+    report_json: str,
+) -> EvaluationRecord:
+    """写入或覆盖某 session 的评估报告（``evaluations.session_id`` 唯一）。
+
+    幂等：同 session_id 二次调用更新原行，避免 UNIQUE 冲突。
+    """
+    row = (
+        db.query(EvaluationRecord)
+        .filter(EvaluationRecord.session_id == session_id)
+        .first()
+    )
+    if row is None:
+        row = EvaluationRecord(
+            session_id=session_id,
+            rubric_version=rubric_version,
+            report_json=report_json,
+        )
+        db.add(row)
+    else:
+        row.rubric_version = rubric_version
+        row.report_json = report_json
+        row.generated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def get_evaluation_by_session(
+    db: Session, session_id: str
+) -> Optional[EvaluationRecord]:
+    return (
+        db.query(EvaluationRecord)
+        .filter(EvaluationRecord.session_id == session_id)
+        .first()
+    )
+
+
+# ============================================================ feedbacks
+
+
+def upsert_feedback(
+    db: Session,
+    *,
+    session_id: str,
+    feedback_json: str,
+) -> FeedbackRecord:
+    """写入或覆盖某 session 的反馈（``feedbacks.session_id`` 唯一）。"""
+    row = (
+        db.query(FeedbackRecord)
+        .filter(FeedbackRecord.session_id == session_id)
+        .first()
+    )
+    if row is None:
+        row = FeedbackRecord(
+            session_id=session_id,
+            feedback_json=feedback_json,
+        )
+        db.add(row)
+    else:
+        row.feedback_json = feedback_json
+        row.generated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def get_feedback_by_session(
+    db: Session, session_id: str
+) -> Optional[FeedbackRecord]:
+    return (
+        db.query(FeedbackRecord)
+        .filter(FeedbackRecord.session_id == session_id)
+        .first()
+    )
