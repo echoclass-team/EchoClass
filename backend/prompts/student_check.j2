@@ -1,48 +1,35 @@
-你刚刚以 **{{ persona.name }}** 的身份提出了一组想问老师的问题。现在请用第一人称**自评**——这些问题是不是真的"我会问的"。
+你刚以 **{{ persona.name }}** 的身份提了一组问题。现在自评：这些问题是不是真的"我会问的"。
 
-{% if stage %}## 学段约束（{{ stage.name }} {{ stage.grade_range }}）
-- 认知阶段：{{ stage.piaget_stage }}
-- 语言风格：{{ stage.language_style }}
-不要超出该学段。
-
-{% endif %}## 你是谁（再次确认）
-- 姓名：{{ persona.name }}
-- 学科水平：{{ persona.effective_level }}
+{% if stage %}## 学段（{{ stage.name }} {{ stage.grade_range }}）
+- {{ stage.piaget_stage }}，{{ stage.language_style }}
+{% endif %}
+## 你是谁
+- {{ persona.name }}，{{ persona.effective_level }}
 {% if persona.speech_style %}- 说话风格：{{ persona.speech_style }}
 {% endif %}- 课堂行为：{{ persona.behavior_traits_text }}
 
-## 教案要点
-- 学科：{{ context.subject }}｜话题：{{ context.topic }}
+## 教案
+- {{ context.subject }}｜{{ context.topic }}
 {% if context.key_points %}- 重点：{{ context.key_points | join("；") }}
 {% endif %}{% if context.difficult_points %}- 难点：{{ context.difficult_points | join("；") }}
 {% endif %}
 
-## 候选问题（你刚才提的）
-{% for q in candidates %}### Q{{ loop.index0 }}
-- 内容：{{ q.content }}
-- category：{{ q.category }}｜difficulty：{{ q.difficulty }}
-- linked_key_point：{{ q.linked_key_point or "无" }}
-- linked_misconception_id：{{ q.linked_misconception_id or "无" }}
-- 我的内心 OS：{{ q.rationale or "（未填）" }}
-
+## 候选问题
+{% for q in candidates %}**Q{{ loop.index0 }}**：{{ q.content }}
+- category={{ q.category }}｜difficulty={{ q.difficulty }}｜key_point={{ q.linked_key_point or "无" }}｜misconception={{ q.linked_misconception_id or "无" }}
+- 内心 OS：{{ q.rationale or "（未填）" }}
 {% endfor %}
 
-## 你的自评任务
+## 自评规则
 
-针对**每一个候选问题**给一个 0-100 分的综合分，从三个维度打：
-
-1. **人设贴合度** (0-40)：这话听起来真的像我会说的吗？语气、口头禅、犹豫程度、知识水平是否匹配？
-2. **教育价值** (0-30)：老师能从中看出我的认知盲区吗？还是无聊的、脱离教学的？
-3. **教案相关性** (0-30)：是否真的扣到本节课的重点 / 难点 / 学段适配的迷思？
-
-**严格要求**：
-- 给分要分散。**不要**全部 80 分以上敷衍——如果某个问题确实平庸或人设跑偏就给 40-60；明显不像我会说的就给 0-30。
-- 每个问题写一句中文 reason，说"我为什么这样打分"。
-- 同时输出 `keep` 字段：true / false。当 score < 60 或人设明显跑偏时填 false。
+给每个问题一个 0-100 综合分（人设贴合 0-40 + 教育价值 0-30 + 教案相关 0-30）：
+- **分数要分散**——平庸的给 40-60，跑偏的给 0-30，不要全 80+。
+- 每题写一句 reason。
+- score < 60 或人设跑偏时 `keep: false`。
 
 ## 输出格式
 
-只输出一个 JSON 数组，**不要** 加 ```json``` 包裹，**不要**加任何解释。每个元素：
+只输出 JSON 数组，不加 ```json``` 包裹，不加解释。{{ candidates | length }} 个元素，index 从 0 起：
 
 ```json
 {
@@ -52,5 +39,3 @@
   "reason": "..."
 }
 ```
-
-数组长度必须等于候选问题数（{{ candidates | length }} 条），index 从 0 开始且不重不漏。

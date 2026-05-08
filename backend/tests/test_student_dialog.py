@@ -166,7 +166,7 @@ async def test_respond_in_dialog_prompt_contains_question_and_history() -> None:
 
 
 async def test_respond_in_dialog_prompt_warns_for_stuck_misconception() -> None:
-    """category=stuck_misconception 时 prompt 应含"不要轻易'懂'"提示。"""
+    """category=stuck_misconception 时 prompt 应含"不要说懂"提示。"""
     llm = _make_mock_llm("哦……")
     agent = _make_agent(llm)
 
@@ -177,4 +177,4 @@ async def test_respond_in_dialog_prompt_warns_for_stuck_misconception() -> None:
 
     system_msg = llm.chat.call_args[0][0][0]["content"]
     assert "错误前提" in system_msg
-    assert "不要轻易" in system_msg
+    assert "不要说懂" in system_msg
