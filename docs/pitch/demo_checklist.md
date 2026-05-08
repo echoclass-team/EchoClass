@@ -13,8 +13,8 @@
 ### 1.1 数据层
 
 - [ ] `data/demo_sessions/session_{good,mid,bad}.json` 三份文件存在且 JSON 合法
-- [ ] `uv run python backend/scripts/seed_demo.py --build` 跑通，三份 JSON 重新生成无报错
-- [ ] `uv run python backend/scripts/seed_demo.py --reset` 跑通，DB 中确认 demo user + 3 条 session 已入库
+- [ ] `(cd backend && uv run python scripts/seed_demo.py --build)` 跑通，三份 JSON 重新生成无报错
+- [ ] `(cd backend && uv run python scripts/seed_demo.py --reset)` 跑通，DB 中确认 demo user + 3 条 session 已入库
 - [ ] `/sessions` 页面访问后**确实显示 3 条**，标题 / 时间 / 分数三列正确
 - [ ] 点开 `session_bad` → `/qa/{id}/summary` 能看到 5 维评分卡 + evidence 片段 + FeedbackAgent 反馈
 
@@ -47,8 +47,8 @@
 按顺序执行，**不要乱序**：
 
 1. **接电源** + 关闭笔记本电池省电模式
-2. **连场地 wifi**，浏览器访问 `https://echoclass-test.example.com/sessions` 确认能进
-3. `uv run python backend/scripts/seed_demo.py --reset` **跑一次清空重灌** —— 确保 demo 状态全新
+2. **连场地 wifi**，浏览器访问 `http://localhost:3000/sessions` 确认能进
+3. `(cd backend && uv run python scripts/seed_demo.py --reset)` **跑一次清空重灌** —— 确保 demo 状态全新
 4. 访问 `/sessions`，确认 3 条 session 显示，**点开 session_bad 预热一下后端缓存**
 5. ESC 回到 `/sessions` 列表页，**关闭浏览器其他所有 tab**
 6. 投影器测试：把 `/sessions` 页面投到大屏，**蹲到最后一排**确认字号能看清
@@ -79,10 +79,10 @@
 #   按 Ctrl+C 终止，或在另一个 terminal 找进程 kill
 
 # 步骤 2：清空 + 重灌 demo seed
-uv run python backend/scripts/seed_demo.py --reset
+(cd backend && uv run python scripts/seed_demo.py --reset)
 
 # 步骤 3：重启 backend（在仓库根目录）
-uv run uvicorn backend.app.main:app --reload --port 8000
+(cd backend && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000)
 
 # 步骤 4：刷新前端 /sessions，确认 3 条 demo session 重新出现
 ```

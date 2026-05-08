@@ -34,10 +34,10 @@
 |---|---|---|
 | Demo seed 数据 | `data/demo_sessions/session_{good,mid,bad}.json` | 3 段不同分数 session，预置可演示 |
 | Demo 灌库脚本 | `backend/scripts/seed_demo.py` | `--build` 重生成 / `--reset` 清空重灌 |
-| Rubric 文档 | `@/f:/Pycharm/PycharmProjects/EchoClass/docs/rubric_v0.md` | 答辩中介绍 5 维设计依据 |
-| 立项书 | `@/f:/Pycharm/PycharmProjects/EchoClass/docs/proposal.md` | 长答辩可引用的完整理论框架 |
-| 用户测试方案 | `@/f:/Pycharm/PycharmProjects/EchoClass/docs/user_test_plan.md` | 答辩中"如何验证"的方法学引用 |
-| 用户测试报告 | `@/f:/Pycharm/PycharmProjects/EchoClass/docs/user_test_report.md` | 待回填，用于"实证证据"段 |
+| Rubric 文档 | `../rubric_v0.md` | 答辩中介绍 5 维设计依据 |
+| 立项书 | `../proposal.md` | 长答辩可引用的完整理论框架 |
+| 用户测试方案 | `../user_test_plan.md` | 答辩中"如何验证"的方法学引用 |
+| 用户测试报告 | `../user_test_report.md` | 待回填，用于"实证证据"段 |
 
 ## Pitch 核心三层信息（贯穿三份脚本）
 
