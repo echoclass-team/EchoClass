@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "label": "mid",
+  "session": {
+    "id": "demo-session-mid",
+    "lesson_meta": {
+      "subject": "数学",
+      "grade": "三年级",
+      "topic": "分数的初步认识",
+      "objectives": [
+        "理解分数表示整体的一部分",
+        "掌握几分之一与几分之几的读写"
+      ],
+      "key_points": [
+        "分数表示部分与整体的关系",
+        "几分之几的写法与读法"
+      ],
+      "difficult_points": [
+        "分母分子相等的分数等于 1",
+        "等值分数的初步感知"
+      ]
+    },
+    "persona_ids": [
+      "p_lower_curious"
+    ],
+    "dialogs": [
+      {
+        "id": "p_lower_curious",
+        "student_id": "p_lower_curious",
+        "question": {
+          "id": "p_lower_curious",
+          "speaker_id": "p_lower_curious",
+          "speaker_name": "张天乐",
+          "content": "老师，几分之几是什么意思呀？我看书上写 3/4，我不知道怎么读。",
+          "category": "clarify_concept",
+          "difficulty": "easy",
+          "linked_key_point": "几分之几的写法与读法",
+          "linked_misconception_id": null,
+          "rationale": "我对分数的写法不熟，记不住读法。",
+          "self_score": null
+        },
+        "status": "resolved",
+        "messages": [
+          {
+            "role": "teacher",
+            "content": "3/4 读作'四分之三'。下面的数字叫分母，先读分母；上面的数字叫分子，再读分子。所以是'四分之三'。",
+            "timestamp": "2026-01-01T09:00:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "哦……那 5/8 是读'八分之五'吗？",
+            "timestamp": "2026-01-01T09:01:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "teacher",
+            "content": "对的，记住先读分母再读分子就行。",
+            "timestamp": "2026-01-01T09:02:00Z",
+            "self_resolved": false,
+            "is_new_question": false,
+            "question_id": null
+          },
+          {
+            "role": "student",
+            "content": "嗯……我大概知道了。\n[懂了]",
+            "timestamp": "2026-01-01T09:03:00Z",
+            "self_resolved": true,
+            "is_new_question": false,
+            "question_id": null
+          }
+        ],
+        "started_at": "2026-01-01T09:00:00Z",
+        "ended_at": "2026-01-01T09:03:00Z",
+        "resolution_source": "self_resolve",
+        "asked_questions": [
+          {
+            "id": "p_lower_curious",
+            "speaker_id": "p_lower_curious",
+            "speaker_name": "张天乐",
+            "content": "老师，几分之几是什么意思呀？我看书上写 3/4，我不知道怎么读。",
+            "category": "clarify_concept",
+            "difficulty": "easy",
+            "linked_key_point": "几分之几的写法与读法",
+            "linked_misconception_id": null,
+            "rationale": "我对分数的写法不熟，记不住读法。",
+            "self_score": null
+          }
+        ],
+        "question_progress": [
+          {
+            "question_id": "p_lower_curious",
+            "status": "resolved",
+            "turns_used": 2,
+            "message_start_idx": 0,
+            "message_end_idx": 4,
+            "resolution_source": "self_resolve"
+          }
+        ],
+        "current_question_idx": 1
+      }
+    ]
+  },
+  "evaluation": {
+    "session_id": "demo-session-mid",
+    "rubric_version": "v0",
+    "scores": [
+      {
+        "dimension": "MR",
+        "score": 2,
+        "rationale": "本题非典型迷思类，未涉及破除；但老师也未引导学生反思'为什么先读分母'的概念由来。",
+        "evidence": []
+      },
+      {
+        "dimension": "KC",
+        "score": 2,
+        "rationale": "覆盖'读法'重点但未联系'部分与整体'的核心含义，学生仅记住程序性规则。",
+        "evidence": []
+      },
+      {
+        "dimension": "RR",
+        "score": 3,
+        "rationale": "问题表面解决，学生表达'大概知道'有不确定信号，self_resolve 的真懂程度存疑。",
+        "evidence": [
+          {
+            "dialog_id": "p_lower_curious",
+            "chunk_seq": 3,
+            "excerpt": "嗯……我大概知道了"
+          }
+        ]
+      },
+      {
+        "dimension": "TQ",
+        "score": 2,
+        "rationale": "老师以陈述代替提问，未让学生用自己的话解释'为什么是这样读'，缺少脚手架。",
+        "evidence": []
+      },
+      {
+        "dimension": "SS",
+        "score": 2,
+        "rationale": "学生从'不知道怎么读'→'记住规则'，停留在记忆层未进入理解层。",
+        "evidence": []
+      }
+    ],
+    "overall": 2.2,
+    "generated_at": "2026-01-01T09:03:20Z"
+  },
+  "feedback": {
+    "strengths": [
+      "及时回应学生的概念性提问，给出明确的读法规则"
+    ],
+    "improvements": [
+      "学生说'大概知道了'是不确定信号，建议追问 1 道变式题（如 7/10）确认",
+      "可让学生用自己的话解释'为什么先读分母'，从记忆层推进到理解层"
+    ],
+    "next_steps": [
+      "下次面对程序性问题，多用'反问 + 学生复述'代替'直接告知'"
+    ],
+    "tone": "neutral",
+    "generated_at": "2026-01-01T09:03:30Z"
+  }
+}
