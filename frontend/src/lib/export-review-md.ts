@@ -30,12 +30,16 @@ const SOURCE_LABEL: Record<string, string> = {
 };
 
 const DIMENSION_LABEL: Record<string, string> = {
-  accuracy: "知识准确性",
-  scaffolding: "引导支架",
-  responsiveness: "回应性",
-  language: "语言表达",
-  misconception_handling: "迷思处理",
+  MR: "迷思破除",
+  KC: "重点覆盖",
+  RR: "解决率",
+  TQ: "师范生提问质量",
+  SS: "学生满意度",
 };
+
+function escapeTableCell(value: string): string {
+  return value.replaceAll("|", "\\|").replaceAll("\n", "<br>");
+}
 
 // ────────────────────────────────────────────── builders
 
@@ -46,9 +50,9 @@ function sectionLesson(session: QASessionStateData): string {
     "",
     `| 项目 | 内容 |`,
     `| --- | --- |`,
-    `| 学科 | ${lesson.subject} |`,
-    `| 年级 | ${lesson.grade} |`,
-    `| 课题 | ${lesson.topic} |`,
+    `| 学科 | ${escapeTableCell(lesson.subject)} |`,
+    `| 年级 | ${escapeTableCell(lesson.grade)} |`,
+    `| 课题 | ${escapeTableCell(lesson.topic)} |`,
     `| 对话数 | ${session.dialogs.length} |`,
     `| Session ID | \`${session.session_id}\` |`,
   ];
