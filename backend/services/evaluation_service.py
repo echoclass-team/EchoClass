@@ -5,21 +5,22 @@
 - 在 session 结束后串行运行 ``EvaluatorAgent`` → ``FeedbackAgent``
 - 按 session_id 持有 ``asyncio.Lock``，保证同一 session 只触发一次
 - 结果暂存进程内字典（``status`` + ``evaluation`` + ``feedback``），供 B3
-  REST 拉取；DB 落盘（``evaluations`` / ``feedbacks`` 表）走 B 的 CRUD，当前
-  PR 不直接写库，等 #M3-B3 完成后在 ``run`` 末尾再加一步即可。
+  REST 拉取；落盘到 ``evaluations`` / ``feedbacks`` 表由 B3 的路由层
+  (``api/qa_sessions.py::get_qa_session_evaluation``) 在首次读取时写穿。
 
 契约
 ----
 - ``schedule(session)``：fire-and-forget，同 session 重复调用只会跑一次
 - ``run(session)``：阻塞版本，供测试和同步路径调用；内部同样走锁
 - ``get(session_id)``：返回 bundle 或 ``None``
-- LLM 失败时 evaluation.overall == ``"unavailable"``，feedback 返回
-  ``[fallback]`` 占位（依 api_contract §2.6.4 降级语义）
+- 默认 factory 注入 ``LLMClient()`` 走真实 LLM；LLM 失败时 evaluation.overall
+  == ``"unavailable"``，feedback 返回 ``[fallback]`` 占位（依
+  ``docs/api_contract.md §2.6.4`` 降级语义）。测试可通过自定义 factory 注入 mock。
 
 非目标
 ------
 - 不调度到其它 worker / 消息队列（M3 单进程足够）
-- 不落盘（由 #M3-B3 接入后增补 CRUD 调用）
+- 不直接写 DB（由 B3 路由层在首次读取时 upsert）
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from typing import Callable, Literal, Optional
 
 from agents.evaluator import EvaluatorAgent
 from agents.feedback import FeedbackAgent
+from llm.client import LLMClient
 from schemas.evaluation import EvaluationReport
 from schemas.feedback import TeacherFeedback
 from services.qa_session import QASession
@@ -55,13 +57,29 @@ EvaluatorFactory = Callable[[], EvaluatorAgent]
 FeedbackFactory = Callable[[], FeedbackAgent]
 
 
+def _default_evaluator_factory() -> EvaluatorAgent:
+    """默认 evaluator：注入共享 ``LLMClient()`` 走真实 LLM 路径。
+
+    ``LLMClient()`` 构造期不要求 API key（见 ``llm/client.py`` #144 注释），
+    实际请求时若 key 缺失会抛 ``ValueError``，被 ``EvaluatorAgent._real_evaluate``
+    捕获并降级为 ``overall="unavailable"``。CI 无 key 场景因此不会破坏测试。
+    """
+    return EvaluatorAgent(llm=LLMClient())
+
+
+def _default_feedback_factory() -> FeedbackAgent:
+    """默认 feedback：注入共享 ``LLMClient()`` 走真实 LLM 路径。"""
+    return FeedbackAgent(llm=LLMClient())
+
+
 class EvaluationService:
     """进程内评估 + 反馈编排器。
 
     Parameters
     ----------
     evaluator_factory
-        ``EvaluatorAgent`` 工厂；测试可注入 mock。默认无 LLM（走 mock 分）。
+        ``EvaluatorAgent`` 工厂；测试可注入 mock。默认走真实 LLM
+        (``LLMClient()``)，调用失败时由 agent 内部降级为 unavailable / fallback。
     feedback_factory
         ``FeedbackAgent`` 工厂；同上。
     """
@@ -71,8 +89,8 @@ class EvaluationService:
         evaluator_factory: EvaluatorFactory | None = None,
         feedback_factory: FeedbackFactory | None = None,
     ) -> None:
-        self._evaluator_factory = evaluator_factory or EvaluatorAgent
-        self._feedback_factory = feedback_factory or FeedbackAgent
+        self._evaluator_factory = evaluator_factory or _default_evaluator_factory
+        self._feedback_factory = feedback_factory or _default_feedback_factory
         self._locks: dict[str, asyncio.Lock] = {}
         self._results: dict[str, EvaluationBundle] = {}
         self._global_lock = asyncio.Lock()

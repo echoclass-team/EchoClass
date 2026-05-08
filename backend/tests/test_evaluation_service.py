@@ -170,20 +170,34 @@ async def test_clear_resets_state() -> None:
     assert evaluator.calls == 2
 
 
-# ============================================================ default factories fallback
+# ============================================================ default factories
 
 
-async def test_default_factories_use_mock_agents() -> None:
-    """未注入 factory 时使用默认 ``EvaluatorAgent`` / ``FeedbackAgent`` 的 mock 模式。"""
+async def test_default_factories_inject_llm_client(monkeypatch: Any) -> None:
+    """未注入 factory 时使用默认 ``EvaluatorAgent`` / ``FeedbackAgent`` 走真实 LLM 路径。
+
+    无 ``OPENAI_API_KEY`` 时 LLMClient 在调用现场抛 ValueError，被 agent 内部
+    捕获后降级：evaluation.overall == "unavailable"，feedback 走 fallback 占位。
+    本用例不联网，断言降级路径符合 §2.6.4 契约。
+    """
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     svc = EvaluationService()
-    session = _fake_session("sess-default")
+    evaluator = svc._evaluator_factory()  # noqa: SLF001
+    feedback = svc._feedback_factory()  # noqa: SLF001
+    assert isinstance(evaluator, EvaluatorAgent)
+    assert isinstance(feedback, FeedbackAgent)
+    # 默认 factory 必须注入 LLM（不再是 mock 路径）
+    assert evaluator.llm is not None
+    assert feedback.llm is not None
 
+    session = _fake_session("sess-default")
     bundle = await svc.run(session)
 
     assert bundle.status == "done"
     assert isinstance(bundle.evaluation, EvaluationReport)
     assert isinstance(bundle.feedback, TeacherFeedback)
-    # 未注入 LLM → mock 模式 → tone 固定 encouraging
-    assert bundle.feedback.tone == "encouraging"
-    assert isinstance(svc._evaluator_factory(), EvaluatorAgent)  # noqa: SLF001
-    assert isinstance(svc._feedback_factory(), FeedbackAgent)  # noqa: SLF001
+    # 无 API key → evaluator 内部降级
+    assert bundle.evaluation.overall == "unavailable"
+    # feedback 在 evaluation unavailable 时短路走 fallback
+    assert bundle.feedback.tone == "neutral"
+    assert any("[fallback]" in s for s in bundle.feedback.strengths)

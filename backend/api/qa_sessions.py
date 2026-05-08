@@ -325,7 +325,9 @@ async def get_qa_session(
     try:
         record = get_qa_session_record(db, session_id)
         if record is None:
-            raise HTTPException(status_code=404, detail=f"session {session_id!r} not found")
+            raise HTTPException(
+                status_code=404, detail=f"session {session_id!r} not found"
+            )
 
         from schemas.dialog import DialogMessage as DMsg
 
@@ -345,8 +347,10 @@ async def get_qa_session(
             )
 
         lesson_record = get_lesson_record(record.lesson_id)
-        lesson_meta = lesson_record.meta if lesson_record else LessonMeta(
-            subject="", grade="", topic="unknown"
+        lesson_meta = (
+            lesson_record.meta
+            if lesson_record
+            else LessonMeta(subject="", grade="", topic="unknown")
         )
 
         dialogs: list[DialogStateSummary] = []
@@ -464,9 +468,7 @@ async def get_qa_session_evaluation(
                     report_json=bundle.evaluation.model_dump_json(),
                 )
             except Exception as exc:  # noqa: BLE001
-                logger.warning(
-                    "upsert_evaluation failed for %s: %s", session_id, exc
-                )
+                logger.warning("upsert_evaluation failed for %s: %s", session_id, exc)
         if bundle.feedback is not None:
             try:
                 upsert_feedback(
@@ -493,11 +495,18 @@ async def end_qa_session(
     session_id: str,
     _user: CurrentUser = Depends(get_current_user),  # noqa: B008
     registry: QASessionRegistry = Depends(get_registry),  # noqa: B008
+    eval_service: EvaluationService = Depends(get_evaluation_service),  # noqa: B008
 ) -> ApiResponse[QASessionEndData]:
     """显式结束 session，返回 ``QASession.summary()``。
 
     幂等性：同 session_id 第二次调用返回 404（已不在 registry）。前端应
     在拿到第一次 summary 后跳转 summary 页，不应重复 end。
+
+    副作用：
+    - 关闭 DB session 状态（``close_qa_session``）
+    - **fire-and-forget** 触发 ``EvaluationService.schedule(session)`` 启动
+      Evaluator + Feedback。前端随后轮询 ``GET /{session_id}/evaluation``
+      获取结果，状态机契约见 ``docs/api_contract.md §2.6.1``。
 
     注意：本接口**只**从 registry 移除并取 summary 快照；现存 WS 连接不会
     被服务器主动关闭（前端在 end 成功后应自行 ``client.close()``）。
@@ -514,6 +523,16 @@ async def end_qa_session(
         close_qa_session(db, session_id)
     finally:
         db.close()
+
+    # 触发评估（fire-and-forget）：失败由 service 内部降级，不阻塞 end 响应
+    try:
+        await eval_service.schedule(session)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "end_qa_session: failed to schedule evaluation for %s: %s",
+            session_id,
+            exc,
+        )
 
     return ok_response(QASessionEndData(session_id=session_id, summary=summary))
 
