@@ -120,3 +120,58 @@ export interface QASessionEndData {
   session_id: string;
   summary: QASessionSummary;
 }
+
+// ============================================================ 历史列表
+
+/** GET /api/qa-sessions 列表单项（对应后端 QASessionListItem） */
+export interface QASessionListItem {
+  session_id: string;
+  lesson_id: string;
+  status: string;
+  persona_ids: string[];
+  created_at: string;
+  closed_at?: string | null;
+}
+
+// ============================================================ 评估 API
+
+/** 打分证据片段 */
+export interface Evidence {
+  dialog_id: string;
+  chunk_seq?: number | null;
+  excerpt: string;
+}
+
+/** 单维度评分 */
+export interface RubricScore {
+  dimension: string;
+  score: number;
+  rationale: string;
+  evidence: Evidence[];
+}
+
+/** 完整评估报告（对应后端 EvaluationReport） */
+export interface EvaluationReport {
+  session_id: string;
+  rubric_version: string;
+  scores: RubricScore[];
+  overall: number | "unavailable";
+  generated_at: string;
+}
+
+/** 师范生反馈（对应后端 TeacherFeedback） */
+export interface TeacherFeedback {
+  strengths: string[];
+  improvements: string[];
+  next_steps: string[];
+  tone: "encouraging" | "neutral" | "critical";
+  generated_at: string;
+}
+
+/** GET /api/qa-sessions/{id}/evaluation 响应 data */
+export interface QASessionEvaluationData {
+  status: "done" | "pending" | "failed";
+  evaluation?: EvaluationReport | null;
+  feedback?: TeacherFeedback | null;
+  error?: string | null;
+}

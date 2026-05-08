@@ -5,6 +5,7 @@ const navItems = [
   { href: "/", label: "首页" },
   { href: "/setup", label: "开始陪练" },
   { href: "/lessons/manage", label: "教案管理" },
+  { href: "/sessions", label: "历史复盘" },
 ];
 
 export function SiteHeader() {

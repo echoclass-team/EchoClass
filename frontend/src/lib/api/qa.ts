@@ -11,6 +11,8 @@ import type {
   CreateQASessionData,
   CreateQASessionReq,
   QASessionEndData,
+  QASessionEvaluationData,
+  QASessionListItem,
   QASessionStateData,
   RecommendedPersonasData,
 } from "@/types/qa";
@@ -67,5 +69,25 @@ export async function endQASession(sessionId: string) {
       )
     ).data,
     "Failed to end qa session",
+  );
+}
+
+/** GET /api/qa-sessions —— 当前用户的历史会话列表。 */
+export async function fetchSessionList() {
+  return unwrap(
+    (await apiFetch<QASessionListItem[]>("/api/qa-sessions")).data,
+    "Failed to load session list",
+  );
+}
+
+/** GET /api/qa-sessions/{session_id}/evaluation —— 评估报告 + 反馈。 */
+export async function fetchEvaluation(sessionId: string) {
+  return unwrap(
+    (
+      await apiFetch<QASessionEvaluationData>(
+        `/api/qa-sessions/${encodeURIComponent(sessionId)}/evaluation`,
+      )
+    ).data,
+    "Failed to load evaluation",
   );
 }
