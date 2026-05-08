@@ -361,7 +361,7 @@ async def get_qa_session(
                     id=dialog_id,
                     student_id=dialog_id,
                     student_name=dialog_id,
-                    status="closed",
+                    status="resolved",
                     question_preview=preview,
                     turn_count=(len(msgs) + 1) // 2,
                     resolution_source=None,
