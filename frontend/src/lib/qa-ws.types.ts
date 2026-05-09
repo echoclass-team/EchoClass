@@ -59,7 +59,8 @@ export type ResolutionSource =
   | "self_resolve"
   | "teacher_marked"
   | "auto_evaluator"
-  | "abandoned";
+  | "abandoned"
+  | "turn_limit";
 
 /** WS 错误码受控枚举。 */
 export type WsErrorCode =
@@ -157,6 +158,8 @@ export interface WsStudentNewQuestion extends _ServerBase {
   dialog_id: string;
   /** 学生主动抛出的新问题，复用 StudentQuestion 结构。 */
   question: StudentQuestion;
+  /** 推进原因：'turn_limit' / 'self_resolve' 等；首问为 null。 */
+  source?: string | null;
   /** 可选：本新问题是在哪一轮回复之后产生的；前端可忽略。 */
   after_reply_chunk_seq?: number | null;
 }
@@ -164,7 +167,7 @@ export interface WsStudentNewQuestion extends _ServerBase {
 export interface WsDialogResolved extends _ServerBase {
   type: "dialog_resolved";
   dialog_id: string;
-  source: "teacher_marked" | "self_resolve";
+  source: ResolutionSource;
 }
 
 export interface WsDialogAbandoned extends _ServerBase {

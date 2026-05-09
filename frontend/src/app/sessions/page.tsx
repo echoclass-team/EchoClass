@@ -153,7 +153,7 @@ export default function SessionsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <h2 className="truncate text-base font-semibold text-slate-950">
-                          {s.lesson_id}
+                          {s.lesson_topic ? `《${s.lesson_topic}》答疑回顾` : s.lesson_id}
                         </h2>
                         {statusBadge(s.status)}
                       </div>

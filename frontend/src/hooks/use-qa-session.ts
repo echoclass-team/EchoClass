@@ -40,7 +40,7 @@ import type { DialogMessageDTO, DialogStateSummary } from "@/types/qa";
 
 /** 单条对话回合（已落地的 teacher / student 消息）。 */
 export interface DialogTurn {
-  role: "teacher" | "student";
+  role: "teacher" | "student" | "system";
   content: string;
   /** 仅 student 回合：LLM 是否在末尾标了 [懂了]。 */
   selfResolved?: boolean;
@@ -118,11 +118,12 @@ type Action =
       type: "STUDENT_NEW_QUESTION";
       dialogId: string;
       question: StudentQuestion;
+      source?: string | null;
     }
   | {
       type: "DIALOG_RESOLVED";
       dialogId: string;
-      source: "teacher_marked" | "self_resolve";
+      source: ResolutionSource;
     }
   | { type: "DIALOG_ABANDONED"; dialogId: string }
   | { type: "SUMMARY"; data: Record<string, unknown> }
@@ -243,10 +244,19 @@ function reducer(state: QASessionState, action: Action): QASessionState {
     case "STUDENT_NEW_QUESTION": {
       const dialog = state.dialogs[action.dialogId];
       if (!dialog) return state;
+      const extraTurns: DialogTurn[] = [];
+      if (action.source === "turn_limit") {
+        extraTurns.push({
+          role: "system",
+          content: "对话轮数已用尽，学生将进入下一问题的环节。",
+          timestamp: Date.now(),
+        });
+      }
       const next: DialogState = {
         ...dialog,
         history: [
           ...dialog.history,
+          ...extraTurns,
           {
             role: "student",
             content: action.question.content,
@@ -285,7 +295,7 @@ function reducer(state: QASessionState, action: Action): QASessionState {
           ...existing,
           status: dto.status,
           history: hydratedHistory,
-          resolution_source: dto.resolution_source ?? undefined,
+          resolutionSource: dto.resolution_source ?? undefined,
         } as DialogState;
       }
       return { ...state, dialogs: nextDialogs };
@@ -484,6 +494,7 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
         type: "STUDENT_NEW_QUESTION",
         dialogId: e.dialog_id,
         question: e.question,
+        source: e.source,
       });
     });
     const offError = client.on("error", (e) => {

@@ -271,3 +271,7 @@ class StudentStreamEvent(BaseModel):
         default=None,
         description="M3 学生主动抛出的新问题（仅 type=followup 时非空）",
     )
+    source: str | None = Field(
+        default=None,
+        description="推进原因（仅 type=followup）：'turn_limit' / 'self_resolve' 等",
+    )

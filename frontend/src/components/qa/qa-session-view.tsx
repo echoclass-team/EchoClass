@@ -13,7 +13,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { endQASession } from "@/lib/api/qa";
 import { saveQASummary } from "@/lib/qa-summary-storage";
@@ -208,6 +208,27 @@ const STATUS_META: Record<QAWsStatus, { label: string; className: string; dot: s
 
 // ============================================================ Sidebar
 
+// ---- dismissed badge persistence (localStorage) ----
+
+const DISMISSED_KEY_PREFIX = "echoclass.qa.dismissed.";
+
+function getDismissedSet(sessionId: string | null): Set<string> {
+  if (!sessionId || typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY_PREFIX + sessionId);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function persistDismissed(sessionId: string | null, set: Set<string>): void {
+  if (!sessionId || typeof window === "undefined") return;
+  try {
+    localStorage.setItem(DISMISSED_KEY_PREFIX + sessionId, JSON.stringify(Array.from(set)));
+  } catch { /* ignore */ }
+}
+
 function StudentSidebar({
   state,
   activeDialogId,
@@ -231,6 +252,22 @@ function StudentSidebar({
     return map;
   }, [state.dialogOrder, state.dialogs]);
 
+  const [dismissed, setDismissed] = useState<Set<string>>(() => getDismissedSet(state.sessionId));
+
+  const handleSelect = useCallback(
+    (studentId: string, dialogIds: string[]) => {
+      if (dialogIds.length > 0) onSelectDialog(dialogIds[0]);
+      setDismissed((prev) => {
+        if (prev.has(studentId)) return prev;
+        const next = new Set(prev);
+        next.add(studentId);
+        persistDismissed(state.sessionId, next);
+        return next;
+      });
+    },
+    [onSelectDialog, state.sessionId],
+  );
+
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-5 py-3">
@@ -248,7 +285,8 @@ function StudentSidebar({
               dialogIds={dialogIds}
               dialogs={state.dialogs}
               activeDialogId={activeDialogId}
-              onSelectDialog={onSelectDialog}
+              dismissed={dismissed.has(student.id)}
+              onSelectDialog={() => handleSelect(student.id, dialogIds)}
             />
           );
         })}
@@ -267,13 +305,15 @@ function StudentSection({
   dialogIds,
   dialogs,
   activeDialogId,
+  dismissed,
   onSelectDialog,
 }: {
   student: WsStudentInfo;
   dialogIds: string[];
   dialogs: Record<string, DialogState>;
   activeDialogId: string | null;
-  onSelectDialog: (id: string) => void;
+  dismissed: boolean;
+  onSelectDialog: () => void;
 }) {
   const unresolved = dialogIds.filter((id) => {
     const d = dialogs[id];
@@ -285,15 +325,13 @@ function StudentSection({
   const firstDialog = dialogIds.length > 0 ? dialogs[dialogIds[0]] : null;
   const preview = firstDialog?.question.content ?? "";
 
-  const handleClick = () => {
-    if (dialogIds.length > 0) onSelectDialog(dialogIds[0]);
-  };
+  const showBadge = unresolved > 0 && !dismissed;
 
   return (
     <li>
       <button
         type="button"
-        onClick={handleClick}
+        onClick={onSelectDialog}
         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
           isActive
             ? "bg-slate-900 text-white"
@@ -321,7 +359,7 @@ function StudentSection({
             </p>
           )}
         </div>
-        {unresolved > 0 ? (
+        {showBadge ? (
           <span className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-semibold ${
             isActive ? "bg-rose-400 text-white" : "bg-rose-500 text-white"
           }`}>
@@ -474,16 +512,25 @@ function DialogHistory({ dialog }: { dialog: DialogState }) {
           content={dialog.question.content}
         />
 
-        {dialog.history.map((turn, idx) => (
-          <Bubble
-            key={idx}
-            role={turn.role}
-            name={turn.role === "teacher" ? "你" : dialog.question.speaker_name}
-            content={turn.content}
-            selfResolved={turn.selfResolved}
-            isNewQuestion={turn.isNewQuestion}
-          />
-        ))}
+        {dialog.history.map((turn, idx) =>
+          turn.role === "system" ? (
+            <div
+              key={idx}
+              className="mx-auto flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700"
+            >
+              ⏳ {turn.content}
+            </div>
+          ) : (
+            <Bubble
+              key={idx}
+              role={turn.role}
+              name={turn.role === "teacher" ? "你" : dialog.question.speaker_name}
+              content={turn.content}
+              selfResolved={turn.selfResolved}
+              isNewQuestion={turn.isNewQuestion}
+            />
+          ),
+        )}
 
         {/* 流式中的学生回复（不在 history 中） */}
         {dialog.isStreaming && dialog.currentReply && (
@@ -532,7 +579,7 @@ function Bubble({
           {name}
           {isNewQuestion && (
             <span className="ml-1.5 inline-flex items-center rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">
-              追问
+              新问题
             </span>
           )}
         </p>

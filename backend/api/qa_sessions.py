@@ -354,14 +354,25 @@ async def get_qa_session(
             else LessonMeta(subject="", grade="", topic="unknown")
         )
 
+        # persona id → name mapping (dialog_id == student_id == persona_id)
+        from schemas.student import load_personas as _load_personas
+
+        persona_name_map: dict[str, str] = {}
+        try:
+            for p in _load_personas():
+                persona_name_map[p.id] = p.name
+        except Exception:  # noqa: BLE001
+            pass  # best-effort: fallback to dialog_id below
+
         dialogs: list[DialogStateSummary] = []
         for dialog_id, msgs in dialog_map.items():
             preview = msgs[0].content[:80] if msgs else ""
+            student_name = persona_name_map.get(dialog_id, dialog_id)
             dialogs.append(
                 DialogStateSummary(
                     id=dialog_id,
                     student_id=dialog_id,
-                    student_name=dialog_id,
+                    student_name=student_name,
                     status="resolved",
                     question_preview=preview,
                     turn_count=(len(msgs) + 1) // 2,
@@ -569,6 +580,7 @@ class QASessionListItem(BaseModel):
 
     session_id: str
     lesson_id: str
+    lesson_topic: str = ""
     status: str
     persona_ids: list[str] = Field(default_factory=list)
     created_at: str
@@ -583,6 +595,21 @@ async def list_qa_sessions(
     db = SessionLocal()
     try:
         rows = list_qa_sessions_by_owner(db, _user.id)
+
+        # batch-fetch lesson topics for display
+        lesson_ids = list({r.lesson_id for r in rows})
+        lesson_topics: dict[str, str] = {}
+        if lesson_ids:
+            from db.models import Lesson as LessonModel
+            lesson_rows = db.query(LessonModel.id, LessonModel.meta_json).filter(
+                LessonModel.id.in_(lesson_ids)
+            ).all()
+            for lid, meta_raw in lesson_rows:
+                try:
+                    meta = json.loads(meta_raw) if meta_raw else {}
+                    lesson_topics[lid] = meta.get("topic", "")
+                except Exception:  # noqa: BLE001
+                    lesson_topics[lid] = ""
     finally:
         db.close()
 
@@ -590,6 +617,7 @@ async def list_qa_sessions(
         QASessionListItem(
             session_id=r.id,
             lesson_id=r.lesson_id,
+            lesson_topic=lesson_topics.get(r.lesson_id, ""),
             status=r.status,
             persona_ids=json.loads(r.persona_ids_json) if r.persona_ids_json else [],
             created_at=r.created_at.isoformat() if r.created_at else "",
