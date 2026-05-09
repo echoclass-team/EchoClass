@@ -354,14 +354,25 @@ async def get_qa_session(
             else LessonMeta(subject="", grade="", topic="unknown")
         )
 
+        # persona id → name mapping (dialog_id == student_id == persona_id)
+        from schemas.student import load_personas as _load_personas
+
+        persona_name_map: dict[str, str] = {}
+        try:
+            for p in _load_personas():
+                persona_name_map[p.id] = p.name
+        except Exception:  # noqa: BLE001
+            pass  # best-effort: fallback to dialog_id below
+
         dialogs: list[DialogStateSummary] = []
         for dialog_id, msgs in dialog_map.items():
             preview = msgs[0].content[:80] if msgs else ""
+            student_name = persona_name_map.get(dialog_id, dialog_id)
             dialogs.append(
                 DialogStateSummary(
                     id=dialog_id,
                     student_id=dialog_id,
-                    student_name=dialog_id,
+                    student_name=student_name,
                     status="resolved",
                     question_preview=preview,
                     turn_count=(len(msgs) + 1) // 2,

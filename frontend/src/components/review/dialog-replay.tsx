@@ -5,13 +5,13 @@ import type { DialogStateSummary } from "@/types/qa";
 function roleBadge(role: "teacher" | "student") {
   if (role === "teacher") {
     return (
-      <span className="inline-flex h-6 shrink-0 items-center rounded-full bg-sky-100 px-2 text-xs font-medium text-sky-700">
+      <span className="inline-flex h-9 shrink-0 items-center rounded-full bg-sky-100 px-3 text-sm font-medium text-sky-700">
         老师
       </span>
     );
   }
   return (
-    <span className="inline-flex h-6 shrink-0 items-center rounded-full bg-amber-100 px-2 text-xs font-medium text-amber-700">
+    <span className="inline-flex h-9 shrink-0 items-center rounded-full bg-amber-100 px-3 text-sm font-medium text-amber-700">
       学生
     </span>
   );
