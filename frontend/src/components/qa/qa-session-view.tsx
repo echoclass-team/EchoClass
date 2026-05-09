@@ -512,24 +512,25 @@ function DialogHistory({ dialog }: { dialog: DialogState }) {
           content={dialog.question.content}
         />
 
-        {dialog.history.map((turn, idx) => (
-          <Bubble
-            key={idx}
-            role={turn.role}
-            name={turn.role === "teacher" ? "你" : dialog.question.speaker_name}
-            content={turn.content}
-            selfResolved={turn.selfResolved}
-            isNewQuestion={turn.isNewQuestion}
-          />
-        ))}
-
-        {/* 8轮耗尽提示：对话终态且最后一条是学生消息（turn_limit 场景） */}
-        {(dialog.status === "resolved" || dialog.status === "abandoned") &&
-          dialog.resolutionSource === "turn_limit" && (
-            <div className="mx-auto flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
-              ⏳ 对话轮数已用尽，学生将进入下一问题的环节。
+        {dialog.history.map((turn, idx) =>
+          turn.role === "system" ? (
+            <div
+              key={idx}
+              className="mx-auto flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700"
+            >
+              ⏳ {turn.content}
             </div>
-          )}
+          ) : (
+            <Bubble
+              key={idx}
+              role={turn.role}
+              name={turn.role === "teacher" ? "你" : dialog.question.speaker_name}
+              content={turn.content}
+              selfResolved={turn.selfResolved}
+              isNewQuestion={turn.isNewQuestion}
+            />
+          ),
+        )}
 
         {/* 流式中的学生回复（不在 history 中） */}
         {dialog.isStreaming && dialog.currentReply && (

@@ -267,6 +267,13 @@ class WsStudentNewQuestion(_ServerBase):
     question: StudentQuestion = Field(
         ..., description="学生主动抛出的新问题，复用 StudentQuestion 结构"
     )
+    source: str | None = Field(
+        default=None,
+        description=(
+            "推进原因：'self_resolve' 学生自悟、'turn_limit' 轮次耗尽、"
+            "'teacher_marked' 教师标记等。None 表示未知 / 首问。"
+        ),
+    )
     after_reply_chunk_seq: int | None = Field(
         default=None,
         ge=0,

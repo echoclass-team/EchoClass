@@ -395,9 +395,9 @@ class QASession:
                 f"stream_in_dialog finished without final event for {dialog_id}"
             )
         if final_event.result is not None:
-            next_q = self._after_student_reply(dialog, final_event.result)
+            next_q, advance_source = self._after_student_reply(dialog, final_event.result)
             if next_q is not None:
-                yield StudentStreamEvent(type="followup", new_question=next_q)
+                yield StudentStreamEvent(type="followup", new_question=next_q, source=advance_source)
 
     @staticmethod
     def _current_question(dialog: DialogSession) -> StudentQuestion:
@@ -413,7 +413,7 @@ class QASession:
 
     def _after_student_reply(
         self, dialog: DialogSession, result: DialogReplyResult
-    ) -> StudentQuestion | None:
+    ) -> tuple[StudentQuestion | None, str | None]:
         """学生回复落库后调用，判定是否推进子题。
 
         规则：
@@ -425,23 +425,22 @@ class QASession:
 
         Returns
         -------
-        StudentQuestion | None
-            推进后抛出的新题（已作为 ``is_new_question=True`` 消息 append 到
-            ``dialog.messages``）；若不推进或已是最后一题则返回 ``None``。
+        tuple[StudentQuestion | None, str | None]
+            (推进后抛出的新题, 推进原因)；若不推进则 ``(None, None)``。
         """
         if not dialog.question_progress:
-            return None  # M2 退化：没有进度追踪，不推进
+            return None, None  # M2 退化：没有进度追踪，不推进
         idx = dialog.current_question_idx
         if idx >= len(dialog.question_progress):
-            return None
+            return None, None
         progress = dialog.question_progress[idx]
         progress.turns_used += 1
 
         if result.self_resolved:
-            return self._advance_after_question_end(dialog, source="self_resolve")
+            return self._advance_after_question_end(dialog, source="self_resolve"), "self_resolve"
         if progress.turns_used >= MAX_TURNS_PER_QUESTION:
-            return self._advance_after_question_end(dialog, source="turn_limit")
-        return None
+            return self._advance_after_question_end(dialog, source="turn_limit"), "turn_limit"
+        return None, None
 
     def _advance_after_question_end(
         self,

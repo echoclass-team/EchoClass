@@ -335,6 +335,7 @@ async def _handle_message(
                         seq=seq.next(),
                         dialog_id=event.dialog_id,
                         question=stream_evt.new_question,
+                        source=stream_evt.source,
                     ),
                 )
                 # 落盘学生追问

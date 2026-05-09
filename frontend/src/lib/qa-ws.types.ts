@@ -158,6 +158,8 @@ export interface WsStudentNewQuestion extends _ServerBase {
   dialog_id: string;
   /** 学生主动抛出的新问题，复用 StudentQuestion 结构。 */
   question: StudentQuestion;
+  /** 推进原因：'turn_limit' / 'self_resolve' 等；首问为 null。 */
+  source?: string | null;
   /** 可选：本新问题是在哪一轮回复之后产生的；前端可忽略。 */
   after_reply_chunk_seq?: number | null;
 }
