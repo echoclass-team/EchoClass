@@ -122,7 +122,7 @@ type Action =
   | {
       type: "DIALOG_RESOLVED";
       dialogId: string;
-      source: "teacher_marked" | "self_resolve";
+      source: ResolutionSource;
     }
   | { type: "DIALOG_ABANDONED"; dialogId: string }
   | { type: "SUMMARY"; data: Record<string, unknown> }
@@ -285,7 +285,7 @@ function reducer(state: QASessionState, action: Action): QASessionState {
           ...existing,
           status: dto.status,
           history: hydratedHistory,
-          resolution_source: dto.resolution_source ?? undefined,
+          resolutionSource: dto.resolution_source ?? undefined,
         } as DialogState;
       }
       return { ...state, dialogs: nextDialogs };

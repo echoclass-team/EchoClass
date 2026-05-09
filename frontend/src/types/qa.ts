@@ -127,6 +127,7 @@ export interface QASessionEndData {
 export interface QASessionListItem {
   session_id: string;
   lesson_id: string;
+  lesson_topic?: string;
   status: string;
   persona_ids: string[];
   created_at: string;

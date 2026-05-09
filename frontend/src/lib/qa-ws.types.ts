@@ -59,7 +59,8 @@ export type ResolutionSource =
   | "self_resolve"
   | "teacher_marked"
   | "auto_evaluator"
-  | "abandoned";
+  | "abandoned"
+  | "turn_limit";
 
 /** WS 错误码受控枚举。 */
 export type WsErrorCode =
@@ -164,7 +165,7 @@ export interface WsStudentNewQuestion extends _ServerBase {
 export interface WsDialogResolved extends _ServerBase {
   type: "dialog_resolved";
   dialog_id: string;
-  source: "teacher_marked" | "self_resolve";
+  source: ResolutionSource;
 }
 
 export interface WsDialogAbandoned extends _ServerBase {
