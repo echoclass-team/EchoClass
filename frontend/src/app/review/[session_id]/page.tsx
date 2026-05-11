@@ -11,7 +11,7 @@ import { FeedbackPanel } from "@/components/review/feedback-panel";
 import { buildReviewMarkdown, downloadMarkdown } from "@/lib/export-review-md";
 import type { QASessionStateData, QASessionEvaluationData, DialogStateSummary } from "@/types/qa";
 
-// ============================================================ helpers
+// --- helpers
 
 const SOURCE_LABEL: Record<string, string> = {
   teacher_marked: "教师标记",
@@ -44,7 +44,7 @@ function deriveResolutionSources(dialogs: DialogStateSummary[]) {
   return counts;
 }
 
-// ============================================================ page
+// --- page
 
 export default function ReviewPage() {
   const params = useParams<{ session_id: string }>();
@@ -326,7 +326,7 @@ export default function ReviewPage() {
   );
 }
 
-// ============================================================ blocks
+// --- blocks
 
 function BigStat({
   label,

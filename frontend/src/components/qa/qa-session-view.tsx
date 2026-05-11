@@ -105,7 +105,7 @@ export function QASessionView(props: Props) {
   );
 }
 
-// ============================================================ Top bar
+// --- Top bar
 
 function LessonInfoBar({
   state,
@@ -206,9 +206,9 @@ const STATUS_META: Record<QAWsStatus, { label: string; className: string; dot: s
   replaced: { label: "已被新连接挤掉", className: "bg-rose-50 text-rose-700", dot: "bg-rose-500" },
 };
 
-// ============================================================ Sidebar
+// --- Sidebar
 
-// ---- dismissed badge persistence (localStorage) ----
+// dismissed badge persistence (localStorage)
 
 const DISMISSED_KEY_PREFIX = "echoclass.qa.dismissed.";
 
@@ -375,7 +375,7 @@ function StudentSection({
   );
 }
 
-// ============================================================ Dialog pane
+// --- Dialog pane
 
 function DialogPane({
   activeDialog,

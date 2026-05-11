@@ -92,9 +92,7 @@ export function createQAWs(options: QAWsClientOptions): QAWsClient {
   return new _QAWsClient(options);
 }
 
-// ----------------------------------------------------------------------------
-// 实现
-// ----------------------------------------------------------------------------
+// --- 实现
 
 const STATUSES_FINAL = new Set<QAWsStatus>(["closed", "replaced"]);
 
@@ -205,7 +203,7 @@ class _QAWsClient implements QAWsClient {
     };
   }
 
-  // ----------------------------------------------------- 内部生命周期
+  // --- 内部生命周期
 
   private _open(): void {
     this._setStatus(this._retryCount > 0 ? "reconnecting" : "connecting");

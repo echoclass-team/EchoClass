@@ -48,7 +48,6 @@ export async function pollEvaluation(
       return { status: "failed", error: "network_error" };
     }
 
-    // Wait before next poll
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, interval);
       signal?.addEventListener(
@@ -64,6 +63,5 @@ export async function pollEvaluation(
     });
   }
 
-  // Timeout reached
   return { status: "pending" };
 }
