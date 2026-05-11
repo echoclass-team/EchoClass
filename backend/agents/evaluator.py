@@ -264,6 +264,13 @@ class EvaluatorAgent:
         for item in data.get("scores", []):
             if not isinstance(item, dict):
                 continue
+            if isinstance(item.get("score"), float):
+                item["score"] = round(item["score"])
+            if isinstance(item.get("rationale"), str) and len(item["rationale"]) > 200:
+                item["rationale"] = item["rationale"][:197] + "..."
+            for ev in item.get("evidence", []):
+                if isinstance(ev, dict) and isinstance(ev.get("excerpt"), str) and len(ev["excerpt"]) > 120:
+                    ev["excerpt"] = ev["excerpt"][:117] + "..."
             try:
                 scores.append(RubricScore.model_validate(item))
             except Exception:  # noqa: BLE001
