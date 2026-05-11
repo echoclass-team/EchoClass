@@ -2,13 +2,9 @@
 
 设计原则
 --------
-- 默认 mock 模式让 B3（评估 REST API）/ B4（复盘 UI）能稳定消费；传入
-  ``LLMClient`` 时走真实 LLM 打分路径。
-- 接口契约由 ``schemas/evaluation.py`` 冻结（Epic #121 / PR #141），任何字段
-  扩展必须先改 schema 文件 + ``docs/api_contract.md §2.6``，A+B 双 approve
-  后合入。
-- Rubric 内容由 C 在 #122 维护，存于 ``data/rubrics/{version}.json``；本 agent
-  只读取，不构造维度。
+- 默认 mock 模式，不调 LLM；传入 ``LLMClient`` 时走真实 LLM 打分路径。
+- 接口契约由 ``schemas/evaluation.py`` 冻结。
+- Rubric 内容存于 ``data/rubrics/{version}.json``；本 agent 只读取，不构造维度。
 
 使用
 ----

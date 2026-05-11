@@ -66,15 +66,15 @@ class DialogStateSummary(BaseModel):
     """单个 dialog 的轻量摘要 + 完整对话历史。
 
     ``history`` 用于支持页面级导航（组件卸载 / 浏览器后退 / 新 tab）后
-    复原对话进度（issue #102）。前端在 `useQASession` 挂载时调一次
+    复原对话进度。前端在 `useQASession` 挂载时调一次
     GET `/api/qa-sessions/{id}` 即可 seed reducer，再正常走 WS 增量。
 
     形态语义
     --------
 
-    - **M2 闯关模式（v1）**：``id == question.id``，一个学生有多个 dialog，
+    - **闯关模式（v1）**：``id == question.id``，一个学生有多个 dialog，
       ``question_preview`` 是该题正文。
-    - **M3 连续答疑模式（v2，issue #111）**：``id == student_id``，一个学生
+    - **连续答疑模式（v2）**：``id == student_id``，一个学生
       只有一个 dialog；``question_preview`` 仍是"学生抛出的第一个问题"，
       后续追问通过 ``history`` 中 ``is_new_question=True`` 的消息体现。
     """
@@ -82,7 +82,7 @@ class DialogStateSummary(BaseModel):
     id: str = Field(
         ...,
         description=(
-            "dialog id。M2 = question.id；M3 = student_id（每学生唯一 thread）"
+            "dialog id。闯关模式 = question.id；连续答疑模式 = student_id（每学生唯一 thread）"
         ),
     )
     student_id: str = Field(..., description="提问学生 id")
@@ -91,8 +91,7 @@ class DialogStateSummary(BaseModel):
     question_preview: str = Field(
         ...,
         description=(
-            "问题正文前 80 字符预览（节省 payload）。"
-            "M3 连续答疑模式下 = 学生首问的预览。"
+            "问题正文前 80 字符预览（节省 payload）。连续答疑模式下 = 学生首问的预览。"
         ),
     )
     turn_count: int = Field(default=0, description="已发生的对话轮数（一来一回算一轮）")
@@ -105,7 +104,7 @@ class DialogStateSummary(BaseModel):
         description=(
             "完整对话历史，按时间顺序排列：[teacher, student, teacher, student, ...]。"
             "student 回合的 self_resolved 字段记录该轮 LLM 是否输出 [懂了]。"
-            "M3 连续答疑模式下，history 可能跨越多个 question："
+            "连续答疑模式下，history 可能跨越多个 question："
             "is_new_question=True 的消息标识学生主动追问的回合，question_id 关联到对应 question。"
             "未发生过对话的 dialog 为空数组。"
         ),
@@ -140,7 +139,7 @@ class QASessionEndData(BaseModel):
 class QASessionEvaluationData(BaseModel):
     """``GET /api/qa-sessions/{id}/evaluation`` 响应数据。
 
-    与 ``docs/api_contract.md §2.6`` 保持一致：
+    语义约定：
 
     - HTTP 200 + ``status="done"``：``evaluation`` 与 ``feedback`` 均非空
     - HTTP 202 + ``status="pending"``：评估仍在跑（或尚未触发），轮询即可

@@ -1,4 +1,4 @@
-"""迷思库召回率链路验证（Issue #73 任务 1）。
+"""迷思库召回率链路验证。
 
 离线脚本，不依赖 LLM / WebSocket / 数据库。直接做下列流程:
 
@@ -38,7 +38,7 @@ from rag.misconceptions import match_misconceptions  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 LESSONS_DIR = REPO_ROOT / "data" / "lesson_samples"
 
-# 目标命中数（issue #73 验收线）
+# 目标命中数
 TARGET_HITS_PER_LESSON = 3
 
 
@@ -85,9 +85,7 @@ def _run_recall(lesson: dict) -> list[dict]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="迷思库召回率链路验证（issue #73 任务 1）"
-    )
+    parser = argparse.ArgumentParser(description="迷思库召回率链路验证")
     parser.add_argument(
         "--json", action="store_true", help="输出 JSON 而不是人类可读表格"
     )
@@ -117,7 +115,8 @@ def main() -> None:
                 {
                     "lessons": results,
                     "by_stage_avg": {
-                        stage: round(sum(v) / len(v), 2) for stage, v in by_stage.items()
+                        stage: round(sum(v) / len(v), 2)
+                        for stage, v in by_stage.items()
                     },
                     "target_per_lesson": TARGET_HITS_PER_LESSON,
                 },
@@ -129,7 +128,7 @@ def main() -> None:
 
     # 人类可读表格
     print("=" * 80)
-    print("迷思库召回率链路验证 — issue #73 任务 1")
+    print("迷思库召回率链路验证")
     print("=" * 80)
     print(f"目标：每份教案 ≥ {TARGET_HITS_PER_LESSON} 条命中")
     print()

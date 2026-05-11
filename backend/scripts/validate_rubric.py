@@ -1,4 +1,4 @@
-"""离线校验 ``data/rubrics/<version>.json`` 是否合规（issue #122 验收脚本）。
+"""离线校验 ``data/rubrics/<version>.json`` 是否合规。
 
 用途
 ----
@@ -132,7 +132,9 @@ def main() -> None:
     if args.version:
         files = [RUBRICS_DIR / f"{args.version}.json"]
     else:
-        files = sorted(p for p in RUBRICS_DIR.glob("*.json") if not p.name.startswith("_"))
+        files = sorted(
+            p for p in RUBRICS_DIR.glob("*.json") if not p.name.startswith("_")
+        )
 
     results: list[dict] = []
     for f in files:
@@ -148,7 +150,9 @@ def main() -> None:
         print(f"已知 theory id（{len(theory_ids)} 张）：{sorted(theory_ids)}\n")
         for r in results:
             if r["ok"]:
-                rubric = json.loads((RUBRICS_DIR / r["file"]).read_text(encoding="utf-8"))
+                rubric = json.loads(
+                    (RUBRICS_DIR / r["file"]).read_text(encoding="utf-8")
+                )
                 dims = [d["id"] for d in rubric["dimensions"]]
                 print(f"✅ {r['file']:<20}  schema OK  dims={len(dims)} {dims}")
             else:

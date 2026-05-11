@@ -1,4 +1,4 @@
-"""评估 replay 工具（M3-A5 #126）。
+"""评估 replay 工具。
 
 用途
 ----
@@ -27,7 +27,7 @@ CLI 示例
 
 输入约定
 --------
-session JSON 必须满足 ``services.session_serde`` 的 v1 格式（同 #M3-A7 demo_sessions）。
+session JSON 必须满足 ``services.session_serde`` 的 v1 格式（同 demo_sessions）。
 
 输出
 ----

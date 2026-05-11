@@ -33,7 +33,7 @@
     C→S: <connection close>
     S→C: summary(data={...})                    # 关闭前推，可选
 
-**M3 连续答疑模式（v2，一学生一 dialog，issue #111）**::
+**连续答疑模式（v2，一学生一 dialog）**::
 
     S→C: session_init                          # questions 只含每人首问
     C→S: select_dialog(dialog_id=stu_a)
@@ -249,7 +249,7 @@ class WsReplyEnd(_ServerBase):
 
 
 class WsStudentNewQuestion(_ServerBase):
-    """学生在连续答疑中主动抛出的新问题帧（M3 / issue #111）。
+    """学生在连续答疑中主动抛出的新问题帧。
 
     仅在**连续答疑模式**（v2）出现：当前题被 ``self_resolved`` 或 ``turn_limit``
     触发结束后，由 ``QASession`` 从 ``asked_questions`` 队列**确定性**弹出下一题
@@ -259,7 +259,7 @@ class WsStudentNewQuestion(_ServerBase):
     提示师范生“学生提出了新问题”；question 字段复用 ``StudentQuestion``，可以
     提取 category / linked_key_point 等信息呈现。
 
-    向后兼容：M2 闯关模式下服务端不会发出本帧；老前端遇到未知类型静默丢弃即可。
+    向后兼容：闯关模式下服务端不会发出本帧；老前端遇到未知类型静默丢弃即可。
     """
 
     type: Literal["student_new_question"] = "student_new_question"
@@ -287,7 +287,7 @@ class WsStudentNewQuestion(_ServerBase):
 class WsDialogResolved(_ServerBase):
     """``resolve`` 的响应：dialog 转为 resolved。
 
-    M3 连续答疑模式下，``source="teacher_marked"`` 的语义从“该题已解”升级为
+    连续答疑模式下，``source="teacher_marked"`` 的语义从“该题已解”升级为
     “结束整段辅导”；字段名 / 枚举不变。
     """
 

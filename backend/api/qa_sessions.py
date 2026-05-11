@@ -1,4 +1,4 @@
-"""QA 答疑陪练 REST 路由 (#B1 / Issue #72)。
+"""QA 答疑陪练 REST 路由。
 
 本模块负责"拉起一个 QA session"、"查询 session 现状"、"显式结束 session"
 三件事；session 内的多轮交互全部走 WebSocket（``api/qa_ws.py``）。
@@ -88,7 +88,7 @@ AgentFactory = Callable[[Persona, Optional[StageProfile]], StudentAgent]
 
 
 def get_lesson_lookup() -> LessonLookup:
-    """默认 lesson 查询器（M2 进程内字典；M3 切持久化时改这里）。"""
+    """默认 lesson 查询器。"""
     return get_lesson_record
 
 
@@ -409,13 +409,13 @@ async def get_qa_session_evaluation(
 ) -> ApiResponse[QASessionEvaluationData]:
     """读取某 session 的评估报告 + 师范生反馈。
 
-    状态机（与 ``docs/api_contract.md §2.6.1`` 一致）:
+    状态机：
 
     - 200 ``status="done"``：DB 命中 ``evaluations`` + ``feedbacks`` 行；
       或内存 ``EvaluationService`` 命中 done 且首次落盘成功。
     - 200 ``status="failed"``：内存命中 failed bundle；前端可显示 retry。
     - 202 ``status="pending"``：内存命中 pending bundle，或两边都 miss
-      （此时评估尚未触发，前端轮询即可，等 #M3-A3 真实触发流程完成自然转 done）。
+      （此时评估尚未触发，前端轮询即可）。
     - 404：session 不存在或不属于当前用户（不区分两者，避免泄露存在性）。
     - 401：未登录（由 ``get_current_user`` 抛出）。
     """
@@ -452,7 +452,7 @@ async def get_qa_session_evaluation(
                     )
                 )
 
-        # DB miss：查内存 service（#M3-A3 fallback；评估正在跑或刚跑完未落盘）
+        # DB miss：查内存 service（fallback；评估正在跑或刚跑完未落盘）
         bundle = eval_service.get(session_id)
         if bundle is None:
             response.status_code = 202
@@ -518,7 +518,7 @@ async def end_qa_session(
     - 关闭 DB session 状态（``close_qa_session``）
     - **fire-and-forget** 触发 ``EvaluationService.schedule(session)`` 启动
       Evaluator + Feedback。前端随后轮询 ``GET /{session_id}/evaluation``
-      获取结果，状态机契约见 ``docs/api_contract.md §2.6.1``。
+      获取结果。
 
     注意：本接口**只**从 registry 移除并取 summary 快照；现存 WS 连接不会
     被服务器主动关闭（前端在 end 成功后应自行 ``client.close()``）。
@@ -601,9 +601,12 @@ async def list_qa_sessions(
         lesson_topics: dict[str, str] = {}
         if lesson_ids:
             from db.models import Lesson as LessonModel
-            lesson_rows = db.query(LessonModel.id, LessonModel.meta_json).filter(
-                LessonModel.id.in_(lesson_ids)
-            ).all()
+
+            lesson_rows = (
+                db.query(LessonModel.id, LessonModel.meta_json)
+                .filter(LessonModel.id.in_(lesson_ids))
+                .all()
+            )
             for lid, meta_raw in lesson_rows:
                 try:
                     meta = json.loads(meta_raw) if meta_raw else {}

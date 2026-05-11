@@ -14,13 +14,13 @@
 - ``run(session)``：阻塞版本，供测试和同步路径调用；内部同样走锁
 - ``get(session_id)``：返回 bundle 或 ``None``
 - 默认 factory 注入 ``LLMClient()`` 走真实 LLM；LLM 失败时 evaluation.overall
-  == ``"unavailable"``，feedback 返回 ``[fallback]`` 占位（依
-  ``docs/api_contract.md §2.6.4`` 降级语义）。测试可通过自定义 factory 注入 mock。
+  == ``"unavailable"``，feedback 返回 ``[fallback]`` 占位。测试可通过
+  自定义 factory 注入 mock。
 
 非目标
 ------
-- 不调度到其它 worker / 消息队列（M3 单进程足够）
-- 不直接写 DB（由 B3 路由层在首次读取时 upsert）
+- 不调度到其它 worker / 消息队列（单进程足够）
+- 不直接写 DB（由路由层在首次读取时 upsert）
 """
 
 from __future__ import annotations

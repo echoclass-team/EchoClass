@@ -1,4 +1,4 @@
-"""教育学知识库 SQLAlchemy 模型（issue #84 第一期）。
+"""教育学知识库 SQLAlchemy 模型。
 
 5 张表：
 
@@ -74,11 +74,15 @@ class Theory(Base):
     school: Mapped[str] = mapped_column(String(64), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     references_json: Mapped[str] = mapped_column(
-        Text, nullable=False, default="[]",
+        Text,
+        nullable=False,
+        default="[]",
         comment="JSON 序列化 list[str]",
     )
     applies_to_json: Mapped[str] = mapped_column(
-        Text, nullable=False, default="{}",
+        Text,
+        nullable=False,
+        default="{}",
         comment="JSON: {persona: bool, misconception: bool, rubric: bool}",
     )
 
@@ -102,22 +106,17 @@ class Theory(Base):
 class TheoryTrait(Base):
     """理论的某个 trait 变体（如 low_self_efficacy）。复合主键。"""
 
-    theory_id: Mapped[str] = mapped_column(
-        String(64), nullable=False, primary_key=True
-    )
-    trait_key: Mapped[str] = mapped_column(
-        String(64), nullable=False, primary_key=True
-    )
+    theory_id: Mapped[str] = mapped_column(String(64), nullable=False, primary_key=True)
+    trait_key: Mapped[str] = mapped_column(String(64), nullable=False, primary_key=True)
     label: Mapped[str] = mapped_column(String(64), nullable=False)
     operational_rules_json: Mapped[str] = mapped_column(
-        Text, nullable=False,
+        Text,
+        nullable=False,
         comment="JSON 序列化 list[str] 行为准则",
     )
 
     __table_args__ = (
-        ForeignKeyConstraint(
-            ["theory_id"], ["kb_theory.id"], ondelete="CASCADE"
-        ),
+        ForeignKeyConstraint(["theory_id"], ["kb_theory.id"], ondelete="CASCADE"),
     )
 
     theory: Mapped[Theory] = relationship(back_populates="traits")
@@ -141,7 +140,8 @@ class TheoryAnchor(Base):
     trait_key: Mapped[str] = mapped_column(String(64), nullable=False)
     target_type: Mapped[str] = mapped_column(String(32), nullable=False)
     target_id: Mapped[str] = mapped_column(
-        String(128), nullable=False,
+        String(128),
+        nullable=False,
         comment="persona name / misconception id / rubric 维度 key",
     )
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
@@ -157,7 +157,10 @@ class TheoryAnchor(Base):
             ondelete="CASCADE",
         ),
         UniqueConstraint(
-            "theory_id", "trait_key", "target_type", "target_id",
+            "theory_id",
+            "trait_key",
+            "target_type",
+            "target_id",
             name="uq_anchor_trait_target",
         ),
         CheckConstraint(
@@ -183,13 +186,13 @@ class TheoryAnchor(Base):
 
 
 OBSERVATION_EVENT_TYPES: tuple[str, ...] = (
-    "theory_confirmed",          # 行为符合 trait
-    "theory_violated",           # 行为违反 trait
-    "misconception_candidate",   # 检测到候选迷思（详情见候选表）
-    "anchor_added",              # 审计：新增锚点
-    "anchor_removed",            # 审计：移除锚点
-    "candidate_reviewed",        # 审计：候选迷思状态流转
-    "evolution",                 # 预留通用进化事件
+    "theory_confirmed",  # 行为符合 trait
+    "theory_violated",  # 行为违反 trait
+    "misconception_candidate",  # 检测到候选迷思（详情见候选表）
+    "anchor_added",  # 审计：新增锚点
+    "anchor_removed",  # 审计：移除锚点
+    "candidate_reviewed",  # 审计：候选迷思状态流转
+    "evolution",  # 预留通用进化事件
 )
 
 
@@ -207,7 +210,9 @@ class Observation(Base):
     trait_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     persona_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     payload_json: Mapped[str] = mapped_column(
-        Text, nullable=False, default="{}",
+        Text,
+        nullable=False,
+        default="{}",
         comment="JSON 自由结构；event_type 决定 schema",
     )
 
@@ -229,11 +234,11 @@ class Observation(Base):
 
 
 CANDIDATE_STATUSES: tuple[str, ...] = (
-    "candidate",   # 初始：LLM 检测到，等审核
-    "reviewing",   # 已分配给审核者
-    "approved",    # 通过 → 应转为正式 misconception
-    "rejected",    # 驳回 → 不入正式库
-    "merged",      # 合并到已有 misconception
+    "candidate",  # 初始：LLM 检测到，等审核
+    "reviewing",  # 已分配给审核者
+    "approved",  # 通过 → 应转为正式 misconception
+    "rejected",  # 驳回 → 不入正式库
+    "merged",  # 合并到已有 misconception
 )
 
 
@@ -257,23 +262,24 @@ class MisconceptionCandidate(Base):
         DateTime(timezone=True), default=_utcnow, nullable=False, index=True
     )
     student_text: Mapped[str] = mapped_column(
-        Text, nullable=False,
+        Text,
+        nullable=False,
         comment="触发该候选的学生原话",
     )
     suggested_misconception_json: Mapped[str] = mapped_column(
-        Text, nullable=False,
+        Text,
+        nullable=False,
         comment="JSON: LLM 生成的迷思建议结构（subject/stage/key_point/...）",
     )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="candidate"
-    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="candidate")
     reviewer_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     reviewed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     review_notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     merged_into_id: Mapped[Optional[str]] = mapped_column(
-        String(128), nullable=True,
+        String(128),
+        nullable=True,
         comment="status='merged' 时指向正式 misconception id",
     )
 

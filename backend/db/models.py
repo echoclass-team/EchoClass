@@ -1,4 +1,4 @@
-"""B 端 SQLAlchemy 模型（M3 #B1 账号 + #B2 持久化）。
+"""SQLAlchemy 模型。
 
 表：
 - users: 用户表
@@ -20,7 +20,15 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -46,15 +54,11 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(
-        String(32), primary_key=True, default=_new_id
-    )
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_new_id)
     username: Mapped[str] = mapped_column(
         String(64), unique=True, nullable=False, index=True
     )
-    password_hash: Mapped[str] = mapped_column(
-        String(128), nullable=False
-    )
+    password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )
@@ -72,9 +76,7 @@ class Lesson(Base):
     owner_id: Mapped[str] = mapped_column(
         String(32), ForeignKey("users.id"), nullable=False, index=True
     )
-    content_hash: Mapped[str] = mapped_column(
-        String(64), nullable=False, index=True
-    )
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     filename: Mapped[str] = mapped_column(String(256), nullable=False)
     title: Mapped[str] = mapped_column(String(256), nullable=False, default="")
     meta_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
@@ -104,9 +106,7 @@ class QASessionRecord(Base):
         String(32), ForeignKey("users.id"), nullable=False, index=True
     )
     persona_ids_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="active"
-    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow
     )
@@ -157,7 +157,9 @@ class EvaluationRecord(Base):
     session_id: Mapped[str] = mapped_column(
         String(64), ForeignKey("qa_sessions.id"), unique=True, nullable=False
     )
-    rubric_version: Mapped[str] = mapped_column(String(32), nullable=False, default="v1")
+    rubric_version: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="v1"
+    )
     report_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow

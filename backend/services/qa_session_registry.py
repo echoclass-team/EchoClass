@@ -5,11 +5,11 @@
 
 设计取舍：
 
-- **进程内字典 + asyncio.Lock**：M2 阶段单进程 / 单 worker，无需引入 Redis 等
+- **进程内字典 + asyncio.Lock**：单进程 / 单 worker，无需引入 Redis 等
   外部存储；后续要扩多进程再换实现
 - **WeakValue 不用**：session 生命周期由业务显式控制（``register`` / ``unregister``），
   避免被 GC 突然回收
-- **不与 SQLite 耦合**：M2 仅内存态；M3 持久化时这里加 ``load_from_db`` 即可
+- **不与 SQLite 耦合**：当前仅内存态；后续持久化时这里加 ``load_from_db`` 即可
 
 并发约定：
 

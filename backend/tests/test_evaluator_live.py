@@ -1,4 +1,4 @@
-"""EvaluatorAgent 真实 LLM 冒烟测试 (#M3-A3 验收)。
+"""EvaluatorAgent 真实 LLM 冒烟测试。
 
 默认 skip；设 ``PYTEST_LIVE=1`` 且配置了 ``OPENAI_API_KEY`` 时才执行。
 本测试会真实调用 LLM，消耗 token；仅在手动验收或 release 前跑。

@@ -1,4 +1,4 @@
-"""Demo 固定种子数据脚本（M3-A7 #128）。
+"""Demo 固定种子数据脚本。
 
 两种模式
 --------
@@ -57,7 +57,9 @@ logger = logging.getLogger(__name__)
 
 # ============================================================ 常量
 
-DEMO_DATA_DIR: Path = Path(__file__).resolve().parent.parent.parent / "data" / "demo_sessions"
+DEMO_DATA_DIR: Path = (
+    Path(__file__).resolve().parent.parent.parent / "data" / "demo_sessions"
+)
 DEMO_USER_ID = "demo-user-id"
 DEMO_USERNAME = "demo"
 DEMO_LESSON_ID = "demo-lesson-fractions"
@@ -193,9 +195,7 @@ def _build_good() -> SessionBundle:
         question_progress=[progress],
         current_question_idx=1,
     )
-    session = QASession(
-        lesson_meta=DEMO_LESSON_META, session_id=spec.session_id
-    )
+    session = QASession(lesson_meta=DEMO_LESSON_META, session_id=spec.session_id)
     session.dialogs[dialog.id] = dialog
 
     evaluation = EvaluationReport(
@@ -331,9 +331,7 @@ def _build_mid() -> SessionBundle:
         question_progress=[progress],
         current_question_idx=1,
     )
-    session = QASession(
-        lesson_meta=DEMO_LESSON_META, session_id=spec.session_id
-    )
+    session = QASession(lesson_meta=DEMO_LESSON_META, session_id=spec.session_id)
     session.dialogs[dialog.id] = dialog
 
     evaluation = EvaluationReport(
@@ -472,9 +470,7 @@ def _build_bad() -> SessionBundle:
         question_progress=[progress],
         current_question_idx=1,
     )
-    session = QASession(
-        lesson_meta=DEMO_LESSON_META, session_id=spec.session_id
-    )
+    session = QASession(lesson_meta=DEMO_LESSON_META, session_id=spec.session_id)
     session.dialogs[dialog.id] = dialog
 
     evaluation = EvaluationReport(
@@ -705,18 +701,16 @@ def _reset_demo_rows(db) -> None:
     db.query(EvaluationRecord).filter(
         EvaluationRecord.session_id.in_(session_ids)
     ).delete(synchronize_session=False)
-    db.query(FeedbackRecord).filter(
-        FeedbackRecord.session_id.in_(session_ids)
-    ).delete(synchronize_session=False)
-    db.query(QASessionRecord).filter(
-        QASessionRecord.id.in_(session_ids)
-    ).delete(synchronize_session=False)
+    db.query(FeedbackRecord).filter(FeedbackRecord.session_id.in_(session_ids)).delete(
+        synchronize_session=False
+    )
+    db.query(QASessionRecord).filter(QASessionRecord.id.in_(session_ids)).delete(
+        synchronize_session=False
+    )
     db.query(Lesson).filter(Lesson.id == DEMO_LESSON_ID).delete(
         synchronize_session=False
     )
-    db.query(User).filter(User.id == DEMO_USER_ID).delete(
-        synchronize_session=False
-    )
+    db.query(User).filter(User.id == DEMO_USER_ID).delete(synchronize_session=False)
     db.commit()
 
 

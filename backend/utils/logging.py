@@ -1,4 +1,4 @@
-"""结构化 JSON 日志 (#M3-A6 / issue #127)。
+"""结构化 JSON 日志。
 
 设计目标
 --------
@@ -96,10 +96,29 @@ def bind(**fields: Any) -> Iterator[None]:
 # LogRecord 内置属性；我们在 JSON 输出时需要显式挑选业务关心的字段，
 # 避免把 pathname / lineno 等噪音全写进去。
 _STANDARD_RECORD_ATTRS = {
-    "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
-    "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
-    "created", "msecs", "relativeCreated", "thread", "threadName",
-    "processName", "process", "message", "asctime", "taskName",
+    "name",
+    "msg",
+    "args",
+    "levelname",
+    "levelno",
+    "pathname",
+    "filename",
+    "module",
+    "exc_info",
+    "exc_text",
+    "stack_info",
+    "lineno",
+    "funcName",
+    "created",
+    "msecs",
+    "relativeCreated",
+    "thread",
+    "threadName",
+    "processName",
+    "process",
+    "message",
+    "asctime",
+    "taskName",
 }
 
 
@@ -216,7 +235,9 @@ def configure_logging(
     else:
         formatter = JsonFormatter()
 
-    handler = logging.StreamHandler(stream) if stream is not None else logging.StreamHandler()
+    handler = (
+        logging.StreamHandler(stream) if stream is not None else logging.StreamHandler()
+    )
     handler.setFormatter(formatter)
     handler.set_name("echoclass")
 

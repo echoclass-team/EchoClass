@@ -1,16 +1,11 @@
-"""师范生反馈 schema — M3 协议冻结占位（Epic #121 / 真实实现 #M3-A2）。
-
-与 ``docs/api_contract.md §2.6.3`` 保持一致。
+"""师范生反馈 schema。
 
 **与 ``EvaluationReport`` 的区别**：
 
 - ``EvaluationReport`` 面向 *评估* — 维度打分 + 证据，给评委 / 数据用
 - ``TeacherFeedback`` 面向 *师范生成长* — 肯定 + 改进点 + 下一步建议，自然语言
 
-两者同时由后端异步生成，由 ``GET /api/qa-sessions/{id}/evaluation`` 一同返回
-（详见 api_contract §2.6.1）。
-
-真实生成逻辑由 FeedbackAgent 在 #M3-A4 填充；schema 变更需 A+B 双 approve。
+两者同时由后端异步生成，由 ``GET /api/qa-sessions/{id}/evaluation`` 一同返回。
 """
 
 from __future__ import annotations

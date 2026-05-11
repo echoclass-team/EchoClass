@@ -5,7 +5,7 @@ Markdown 和 TXT 直接读取。
 
 PDF 解析统一走 ``pymupdf.open(stream=...)`` 内存流，避免 ``tempfile.NamedTemporaryFile``
 在 Windows 下独占写导致 ``pymupdf4llm.to_markdown(path)`` 二次打开时抛
-``PermissionError`` 的跨平台 bug（详见 issue #101）。
+``PermissionError`` 的跨平台 bug。
 """
 
 from __future__ import annotations

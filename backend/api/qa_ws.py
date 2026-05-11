@@ -7,7 +7,7 @@
 1. 连接建立后立即推送 ``session_init`` 帧（教案 + 学生列表 + 问题队列）
 2. 解析客户端帧（discriminated union），分发到 ``QASession`` 对应方法
 3. 把 ``QASession.stream_teacher_message`` 的流式事件 1:1 翻译为 ``reply_chunk`` /
-   ``reply_end`` / ``student_new_question``（M3 followup）服务端帧
+   ``reply_end`` / ``student_new_question`` 服务端帧
 4. 业务异常 → ``WsError`` 帧；同 session 新连接挤掉旧连接（``replaced``）
 
 设计要点：
@@ -17,8 +17,6 @@
 - **错误分类**：``dialog_not_found`` / ``dialog_already_ended`` / ``invalid_message``
   / ``internal_error`` / ``replaced``
 - **业务调用串行化**：单 session 单连接 + 单协程读循环天然串行，不需要额外锁
-
-A 端代写（领地 = B），合入 main 后 B 端可自由扩展新事件类型，但**协议变更需双 approve**。
 """
 
 from __future__ import annotations
@@ -491,12 +489,12 @@ async def qa_ws_endpoint(
 ) -> None:
     """1v1 答疑陪练 WebSocket endpoint。
 
-    协议详见 ``backend/schemas/ws_events.py`` / ``docs/api_contract.md §3``。
+    协议详见 ``backend/schemas/ws_events.py``。
 
     依赖 ``get_registry`` 注入 ``QASessionRegistry``，测试可通过
     ``app.dependency_overrides[get_registry] = lambda: my_registry`` 替换。
 
-    鉴权（M3 §0.5.4）：query string ``?token=<jwt>``，失败以 close code 4401 关闭。
+    鉴权：query string ``?token=<jwt>``，失败以 close code 4401 关闭。
     """
     # WS 鉴权
     if not token:

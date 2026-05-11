@@ -1,6 +1,5 @@
-"""认证路由：注册 + 登录（M3 #B1）。
+"""认证路由：注册 + 登录。
 
-对应 ``docs/api_contract.md §0.5.1``：
 - ``POST /api/auth/register`` → ``{user_id}``
 - ``POST /api/auth/login``    → ``{access_token, token_type}``
 """
@@ -26,6 +25,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # ---- request / response models ----
 
+
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=2, max_length=64)
     password: str = Field(..., min_length=4, max_length=128)
@@ -47,8 +47,11 @@ class LoginData(BaseModel):
 
 # ---- routes ----
 
+
 @router.post("/register", response_model=ApiResponse[RegisterData])
-def register(body: RegisterRequest, db: Session = Depends(get_db)) -> ApiResponse[RegisterData]:  # noqa: B008
+def register(
+    body: RegisterRequest, db: Session = Depends(get_db)
+) -> ApiResponse[RegisterData]:  # noqa: B008
     existing = db.query(User).filter(User.username == body.username).first()
     if existing:
         raise HTTPException(status_code=409, detail="用户名已存在")

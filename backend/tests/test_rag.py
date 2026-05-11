@@ -1,4 +1,4 @@
-"""RAG pipeline tests — parser / extractor / indexer / API (Issue #19).
+"""RAG pipeline tests — parser / extractor / indexer / API.
 
 所有 LLM 调用和 PDF 解析均 mock，验证：
 1. parser: MD/TXT 正确读取，PDF 走 pymupdf4llm，不支持格式抛 ValueError。
@@ -100,15 +100,12 @@ class TestParser:
         assert result == "PDF bytes 解析结果"
 
     def test_parse_pdf_bytes_real_sample_no_tempfile(self) -> None:
-        """回归测试 issue #101 — 真 PDF 字节流走完整 parser 路径。
+        """真 PDF 字节流走完整 parser 路径。
 
         用项目内一份真实样例教案做端到端验证：
         - 不 mock pymupdf / pymupdf4llm，跑真实代码路径
         - 不依赖临时文件（之前 NamedTemporaryFile 在 Windows 下独占写）
         - 仅断言解析返回非空文本即可，避免与 PDF 内容耦合
-
-        在 Windows 上跑通即修复 #101；在 Linux/macOS 上也能跑通保证
-        跨平台一致。
         """
         repo_root = Path(__file__).resolve().parent.parent.parent
         sample = repo_root / "data" / "lesson_samples" / "math_p5_area.pdf"
@@ -122,7 +119,7 @@ class TestParser:
         assert len(text) > 100, "PDF 解析应返回有效正文"
 
     def test_parse_pdf_file_real_sample(self) -> None:
-        """回归测试 issue #101 — 真 PDF 文件走 parse_file 路径。"""
+        """真 PDF 文件走 parse_file 路径。"""
         repo_root = Path(__file__).resolve().parent.parent.parent
         sample = repo_root / "data" / "lesson_samples" / "math_p5_area.pdf"
         if not sample.exists():

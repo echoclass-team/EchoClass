@@ -1,4 +1,4 @@
-"""``scripts/seed_demo`` 与 ``services/session_serde`` 的单元测试 (#M3-A7 / #128)。
+"""``scripts/seed_demo`` 与 ``services/session_serde`` 的单元测试。
 
 覆盖：
 - session_serde dump → load 往返保持等价
@@ -113,9 +113,7 @@ def test_disk_json_matches_fixture(tmp_path: Path) -> None:
         )
         on_disk = json.loads(path.read_text(encoding="utf-8"))
         expected = dump_bundle_to_dict(fixture_bundles[label])
-        assert on_disk == expected, (
-            f"{path} 与 fixture 不一致；跑 --build 重新生成"
-        )
+        assert on_disk == expected, f"{path} 与 fixture 不一致；跑 --build 重新生成"
 
 
 def test_write_bundles_to_disk_uses_label(tmp_path: Path, monkeypatch) -> None:
@@ -179,24 +177,16 @@ def test_seed_bundle_writes_all_tables(db_session) -> None:
     _seed_bundle(db_session, bundle)
 
     session_id = bundle.session.id
-    assert (
-        db_session.query(QASessionRecord).filter_by(id=session_id).count() == 1
-    )
+    assert db_session.query(QASessionRecord).filter_by(id=session_id).count() == 1
     msg_count = (
-        db_session.query(DialogMessageRecord)
-        .filter_by(session_id=session_id)
-        .count()
+        db_session.query(DialogMessageRecord).filter_by(session_id=session_id).count()
     )
-    assert msg_count == sum(
-        len(d.messages) for d in bundle.session.dialogs.values()
+    assert msg_count == sum(len(d.messages) for d in bundle.session.dialogs.values())
+    assert (
+        db_session.query(EvaluationRecord).filter_by(session_id=session_id).count() == 1
     )
     assert (
-        db_session.query(EvaluationRecord).filter_by(session_id=session_id).count()
-        == 1
-    )
-    assert (
-        db_session.query(FeedbackRecord).filter_by(session_id=session_id).count()
-        == 1
+        db_session.query(FeedbackRecord).filter_by(session_id=session_id).count() == 1
     )
 
 

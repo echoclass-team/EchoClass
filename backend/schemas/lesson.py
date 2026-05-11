@@ -1,4 +1,5 @@
-"""Lesson plan schemas for RAG pipeline (Issue #19)."""
+"""Lesson plan schemas for RAG pipeline."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -70,4 +71,6 @@ class RecommendedPersonasData(BaseModel):
     stage_name: str = Field(default="", description="学段名称")
     recommended_count: int = Field(..., description="实际推荐学生数量")
     persona_ids: list[str] = Field(default_factory=list, description="推荐学生 id 列表")
-    students: list[PersonaSummary] = Field(default_factory=list, description="推荐学生概要")
+    students: list[PersonaSummary] = Field(
+        default_factory=list, description="推荐学生概要"
+    )

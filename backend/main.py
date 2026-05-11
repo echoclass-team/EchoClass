@@ -1,7 +1,6 @@
 """FastAPI entrypoint for EchoClass backend.
 
-EchoClass 后端入口。Role A 创建初版，日常维护归 Role B。
-Role A 追加 router 注册时请与 B 同步。
+EchoClass 后端入口。
 
 当前已注册的路由：
 - GET /health — 健康检查
@@ -10,8 +9,8 @@ Role A 追加 router 注册时请与 B 同步。
 - GET /api/personas — 人设列表（支持过滤）
 - GET /api/personas/{name_or_id} — 人设详情
 - POST /api/lessons/upload 等 — 教案 CRUD（详见 api/lessons.py）
-- POST /api/qa-sessions 等 — 1v1 答疑陪练 REST（详见 api/qa_sessions.py，B 实现 #B1）
-- WS /ws/qa-sessions/{session_id} — 1v1 答疑陪练 WebSocket（A 代写, see api/qa_ws.py）
+- POST /api/qa-sessions 等 — 1v1 答疑陪练 REST（详见 api/qa_sessions.py）
+- WS /ws/qa-sessions/{session_id} — 1v1 答疑陪练 WebSocket（详见 api/qa_ws.py）
 """
 
 from __future__ import annotations
@@ -56,7 +55,7 @@ app.add_middleware(
 )
 
 
-# M3 #B1: 启动时自动建表（生产应用 Alembic migration）
+# 启动时自动建表（生产应用 Alembic migration）
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)

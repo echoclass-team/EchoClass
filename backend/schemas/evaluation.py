@@ -1,13 +1,6 @@
-"""评估报告 schema — M3 协议冻结占位（Epic #121 / 真实实现 #M3-A1）。
+"""评估报告 schema。
 
-与 ``docs/api_contract.md §2.6`` 保持一致。
-
-本文件在 Epic 0（#121）阶段**仅定义字段契约**，供 B 端（#M3-B3 评估 REST API）
-和前端（#M3-B4 复盘 UI）基于此 schema 搭骨架。真实 LLM 打分逻辑由 EvaluatorAgent
-在 #M3-A3 填充；字段 / 约束若需变更，必须开 PR 修改本文件 + api_contract §2.6，
-经 A+B 双 approve 后合入（与 ws_events.py / qa_session_api.py 同规则）。
-
-不变式（与文档一致）：
+不变式：
 
 - 每个 session 最多一份 ``EvaluationReport``（DB 层 ``evaluations.session_id UNIQUE``）
 - LLM 失败时 ``overall="unavailable"``，``scores`` 可为空列表（字段不为 null）
@@ -91,7 +84,7 @@ class EvaluationReport(BaseModel):
         ...,
         description=(
             "汇总分（0.0–4.0 浮点，允许小数以表达维度加权平均）；"
-            "LLM 整体失败时降级为字符串 ``\"unavailable\"``。"
+            'LLM 整体失败时降级为字符串 ``"unavailable"``。'
         ),
     )
     generated_at: datetime = Field(

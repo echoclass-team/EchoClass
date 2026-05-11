@@ -1,6 +1,6 @@
-"""JWT 签发 / 校验 + 密码哈希工具（M3 #B1）。
+"""JWT 签发 / 校验 + 密码哈希工具。
 
-M3 最小化：
+最小化实现：
 - HS256 对称签名，密钥从 ``JWT_SECRET`` 环境变量取
 - access-only，无 refresh token
 - 密码用 bcrypt 哈希

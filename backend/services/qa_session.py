@@ -46,15 +46,14 @@ from schemas.question import StudentQuestion
 logger = logging.getLogger(__name__)
 
 PRESET_QUESTIONS_PER_STUDENT = 3
-"""M3 预生成问题数：每个学生 spawn 时一次性生成的题数。
+"""预生成问题数：每个学生 spawn 时一次性生成的题数。
 
-重要：改动此值要同步更新 ``schemas/dialog.py`` 和 ``docs/api_contract.md`` 中的
-N=3 文案。过大（≥5）会显著拉高 spawn 阶段 LLM 输出 tokens，且学生处境难以
-支撑 5+ 个互独立的真实问题。
+重要：改动此值要同步更新 ``schemas/dialog.py`` 中的 N=3 文案。过大（≥5）会显著
+拉高 spawn 阶段 LLM 输出 tokens，且学生处境难以支撑 5+ 个互独立的真实问题。
 """
 
 MAX_TURNS_PER_QUESTION = 8
-"""M3 单题最大轮数（老师一句 + 学生一句算1 轮）。超过即单题自动 ``abandoned``
+"""单题最大轮数（老师一句 + 学生一句算1 轮）。超过即单题自动 ``abandoned``
 （``resolution_source='turn_limit'``）并推进下一题，避免关卡在单题上。
 """
 
@@ -110,7 +109,7 @@ class QASession:
         *,
         questions_per_student: int = PRESET_QUESTIONS_PER_STUDENT,
     ) -> list[StudentQuestion]:
-        """为每个学生 spawn 一个 thread dialog（M3）。
+        """为每个学生 spawn 一个 thread dialog。
 
         每个学生调 ``generate_questions(count=questions_per_student)`` 一次性预生成 N
         道独立问题（缺省 N=``PRESET_QUESTIONS_PER_STUDENT``=3），在本 session 里创建
@@ -395,9 +394,13 @@ class QASession:
                 f"stream_in_dialog finished without final event for {dialog_id}"
             )
         if final_event.result is not None:
-            next_q, advance_source = self._after_student_reply(dialog, final_event.result)
+            next_q, advance_source = self._after_student_reply(
+                dialog, final_event.result
+            )
             if next_q is not None:
-                yield StudentStreamEvent(type="followup", new_question=next_q, source=advance_source)
+                yield StudentStreamEvent(
+                    type="followup", new_question=next_q, source=advance_source
+                )
 
     @staticmethod
     def _current_question(dialog: DialogSession) -> StudentQuestion:
@@ -437,9 +440,13 @@ class QASession:
         progress.turns_used += 1
 
         if result.self_resolved:
-            return self._advance_after_question_end(dialog, source="self_resolve"), "self_resolve"
+            return self._advance_after_question_end(
+                dialog, source="self_resolve"
+            ), "self_resolve"
         if progress.turns_used >= MAX_TURNS_PER_QUESTION:
-            return self._advance_after_question_end(dialog, source="turn_limit"), "turn_limit"
+            return self._advance_after_question_end(
+                dialog, source="turn_limit"
+            ), "turn_limit"
         return None, None
 
     def _advance_after_question_end(

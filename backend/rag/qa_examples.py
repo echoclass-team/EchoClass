@@ -4,7 +4,7 @@
 用于注入到 student_ask.j2 / student_chat.j2 prompt 中显著提升 LLM 输出质量。
 
 设计要点：
-- 数据驱动：范例放 JSON，与代码解耦，便于 Role C / Role A 协作维护
+- 数据驱动：范例放 JSON，与代码解耦
 - 学段索引：直接按 ``stage_id`` 加载，避免 prompt 里塞 6 学段全部范例造成 token 浪费
 - ``lru_cache``：进程级缓存，避免每次 generate_questions 都读盘
 """

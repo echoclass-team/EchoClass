@@ -2,15 +2,15 @@
 
 与 ``EvaluatorAgent`` 配对但**受众不同**：
 
-- ``EvaluatorAgent``（#M3-A1）→ 评委 / 数据看板：维度打分 + 证据
+- ``EvaluatorAgent`` → 评委 / 数据看板：维度打分 + 证据
 - ``FeedbackAgent``（本文件）→ 师范生：自然语言的肯定 + 改进 + 下一步
 
 设计原则：
 
-- 默认 mock 模式保证 B3 / B4 可稳定消费；传入 ``LLMClient`` 时走真实 LLM 路径
-- ``schemas/feedback.py`` 已在 Epic #121 / PR #141 冻结，本 agent 只消费
-- 与 ``EvaluatorAgent`` schema 解耦：``evaluation`` 仅作为可选输入参考（缺失
-  时仍能给出占位反馈，配合 ``docs/api_contract.md §2.6.4`` 的降级语义）
+- 默认 mock 模式不调 LLM；传入 ``LLMClient`` 时走真实 LLM 路径
+- ``schemas/feedback.py`` 冻结接口，本 agent 只消费
+- 与 ``EvaluatorAgent`` schema 解耦：``evaluation`` 仅作为可选输入参考，
+  缺失时仍能给出占位反馈
 """
 
 from __future__ import annotations

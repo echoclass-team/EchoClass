@@ -1,6 +1,6 @@
 """QASession orchestrator 集成测试（mock StudentAgent，不调真 LLM）。
 
-覆盖 M3 预生成题机制：
+覆盖预生成题机制：
 
 - spawn 为每个学生预生成 N 题（默认 3），按学生顺序入队
 - next_pending FIFO；start_dialog 后从 pending 队列移除并激活当前题 progress
@@ -113,12 +113,8 @@ def _three_questions(prefix: str = "Q") -> list[dict[str, Any]]:
 
 async def test_spawn_creates_n_predetermined_questions_per_student() -> None:
     """spawn 默认 N=3：每个学生 1 个 dialog，asked_questions 含 3 题，progress 对齐。"""
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
-    b = FakeStudentAgent(
-        student_id="B", name="学生B", questions=_three_questions("B")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
+    b = FakeStudentAgent(student_id="B", name="学生B", questions=_three_questions("B"))
     session = QASession(lesson_meta=_lesson())
     first_questions = await session.spawn([a, b])
 
@@ -136,9 +132,7 @@ async def test_spawn_creates_n_predetermined_questions_per_student() -> None:
 
 
 async def test_spawn_with_explicit_count() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a], questions_per_student=2)
     dialog = session.dialogs["A"]
@@ -147,9 +141,7 @@ async def test_spawn_with_explicit_count() -> None:
 
 
 async def test_spawn_invalid_count_raises() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
     session = QASession(lesson_meta=_lesson())
     with pytest.raises(QASessionError):
         await session.spawn([a], questions_per_student=0)
@@ -162,12 +154,8 @@ async def test_preset_constant_is_three() -> None:
 
 
 async def test_next_pending_fifo_order() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
-    b = FakeStudentAgent(
-        student_id="B", name="学生B", questions=_three_questions("B")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
+    b = FakeStudentAgent(student_id="B", name="学生B", questions=_three_questions("B"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a, b])
 
@@ -183,9 +171,7 @@ async def test_next_pending_fifo_order() -> None:
 
 
 async def test_start_dialog_activates_first_question_progress() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a])
     session.start_dialog("A")
@@ -360,9 +346,7 @@ async def test_self_resolved_marker_lands_on_student_message() -> None:
 
 async def test_mark_resolved_advances_current_question() -> None:
     """老师手动 mark_resolved → 当前题 resolved(teacher_marked)，推进下一题。"""
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a])
     session.start_dialog("A")
@@ -377,9 +361,7 @@ async def test_mark_resolved_advances_current_question() -> None:
 
 async def test_mark_resolved_on_last_question_closes_dialog() -> None:
     """对最后一题 mark_resolved → 整个 dialog resolved。"""
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a])
     session.start_dialog("A")
@@ -394,9 +376,7 @@ async def test_mark_resolved_on_last_question_closes_dialog() -> None:
 
 
 async def test_mark_resolved_idempotent_on_finished_dialog() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=[{"content": "A1"}]
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=[{"content": "A1"}])
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a], questions_per_student=1)
     session.start_dialog("A")
@@ -410,9 +390,7 @@ async def test_mark_resolved_idempotent_on_finished_dialog() -> None:
 
 
 async def test_mark_resolved_after_abandoned_raises() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a])
     session.abandon_dialog("A")
@@ -502,9 +480,7 @@ async def test_summary_aggregates_resolved_metadata() -> None:
             {"content": "B1", "linked_key_point": "比较大小"},
         ],
     )
-    c = FakeStudentAgent(
-        student_id="C", name="学生C", questions=[{"content": "C1"}]
-    )
+    c = FakeStudentAgent(student_id="C", name="学生C", questions=[{"content": "C1"}])
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a, b, c], questions_per_student=1)
 
@@ -551,12 +527,8 @@ async def test_get_dialog_unknown_id_raises() -> None:
 
 
 async def test_iter_students_yields_spawn_order() -> None:
-    a = FakeStudentAgent(
-        student_id="A", name="学生A", questions=_three_questions("A")
-    )
-    b = FakeStudentAgent(
-        student_id="B", name="学生B", questions=_three_questions("B")
-    )
+    a = FakeStudentAgent(student_id="A", name="学生A", questions=_three_questions("A"))
+    b = FakeStudentAgent(student_id="B", name="学生B", questions=_three_questions("B"))
     session = QASession(lesson_meta=_lesson())
     await session.spawn([a, b])
 

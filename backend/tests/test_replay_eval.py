@@ -1,4 +1,4 @@
-"""``scripts/replay_eval`` 单元测试 (#M3-A5 / #126)。
+"""``scripts/replay_eval`` 单元测试。
 
 覆盖：
 - `_TokenTrackingLLM` 累加 prompt/completion tokens

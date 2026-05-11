@@ -1,4 +1,4 @@
-"""共享依赖注入（M3 #B1）。
+"""共享依赖注入。
 
 ``get_current_user`` — 从 ``Authorization: Bearer <jwt>`` 解析当前用户。
 受保护路由只需 ``Depends(get_current_user)``。

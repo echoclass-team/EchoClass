@@ -1,4 +1,4 @@
-"""QASession 序列化 / 反序列化 helper（M3-A5 #126 / M3-A7 #128 共享）。
+"""QASession 序列化 / 反序列化 helper。
 
 设计目标
 --------
@@ -6,8 +6,8 @@
 ``EvaluationReport`` / ``TeacherFeedback`` 一同写入 / 读出 JSON，以服务两类
 脚本：
 
-- ``scripts/replay_eval.py``（#M3-A5）：从 JSON 重建 session 后重新跑 evaluator
-- ``scripts/seed_demo.py``（#M3-A7）：把 demo 三份样本灌入 DB
+- ``scripts/replay_eval.py``：从 JSON 重建 session 后重新跑 evaluator
+- ``scripts/seed_demo.py``：把 demo 三份样本灌入 DB
 
 序列化规范
 ----------
@@ -79,8 +79,7 @@ def dump_bundle_to_dict(bundle: SessionBundle) -> dict[str, Any]:
             "lesson_meta": session.lesson_meta.model_dump(mode="json"),
             "persona_ids": list(bundle.persona_ids or []),
             "dialogs": [
-                dialog.model_dump(mode="json")
-                for dialog in session.dialogs.values()
+                dialog.model_dump(mode="json") for dialog in session.dialogs.values()
             ],
         },
         "evaluation": (

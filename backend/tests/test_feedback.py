@@ -1,4 +1,4 @@
-"""``agents.feedback`` 单元测试 (#M3-A2 / #138)。
+"""``agents.feedback`` 单元测试。
 
 覆盖 mock 行为、真实路径 JSON 解析与失败降级；不调真实 LLM。
 """

@@ -1,4 +1,4 @@
-"""SQLAlchemy engine + session 工厂（M3 #B1）。
+"""SQLAlchemy engine + session 工厂。
 
 单例 engine，所有模块共用。URL 优先级：
 1. ``ECHOCLASS_DB_URL`` 环境变量
@@ -13,7 +13,9 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-_DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "echoclass.db"
+_DEFAULT_DB_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "data" / "echoclass.db"
+)
 _DEFAULT_URL = f"sqlite:///{_DEFAULT_DB_PATH}"
 
 DATABASE_URL = os.environ.get("ECHOCLASS_DB_URL", _DEFAULT_URL)

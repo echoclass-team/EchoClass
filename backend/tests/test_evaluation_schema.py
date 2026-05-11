@@ -1,6 +1,6 @@
 """`schemas/evaluation.py` + `schemas/feedback.py` 占位 schema 的冒烟测试。
 
-Epic #121 协议冻结后运行；覆盖：
+覆盖：
 
 - 必填字段缺失 → 校验报错
 - 典型有效 payload round-trip

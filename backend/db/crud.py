@@ -1,4 +1,4 @@
-"""持久化 CRUD 操作（M3 #B2）。
+"""持久化 CRUD 操作。
 
 供 API 路由和 QASessionRegistry 调用，隔离 SQLAlchemy 细节。
 """
@@ -81,7 +81,9 @@ def list_lessons_by_owner(db: Session, owner_id: str) -> list[Lesson]:
     )
 
 
-def get_lesson_by_hash(db: Session, content_hash: str, owner_id: str) -> Optional[Lesson]:
+def get_lesson_by_hash(
+    db: Session, content_hash: str, owner_id: str
+) -> Optional[Lesson]:
     return (
         db.query(Lesson)
         .filter(Lesson.content_hash == content_hash, Lesson.owner_id == owner_id)
@@ -137,8 +139,12 @@ def delete_qa_session_record(db: Session, session_id: str, owner_id: str) -> boo
     )
     if row is None:
         return False
-    db.query(DialogMessageRecord).filter(DialogMessageRecord.session_id == session_id).delete()
-    db.query(EvaluationRecord).filter(EvaluationRecord.session_id == session_id).delete()
+    db.query(DialogMessageRecord).filter(
+        DialogMessageRecord.session_id == session_id
+    ).delete()
+    db.query(EvaluationRecord).filter(
+        EvaluationRecord.session_id == session_id
+    ).delete()
     db.query(FeedbackRecord).filter(FeedbackRecord.session_id == session_id).delete()
     db.delete(row)
     db.commit()
@@ -289,9 +295,7 @@ def upsert_feedback(
 ) -> FeedbackRecord:
     """写入或覆盖某 session 的反馈（``feedbacks.session_id`` 唯一）。"""
     row = (
-        db.query(FeedbackRecord)
-        .filter(FeedbackRecord.session_id == session_id)
-        .first()
+        db.query(FeedbackRecord).filter(FeedbackRecord.session_id == session_id).first()
     )
     if row is None:
         row = FeedbackRecord(
@@ -307,11 +311,7 @@ def upsert_feedback(
     return row
 
 
-def get_feedback_by_session(
-    db: Session, session_id: str
-) -> Optional[FeedbackRecord]:
+def get_feedback_by_session(db: Session, session_id: str) -> Optional[FeedbackRecord]:
     return (
-        db.query(FeedbackRecord)
-        .filter(FeedbackRecord.session_id == session_id)
-        .first()
+        db.query(FeedbackRecord).filter(FeedbackRecord.session_id == session_id).first()
     )

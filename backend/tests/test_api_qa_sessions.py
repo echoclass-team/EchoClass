@@ -1,4 +1,4 @@
-"""``/api/qa-sessions`` REST 路由集成测试 (#B1 / Issue #72)。
+"""``/api/qa-sessions`` REST 路由集成测试。
 
 用 FastAPI ``TestClient`` + ``app.dependency_overrides`` 注入隔离的
 ``QASessionRegistry``、可控的 lesson lookup 和不触网的 fake agent factory，
@@ -321,7 +321,7 @@ def test_get_session_state(
     assert d0["status"] == "pending"
     assert d0["turn_count"] == 0
     assert d0["question_preview"]
-    # issue #102: history 字段始终存在，未发生对话时为空数组
+    # history 字段始终存在，未发生对话时为空数组
     assert d0["history"] == []
     assert all(d["history"] == [] for d in data["dialogs"])
 
@@ -333,7 +333,7 @@ async def test_get_session_state_returns_dialog_history(
     isolated_registry: QASessionRegistry,
     real_persona_ids: list[str],
 ) -> None:
-    """issue #102 — GET 应返回每个 dialog 的完整 history。
+    """GET 应返回每个 dialog 的完整 history。
 
     构造一个发生过 2 来回 + 1 学生 self_resolved 的 dialog，断言 GET 拿到
     完整 4 条消息（teacher / student / teacher / student），且 student

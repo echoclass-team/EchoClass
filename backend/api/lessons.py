@@ -1,4 +1,4 @@
-"""Lesson upload & retrieval API routes (Issue #19).
+"""Lesson upload & retrieval API routes.
 
 POST /api/lessons/upload — 上传教案文件（PDF/MD/TXT），返回 lesson_id + 抽取结果。
 GET  /api/lessons/{lesson_id} — 获取教案元数据。
@@ -54,6 +54,7 @@ def get_lesson_record(lesson_id: str) -> LessonRecord | None:
         return _store[lesson_id]
     # DB fallback
     from db.engine import SessionLocal
+
     db = SessionLocal()
     try:
         row = get_lesson_by_id(db, lesson_id)
@@ -185,6 +186,7 @@ async def upload_lesson(
     # 与 Chroma 切片，不再调用 parser / extractor / indexer，避免重复消耗
     # LLM token 与向量库空间（#132）。
     from db.engine import SessionLocal
+
     db = SessionLocal()
     try:
         existing = get_lesson_by_hash(db, content_hash, _user.id)
@@ -235,7 +237,7 @@ async def upload_lesson(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:  # noqa: BLE001
         # 解析器内部异常（如 PDF 损坏 / pymupdf 报错）— 翻成 422，避免
-        # 裸 500 让前端看到不可读错误。issue #101 附带要求。
+        # 裸 500 让前端看到不可读错误。
         logger.exception("parse_bytes failed for %s", file.filename)
         raise HTTPException(status_code=422, detail=f"解析失败：{e}") from e
 
@@ -298,24 +300,27 @@ async def list_lessons(
 ) -> ApiResponse[list[LessonListItem]]:
     """列出当前用户的所有教案。"""
     from db.engine import SessionLocal
+
     db = SessionLocal()
     try:
         rows = list_lessons_by_owner(db, _user.id)
         items = []
         for r in rows:
             meta = json.loads(r.meta_json) if r.meta_json else {}
-            items.append(LessonListItem(
-                lesson_id=r.id,
-                title=r.title or meta.get("topic", ""),
-                subject=meta.get("subject", ""),
-                grade=meta.get("grade", ""),
-                topic=meta.get("topic", ""),
-                filename=r.filename or "",
-                created_at=r.created_at.isoformat() if r.created_at else "",
-                objectives=meta.get("objectives", []),
-                key_points=meta.get("key_points", []),
-                difficult_points=meta.get("difficult_points", []),
-            ))
+            items.append(
+                LessonListItem(
+                    lesson_id=r.id,
+                    title=r.title or meta.get("topic", ""),
+                    subject=meta.get("subject", ""),
+                    grade=meta.get("grade", ""),
+                    topic=meta.get("topic", ""),
+                    filename=r.filename or "",
+                    created_at=r.created_at.isoformat() if r.created_at else "",
+                    objectives=meta.get("objectives", []),
+                    key_points=meta.get("key_points", []),
+                    difficult_points=meta.get("difficult_points", []),
+                )
+            )
         return ok_response(items)
     finally:
         db.close()
@@ -379,13 +384,16 @@ async def delete_lesson_endpoint(
 ) -> ApiResponse[dict]:
     """删除教案（仅限上传者）。同时清除内存缓存。"""
     from db.engine import SessionLocal
+
     db = SessionLocal()
     try:
         deleted = delete_lesson(db, lesson_id, _user.id)
     finally:
         db.close()
     if not deleted:
-        raise HTTPException(status_code=404, detail="Lesson not found or not owned by you")
+        raise HTTPException(
+            status_code=404, detail="Lesson not found or not owned by you"
+        )
     _store.pop(lesson_id, None)
     logger.info("Deleted lesson %s by user %s", lesson_id, _user.id)
     return ok_response({"lesson_id": lesson_id, "deleted": True})

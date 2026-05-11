@@ -1,6 +1,6 @@
-"""DialogMessage / DialogSession schema 单元测试 (#111)。
+"""DialogMessage / DialogSession schema 单元测试。
 
-覆盖 M3 连续答疑模式下的新增字段：
+覆盖连续答疑模式下的新增字段：
 
 - ``DialogMessage.is_new_question`` 默认 False、显式赋值往返
 - ``DialogMessage.question_id`` 默认 None、显式赋值往返

@@ -1,4 +1,4 @@
-"""``utils.logging`` 单元测试 (#M3-A6 / #127)。
+"""``utils.logging`` 单元测试。
 
 覆盖：
 
@@ -146,8 +146,13 @@ def test_json_formatter_handles_exc_info() -> None:
         import sys
 
         record = logging.LogRecord(
-            name="t", level=logging.ERROR, pathname=__file__, lineno=1,
-            msg="oops", args=None, exc_info=sys.exc_info(),
+            name="t",
+            level=logging.ERROR,
+            pathname=__file__,
+            lineno=1,
+            msg="oops",
+            args=None,
+            exc_info=sys.exc_info(),
         )
     payload = json.loads(fmt.format(record))
     assert "exc_info" in payload

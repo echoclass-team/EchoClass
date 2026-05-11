@@ -1,4 +1,4 @@
-"""``services.evaluation_service`` 单元测试 (#M3-A3 / #M3-A4)。
+"""``services.evaluation_service`` 单元测试。
 
 覆盖：
 - schedule 触发 evaluator + feedback，并把结果存入内存字典

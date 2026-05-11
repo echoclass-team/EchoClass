@@ -1,4 +1,4 @@
-"""StudentAgent — 单学生虚拟角色（1v1 / M3 连续答疑陪练专用）。
+"""StudentAgent — 单学生虚拟角色（1v1 连续答疑陪练专用）。
 
 该 agent 提供三个能力：
 
@@ -16,7 +16,7 @@
    先若干 ``delta`` 事件（已剥离末尾 ``[懂了]`` 标记），最后一个 ``final``
    事件携带完整 ``DialogReplyResult``。供 WebSocket 端点直接转发。
 
-M3 连续答疑下的追问机制：预生成 N 题后由 ``QASession`` 确定性弹出，
+追问机制：预生成 N 题后由 ``QASession`` 确定性弹出，
 agent 不再负责追问决策。
 
 人设支持：
