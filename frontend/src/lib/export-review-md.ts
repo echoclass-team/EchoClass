@@ -41,7 +41,7 @@ function escapeTableCell(value: string): string {
   return value.replaceAll("|", "\\|").replaceAll("\n", "<br>");
 }
 
-// ────────────────────────────────────────────── builders
+// --- builders
 
 function sectionLesson(session: QASessionStateData): string {
   const { lesson } = session;
@@ -162,17 +162,17 @@ function sectionFeedback(feedback: TeacherFeedback | null | undefined): string {
   const lines: string[] = ["## 反馈建议", ""];
 
   if (feedback.strengths.length > 0) {
-    lines.push("### ✅ 做得好", "");
+    lines.push("### 做得好", "");
     feedback.strengths.forEach((s) => lines.push(`- ${s}`));
     lines.push("");
   }
   if (feedback.improvements.length > 0) {
-    lines.push("### 🔧 可改进", "");
+    lines.push("### 可改进", "");
     feedback.improvements.forEach((s) => lines.push(`- ${s}`));
     lines.push("");
   }
   if (feedback.next_steps.length > 0) {
-    lines.push("### 🚀 下一步建议", "");
+    lines.push("### 下一步建议", "");
     feedback.next_steps.forEach((s) => lines.push(`- ${s}`));
     lines.push("");
   }
@@ -180,7 +180,7 @@ function sectionFeedback(feedback: TeacherFeedback | null | undefined): string {
   return lines.join("\n");
 }
 
-// ────────────────────────────────────────────── public API
+// --- public API
 
 export function buildReviewMarkdown(
   session: QASessionStateData,

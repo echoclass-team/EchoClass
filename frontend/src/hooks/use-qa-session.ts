@@ -36,7 +36,7 @@ import type {
 } from "@/lib/qa-ws.types";
 import type { DialogMessageDTO, DialogStateSummary } from "@/types/qa";
 
-// ============================================================ State 模型
+// --- State
 
 /** 单条对话回合（已落地的 teacher / student 消息）。 */
 export interface DialogTurn {
@@ -94,7 +94,7 @@ const initialState: QASessionState = {
   lastError: null,
 };
 
-// ============================================================ Reducer
+// --- Reducer
 
 type Action =
   | { type: "RESET" }
@@ -343,7 +343,7 @@ function reducer(state: QASessionState, action: Action): QASessionState {
   }
 }
 
-// ============================================================ Hook 接口
+// --- Hook 接口
 
 export interface UseQASessionOptions {
   /** session id；为 null 时不建连。 */
@@ -398,7 +398,7 @@ function deriveDefaultWsBase(): string {
   );
 }
 
-// ============================================================ Hook 实现
+// --- Hook 实现
 
 export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
   const {
@@ -525,7 +525,7 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
     };
   }, [url, autoConnect, maxRetries, retryDelayMs]);
 
-  // ---- 命令 -----
+  // --- 命令
 
   const selectDialog = useCallback((dialogId: string) => {
     // 乐观切右侧窗口（即使服务端 dialog_active 还没回，UI 也能立刻响应）
@@ -574,7 +574,7 @@ export function useQASession(opts: UseQASessionOptions): UseQASessionResult {
     dispatch({ type: "RESET" });
   }, []);
 
-  // ---- 派生 -----
+  // --- 派生
 
   const pendingCount = useMemo(
     () =>

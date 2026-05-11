@@ -8,7 +8,7 @@
  * 后端 schema + 本文件 + api_contract.md，并由 A+B 双 approve。
  */
 
-// =============================================================== 嵌入业务对象
+// --- 嵌入业务对象
 
 /** ISO-8601 时间戳字符串。 */
 export type ISO8601 = string;
@@ -72,7 +72,7 @@ export type WsErrorCode =
   | "llm_failed"
   | "internal_error";
 
-// ============================================================ 客户端 → 服务端
+// --- 客户端 → 服务端
 
 interface _ClientBase {
   /** 客户端发送时间，可选；服务端不做强校验。 */
@@ -112,7 +112,7 @@ export type ClientMessage =
 
 export type ClientMessageType = ClientMessage["type"];
 
-// ============================================================ 服务端 → 客户端
+// --- 服务端 → 客户端
 
 interface _ServerBase {
   /** 服务端单调递增帧序号（连接内唯一，从 0 起）。 */
@@ -207,7 +207,7 @@ export type ServerMessageOf<T extends ServerMessageType> = Extract<
   { type: T }
 >;
 
-// ====================================================================== 客户端
+// --- 客户端
 
 /** WS 连接当前状态。 */
 export type QAWsStatus =

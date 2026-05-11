@@ -121,7 +121,7 @@ export interface QASessionEndData {
   summary: QASessionSummary;
 }
 
-// ============================================================ 历史列表
+// --- 历史列表
 
 /** GET /api/qa-sessions 列表单项（对应后端 QASessionListItem） */
 export interface QASessionListItem {
@@ -134,7 +134,7 @@ export interface QASessionListItem {
   closed_at?: string | null;
 }
 
-// ============================================================ 评估 API
+// --- 评估 API
 
 /** 打分证据片段 */
 export interface Evidence {
