@@ -15,7 +15,7 @@ export interface PollOptions {
 }
 
 const DEFAULT_INTERVAL = 2_000;
-const DEFAULT_TIMEOUT = 60_000;
+const DEFAULT_TIMEOUT = 120_000;
 
 /**
  * Poll evaluation endpoint until done/failed or timeout.
