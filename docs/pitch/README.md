@@ -1,56 +1,40 @@
-# EchoClass Pitch & Demo 资料包
+# Pitch & Demo 资料
 
-> **Issue**：#137 [W5][M3-C4] Pitch + Demo 脚本
-> **Owner**：C-Prod
-> **路线**：学术（校内答辩 / 毕设评审 / 竞赛）
-> **状态**：🚧 骨架（待 #136 用户测试数据回填）
-> **最后更新**：2026-05-08
+#137 · C-Prod · 学术路线（答辩 / 毕设 / 竞赛）· 2026-05-08
 
----
+## 文件
 
-## 文件说明
+| 文件 | 用途 |
+|---|---|
+| [`30s.md`](./30s.md) | 电梯版 |
+| [`2min.md`](./2min.md) | 评委版 · 5 段 |
+| [`5min.md`](./5min.md) | 完整 demo + 答辩（5min 讲 + 3-5min Q&A） |
+| [`demo_checklist.md`](./demo_checklist.md) | 演讲前 24h checklist + 翻车预案 + rollback |
+| [`qa_preparation.md`](./qa_preparation.md) | 12 题 Q&A |
 
-| 文件 | 时长 | 用途 | 入口段落 |
-|---|---|---|---|
-| [`30s.md`](./30s.md) | 30 秒 | 电梯版（陌生人问"你做的什么"） | 一段话 |
-| [`2min.md`](./2min.md) | 2 分钟 | 评委版（5 段式：痛点→方案→机制→验证→展望） | 主胶片 5 张 |
-| [`5min.md`](./5min.md) | 5 分钟 | 完整 demo + 答辩要点（演讲 5min + Q&A 3-5min） | 含演讲稿 + demo 走位 |
-| [`demo_checklist.md`](./demo_checklist.md) | — | Demo 前 24h checklist + 翻车预案 + rollback 手动步骤 | 主持人速查 |
-| [`qa_preparation.md`](./qa_preparation.md) | 3-5 分钟 | 评委尖锐问题预案库 | 12 个高频 Q&A |
+## `_<待回填>_` 字段
 
-## 待回填字段（依赖 #136）
+依赖 #136。W2-W3 测试跑完后统一回填：
 
-每份脚本中以 `_<待回填>_` 标记的字段，待 #136 用户测试 W2-W3 数据出炉后一次性更新：
+- SUS 均值、NPS
+- 测试场次、学段覆盖
+- 师范生原话引语
+- T1-T4 完成率
+- 5 维评分反馈结论
 
-- SUS 平均分 / NPS 数值
-- 真实师范生测试场次数 + 学段覆盖
-- 用户原话引语（≥ 3 句金句）
-- T1-T4 任务完成率
-- 5 维评分用户反馈结论
+## 外部引用
 
-## 共享资产
+| 路径 | 用处 |
+|---|---|
+| `data/demo_sessions/session_{good,mid,bad}.json` | #128 demo seed |
+| `backend/scripts/seed_demo.py` | `--build` / `--reset` |
+| `../rubric_v0.md` | 5 维 Rubric 设计依据 |
+| `../proposal.md` | 理论框架（长答辩可引） |
+| `../user_test_plan.md` | 验证方法学 |
+| `../user_test_report.md` | 实证数据（待 #136 回填） |
 
-| 资产 | 路径 | 用途 |
-|---|---|---|
-| Demo seed 数据 | `data/demo_sessions/session_{good,mid,bad}.json` | 3 段不同分数 session，预置可演示 |
-| Demo 灌库脚本 | `backend/scripts/seed_demo.py` | `--build` 重生成 / `--reset` 清空重灌 |
-| Rubric 文档 | `../rubric_v0.md` | 答辩中介绍 5 维设计依据 |
-| 立项书 | `../proposal.md` | 长答辩可引用的完整理论框架 |
-| 用户测试方案 | `../user_test_plan.md` | 答辩中"如何验证"的方法学引用 |
-| 用户测试报告 | `../user_test_report.md` | 待回填，用于"实证证据"段 |
+## 核心叙事三层
 
-## Pitch 核心三层信息（贯穿三份脚本）
-
-1. **痛点层**：师范生答疑环节缺真实学生 → 同伴扮演温室效应 / 实习前没被真追问过
-2. **方案层**：1v1 虚拟学生答疑陪练（学段共性 × 18 人设 × 21 份学科迷思库三重约束）
-3. **机制层**（差异化护城河）：
-   - 皮亚杰认知阶段约束（防 LLM 超模）
-   - 维果茨基 ZPD + 脚手架（学生不被讲到点上不说"懂了"）
-   - 结构化迷思库（带 typical_error / intervention_hint）
-
-## Changelog
-
-| 版本 | 日期 | 变更 | 作者 |
-|---|---|---|---|
-| v0.1 | 2026-05-08 | 学术路线骨架建立（#137 pre-test draft） | C-Prod |
-| v1.0 | _待填_ | #136 用户测试数据回填 + 全员走查通过 | C-Prod |
+- 痛点：师范生答疑练习缺真学生 —— 同伴扮演没深度 / 实习前没被真追问过
+- 方案：1v1 虚拟学生答疑陪练（学段 × 18 人设 × 21 迷思库）
+- 机制：皮亚杰（防 LLM 超模）+ 维果茨基脚手架（不讲到点不说"懂了"）+ 结构化迷思库（typical_error / intervention_hint）
