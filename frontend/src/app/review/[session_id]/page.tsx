@@ -78,6 +78,7 @@ export default function ReviewPage() {
 
     setEvalPolling(true);
     const result = await pollEvaluation(sessionId, { signal: ac.signal });
+    if (abortRef.current !== ac) return;
     setEvalData(result);
     setEvalPolling(false);
   }, [sessionId]);
